@@ -1,6 +1,15 @@
 /* ============================================
    ZenSpace Operations - Main JavaScript
+   With Supabase Integration for Section Saving
    ============================================ */
+
+// ============================================
+// Global Variables
+// ============================================
+let currentEventId = null;
+let quoteCount = 1;
+let truckingCount = 1;
+let travelCount = 1;
 
 // ============================================
 // Utility Functions
@@ -32,101 +41,754 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// Get form data from a specific section
-function getSectionData(sectionElement) {
-  const data = {};
-  const inputs = sectionElement.querySelectorAll('input, textarea, select');
-  
-  inputs.forEach(input => {
-    if (!input.name) return;
-    
-    if (input.type === 'checkbox') {
-      if (!data[input.name]) data[input.name] = [];
-      if (input.checked) data[input.name].push(input.value);
-    } else if (input.type === 'radio') {
-      if (input.checked) data[input.name] = input.value;
-    } else {
-      data[input.name] = input.value;
-    }
-  });
-  
-  return data;
+// Get event_id from URL parameters
+function getEventIdFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return '4718866000034408037'; // urlParams.get('event_id');
 }
 
-// Get all form data
-function getAllFormData() {
-  const form = document.getElementById('onboardingForm');
-  if (!form) return {};
+// Convert datetime-local value to ISO string for Supabase
+function toISODateTime(value) {
+  if (!value) return null;
+  try {
+    return new Date(value).toISOString();
+  } catch (e) {
+    return null;
+  }
+}
+
+// Convert ISO string to datetime-local format for form input
+function fromISODateTime(isoString) {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    return date.toISOString().slice(0, 16);
+  } catch (e) {
+    return '';
+  }
+}
+
+// Get array of checked checkbox values
+function getCheckedValues(name, container = document) {
+  const checkboxes = container.querySelectorAll(`input[name="${name}"]:checked`);
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Get radio value
+function getRadioValue(name, container = document) {
+  const radio = container.querySelector(`input[name="${name}"]:checked`);
+  return radio ? radio.value : null;
+}
+
+// Get input value
+function getInputValue(name, container = document) {
+  const input = container.querySelector(`[name="${name}"]`);
+  return input ? input.value : null;
+}
+
+// ============================================
+// Section Data Collection Functions
+// ============================================
+
+// Section 1: Pre-planning
+function getPreplanningData() {
+  const section = document.querySelector('[data-section="preplanning"]');
+  return {
+    event_id: currentEventId,
+    onboarding_complete: section.querySelector('[name="onboarding_complete"]')?.checked || false,
+    onboarding_filled_by: getRadioValue('onboarding_filled_by', section),
+    onboarding_filled_by_other: getInputValue('onboarding_filled_by_other', section),
+    preplanning_installer: getCheckedValues('preplanning_installer', section),
+    preplanning_installer_other: getInputValue('preplanning_installer_other', section),
+    warehouse_address: getRadioValue('warehouse_address', section),
+    warehouse_address_other: getInputValue('warehouse_address_other', section),
+    packing_deadline: toISODateTime(getInputValue('packing_deadline', section))
+  };
+}
+
+// Section 2: Artwork & Branding
+function getArtworkData() {
+  const section = document.querySelector('[data-section="artwork"]');
+  return {
+    event_id: currentEventId,
+    proofs_responsible: getRadioValue('proofs_responsible', section),
+    proofs_responsible_other: getInputValue('proofs_responsible_other', section),
+    graphics_upload_link: getInputValue('graphics_upload_link', section),
+    proofs_folder_link: getInputValue('proofs_folder_link', section),
+    proofs_due_date: getInputValue('proofs_due_date', section) || null
+  };
+}
+
+// Section 3: Printing (main data)
+function getPrintingData() {
+  const section = document.querySelector('[data-section="printing"]');
+  return {
+    event_id: currentEventId,
+    assigned_printer: getRadioValue('assigned_printer', section),
+    assigned_printer_other: getInputValue('assigned_printer_other', section),
+    installation_quote: getInputValue('installation_quote', section),
+    printing_start_date: getInputValue('printing_start_date', section) || null,
+    installation_date: getInputValue('installation_date', section) || null,
+    installation_location: getInputValue('installation_location', section)
+  };
+}
+
+// Section 3: Printing Quotes (multiple)
+function getPrintingQuotesData() {
+  const quotes = [];
+  const quoteEntries = document.querySelectorAll('.quote-entry');
   
-  const formData = new FormData(form);
-  const data = {};
-  
-  // Get header fields
-  document.querySelectorAll('.project-field input').forEach(input => {
-    if (input.name) data[input.name] = input.value;
+  quoteEntries.forEach((entry, idx) => {
+    const index = parseInt(entry.dataset.index) || (idx + 1);
+    quotes.push({
+      event_id: currentEventId,
+      quote_index: index,
+      quote_source: getRadioValue(`quote_source_${index}`, entry),
+      quote_source_other: getInputValue(`quote_source_other_${index}`, entry),
+      quote_price: getInputValue(`quote_price_${index}`, entry)
+    });
   });
   
-  // Process form data
-  for (let [key, value] of formData.entries()) {
-    if (data[key]) {
-      if (Array.isArray(data[key])) {
-        data[key].push(value);
-      } else {
-        data[key] = [data[key], value];
-      }
-    } else {
-      data[key] = value;
+  return quotes;
+}
+
+// Section 4: Trucking (multiple entries)
+function getTruckingData() {
+  const entries = [];
+  const truckingEntries = document.querySelectorAll('.trucking-entry');
+  
+  truckingEntries.forEach((entry, idx) => {
+    const index = parseInt(entry.dataset.index) || (idx + 1);
+    entries.push({
+      event_id: currentEventId,
+      entry_index: index,
+      truck_source: getCheckedValues(`truck_source_${index}`, entry),
+      truck_source_other: getInputValue(`truck_source_${index}_other`, entry),
+      truck_quote_enterprise: getInputValue(`truck_quote_enterprise_${index}`, entry),
+      truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
+      pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
+      pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
+      pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
+      delivery_address: getInputValue(`delivery_address_${index}`, entry),
+      delivery_instructions: getInputValue(`delivery_instructions_${index}`, entry)
+    });
+  });
+  
+  return entries;
+}
+
+// Section 5: Installation & Dismantle
+function getInstallationData() {
+  const section = document.querySelector('[data-section="installation"]');
+  return {
+    event_id: currentEventId,
+    install_installer: getCheckedValues('install_installer', section),
+    install_installer_other: getInputValue('install_installer_other', section),
+    install_datetime: toISODateTime(getInputValue('install_datetime', section)),
+    install_location: getInputValue('install_location', section),
+    dismantle_installer: getCheckedValues('dismantle_installer', section),
+    dismantle_installer_other: getInputValue('dismantle_installer_other', section),
+    dismantle_datetime: toISODateTime(getInputValue('dismantle_datetime', section)),
+    dismantle_location: getInputValue('dismantle_location', section)
+  };
+}
+
+// Section 6: Post-Event
+function getPosteventData() {
+  const section = document.querySelector('[data-section="postevent"]');
+  return {
+    event_id: currentEventId,
+    warehouse_receiving: getCheckedValues('warehouse_receiving', section),
+    warehouse_receiving_other: getInputValue('warehouse_receiving_other', section),
+    return_address: getRadioValue('return_address', section),
+    return_address_other: getInputValue('return_address_other_1', section)
+  };
+}
+
+// Section 7: Travel (multiple entries)
+function getTravelData() {
+  const entries = [];
+  const travelEntries = document.querySelectorAll('.travel-entry');
+  
+  travelEntries.forEach((entry, idx) => {
+    const index = parseInt(entry.dataset.index) || (idx + 1);
+    entries.push({
+      event_id: currentEventId,
+      traveler_index: index,
+      traveler_name: getRadioValue(`traveler_name_${index}`, entry),
+      traveler_name_other: getInputValue(`traveler_name_other_${index}`, entry),
+      travel_from: getInputValue(`travel_from_${index}`, entry),
+      travel_to: getInputValue(`travel_to_${index}`, entry),
+      traveler_from_datetime: toISODateTime(getInputValue(`traveler_from_datetime_${index}`, entry)),
+      traveler_to_datetime: toISODateTime(getInputValue(`traveler_to_datetime_${index}`, entry)),
+      flight_number: getInputValue(`flight_number_${index}`, entry),
+      flight_departure: toISODateTime(getInputValue(`flight_departure_${index}`, entry)),
+      flight_arrival: toISODateTime(getInputValue(`flight_arrival_${index}`, entry)),
+      car_company: getInputValue(`car_company_${index}`, entry),
+      car_pickup: toISODateTime(getInputValue(`car_pickup_${index}`, entry)),
+      car_dropoff: toISODateTime(getInputValue(`car_dropoff_${index}`, entry))
+    });
+  });
+  
+  return entries;
+}
+
+// ============================================
+// Supabase Save Functions
+// ============================================
+
+// Generic upsert function for single-record tables
+async function upsertSectionData(tableName, data, conflictColumn = 'event_id') {
+  try {
+    const { data: result, error } = await supabase
+      .from(tableName)
+      .upsert(data, { onConflict: conflictColumn })
+      .select();
+    
+    if (error) throw error;
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(`Error saving to ${tableName}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Save multiple entries (delete existing and insert new)
+async function saveMultipleEntries(tableName, entries, eventId) {
+  try {
+    // First, delete existing entries for this event
+    const { error: deleteError } = await supabase
+      .from(tableName)
+      .delete()
+      .eq('event_id', eventId);
+    
+    if (deleteError) throw deleteError;
+    
+    // Then insert new entries (if any)
+    if (entries.length > 0) {
+      const { data: result, error: insertError } = await supabase
+        .from(tableName)
+        .insert(entries)
+        .select();
+      
+      if (insertError) throw insertError;
+      return { success: true, data: result };
     }
+    
+    return { success: true, data: [] };
+  } catch (error) {
+    console.error(`Error saving to ${tableName}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Section-specific save functions
+async function savePreplanning() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
   }
   
-  return data;
+  const data = getPreplanningData();
+  const result = await upsertSectionData('internal_preplanning', data);
+
+  console.log('Preplanning save result:', result);
+  
+  if (result.success) {
+    updateSaveStatus('preplanning', true);
+    showToast('Pre-planning saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
 }
 
-// Save section data to localStorage
-function saveSectionData(sectionId, data) {
-  const allData = JSON.parse(localStorage.getItem('zenspace_sections') || '{}');
-  allData[sectionId] = {
-    data: data,
-    savedAt: new Date().toISOString()
-  };
-  localStorage.setItem('zenspace_sections', JSON.stringify(allData));
+async function saveArtwork() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const data = getArtworkData();
+  const result = await upsertSectionData('internal_artwork', data);
+    console.log('Artwork save result:', result);
+  if (result.success) {
+    updateSaveStatus('artwork', true);
+    showToast('Artwork & Branding saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
 }
 
-// Load saved data and populate form
-function loadSavedData() {
-  const savedData = localStorage.getItem('zenspace_draft');
-  if (!savedData) return;
+async function savePrinting() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  // Save main printing data
+  const mainData = getPrintingData();
+  const mainResult = await upsertSectionData('internal_printing', mainData);
+  
+  if (!mainResult.success) {
+    showToast(`Error saving printing: ${mainResult.error}`, 'error');
+    return false;
+  }
+  
+  // Save quotes
+  const quotesData = getPrintingQuotesData();
+  const quotesResult = await saveMultipleEntries('internal_printing_quotes', quotesData, currentEventId);
+  
+  if (quotesResult.success) {
+    updateSaveStatus('printing', true);
+    showToast('Printing saved successfully!', 'success');
+  } else {
+    showToast(`Error saving quotes: ${quotesResult.error}`, 'error');
+  }
+  
+  return quotesResult.success;
+}
+
+async function saveTrucking() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const entries = getTruckingData();
+  const result = await saveMultipleEntries('internal_trucking', entries, currentEventId);
+  
+  if (result.success) {
+    updateSaveStatus('trucking', true);
+    showToast('Trucking & Logistics saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
+}
+
+async function saveInstallation() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const data = getInstallationData();
+  const result = await upsertSectionData('internal_installation', data);
+  
+  if (result.success) {
+    updateSaveStatus('installation', true);
+    showToast('Installation & Dismantle saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
+}
+
+async function savePostevent() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const data = getPosteventData();
+  const result = await upsertSectionData('internal_postevent', data);
+  
+  if (result.success) {
+    updateSaveStatus('postevent', true);
+    showToast('Post-Event saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
+}
+
+async function saveTravel() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const entries = getTravelData();
+  const result = await saveMultipleEntries('internal_travel', entries, currentEventId);
+  
+  if (result.success) {
+    updateSaveStatus('travel', true);
+    showToast('Travel & Lodging saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
+}
+
+// Main save section dispatcher
+async function saveSection(sectionId) {
+  const saveButton = document.querySelector(`.section-save-btn[data-section="${sectionId}"]`);
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.innerHTML = `
+      <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+      </svg>
+      <span>Saving...</span>
+    `;
+  }
+  
+  let success = false;
+  
+  switch (sectionId) {
+    case 'preplanning':
+      success = await savePreplanning();
+      break;
+    case 'artwork':
+      success = await saveArtwork();
+      break;
+    case 'printing':
+      success = await savePrinting();
+      break;
+    case 'trucking':
+      success = await saveTrucking();
+      break;
+    case 'installation':
+      success = await saveInstallation();
+      break;
+    case 'postevent':
+      success = await savePostevent();
+      break;
+    case 'travel':
+      success = await saveTravel();
+      break;
+    default:
+      showToast('Unknown section', 'error');
+  }
+  
+  if (saveButton) {
+    saveButton.disabled = false;
+    saveButton.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      <span>Save Section</span>
+    `;
+  }
+  
+  return success;
+}
+
+// Update save status indicator
+function updateSaveStatus(sectionId, saved) {
+  const section = document.querySelector(`[data-section="${sectionId}"]`);
+  const saveStatus = section?.querySelector('.save-status');
+  
+  if (saveStatus) {
+    if (saved) {
+      saveStatus.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>Saved just now</span>
+      `;
+      saveStatus.classList.add('saved');
+    } else {
+      saveStatus.innerHTML = '<span>Not saved</span>';
+      saveStatus.classList.remove('saved');
+    }
+  }
+}
+
+// ============================================
+// Load Data Functions
+// ============================================
+
+// Load all section data for an event
+async function loadAllSectionData(eventId) {
+  if (!eventId) return;
+  
+  currentEventId = eventId;
   
   try {
-    const data = JSON.parse(savedData);
+    // Load all sections in parallel
+    const [
+      preplanning,
+      artwork,
+      printing,
+      printingQuotes,
+      trucking,
+      installation,
+      postevent,
+      travel
+    ] = await Promise.all([
+      supabase.from('internal_preplanning').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_artwork').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_printing').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_printing_quotes').select('*').eq('event_id', eventId).order('quote_index'),
+      supabase.from('internal_trucking').select('*').eq('event_id', eventId).order('entry_index'),
+      supabase.from('internal_installation').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_postevent').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_travel').select('*').eq('event_id', eventId).order('traveler_index')
+    ]);
     
-    Object.entries(data).forEach(([name, value]) => {
-      const inputs = document.querySelectorAll(`[name="${name}"]`);
-      
-      inputs.forEach(input => {
-        if (input.type === 'checkbox') {
-          const shouldCheck = Array.isArray(value) ? value.includes(input.value) : value === input.value;
-          input.checked = shouldCheck;
-          if (shouldCheck) {
-            input.closest('.checkbox-item')?.classList.add('checked');
-            input.closest('.single-checkbox')?.classList.add('checked');
-          }
-        } else if (input.type === 'radio') {
-          if (input.value === value) {
-            input.checked = true;
-            input.closest('.radio-item')?.classList.add('selected');
-            input.closest('.address-option')?.classList.add('selected');
-          }
-        } else {
-          input.value = value || '';
-        }
-      });
-    });
+    // Populate forms with loaded data
+    if (preplanning.data) populatePreplanning(preplanning.data);
+    if (artwork.data) populateArtwork(artwork.data);
+    if (printing.data) populatePrinting(printing.data);
+    if (printingQuotes.data?.length) populatePrintingQuotes(printingQuotes.data);
+    if (trucking.data?.length) populateTrucking(trucking.data);
+    if (installation.data) populateInstallation(installation.data);
+    if (postevent.data) populatePostevent(postevent.data);
+    if (travel.data?.length) populateTravel(travel.data);
     
-    console.log('Loaded saved draft');
-  } catch (e) {
-    console.error('Failed to load draft:', e);
+    console.log('All section data loaded successfully');
+  } catch (error) {
+    console.error('Error loading section data:', error);
   }
+}
+
+// Populate form helpers
+function setInputValue(name, value, container = document) {
+  const input = container.querySelector(`[name="${name}"]`);
+  if (input) input.value = value || '';
+}
+
+function setRadioValue(name, value, container = document) {
+  if (!value) return;
+  const radio = container.querySelector(`input[name="${name}"][value="${value}"]`);
+  if (radio) {
+    radio.checked = true;
+    radio.closest('.radio-item')?.classList.add('selected');
+    radio.closest('.address-option')?.classList.add('selected');
+    
+    // Handle "other" input enabling
+    if (value === 'other' || value === 'third_party') {
+      const wrapper = radio.closest('.radio-group, .address-options');
+      const otherInput = wrapper?.querySelector('.other-input, .address-other-input textarea');
+      if (otherInput) {
+        otherInput.disabled = false;
+        if (otherInput.closest('.address-other-input')) {
+          otherInput.closest('.address-other-input').style.display = 'block';
+        }
+      }
+    }
+  }
+}
+
+function setCheckboxValues(name, values, container = document) {
+  if (!values || !Array.isArray(values)) return;
+  values.forEach(value => {
+    const checkbox = container.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+      checkbox.closest('.checkbox-item')?.classList.add('checked');
+      
+      if (value === 'other') {
+        const wrapper = checkbox.closest('.other-input-wrapper');
+        const otherInput = wrapper?.querySelector('.other-input');
+        if (otherInput) otherInput.disabled = false;
+      }
+    }
+  });
+}
+
+// Section population functions
+function populatePreplanning(data) {
+  const section = document.querySelector('[data-section="preplanning"]');
+  if (!section) return;
+  
+  const checkbox = section.querySelector('[name="onboarding_complete"]');
+  if (checkbox) {
+    checkbox.checked = data.onboarding_complete;
+    checkbox.closest('.single-checkbox')?.classList.toggle('checked', data.onboarding_complete);
+  }
+  
+  setRadioValue('onboarding_filled_by', data.onboarding_filled_by, section);
+  setInputValue('onboarding_filled_by_other', data.onboarding_filled_by_other, section);
+  setCheckboxValues('preplanning_installer', data.preplanning_installer, section);
+  setInputValue('preplanning_installer_other', data.preplanning_installer_other, section);
+  setRadioValue('warehouse_address', data.warehouse_address, section);
+  setInputValue('warehouse_address_other', data.warehouse_address_other, section);
+  setInputValue('packing_deadline', fromISODateTime(data.packing_deadline), section);
+  
+  if (data.warehouse_address === 'other') {
+    const otherDiv = section.querySelector('.address-other-input');
+    if (otherDiv) otherDiv.style.display = 'block';
+  }
+  
+  updateSaveStatus('preplanning', true);
+}
+
+function populateArtwork(data) {
+  const section = document.querySelector('[data-section="artwork"]');
+  if (!section) return;
+  
+  setRadioValue('proofs_responsible', data.proofs_responsible, section);
+  setInputValue('proofs_responsible_other', data.proofs_responsible_other, section);
+  setInputValue('graphics_upload_link', data.graphics_upload_link, section);
+  setInputValue('proofs_folder_link', data.proofs_folder_link, section);
+  setInputValue('proofs_due_date', data.proofs_due_date, section);
+  
+  updateSaveStatus('artwork', true);
+}
+
+function populatePrinting(data) {
+  const section = document.querySelector('[data-section="printing"]');
+  if (!section) return;
+  
+  setRadioValue('assigned_printer', data.assigned_printer, section);
+  setInputValue('assigned_printer_other', data.assigned_printer_other, section);
+  setInputValue('installation_quote', data.installation_quote, section);
+  setInputValue('printing_start_date', data.printing_start_date, section);
+  setInputValue('installation_date', data.installation_date, section);
+  setInputValue('installation_location', data.installation_location, section);
+  
+  updateSaveStatus('printing', true);
+}
+
+function populatePrintingQuotes(quotes) {
+  const container = document.getElementById('printingQuotes');
+  if (!container) return;
+  
+  // Clear existing entries beyond the first
+  const existingEntries = container.querySelectorAll('.quote-entry');
+  existingEntries.forEach((entry, idx) => {
+    if (idx > 0) entry.remove();
+  });
+  
+  quotes.forEach((quote, idx) => {
+    if (idx > 0) {
+      quoteCount++;
+      const entry = createQuoteEntry(quote.quote_index);
+      container.appendChild(entry);
+      initializeRadios();
+    }
+    
+    const entry = container.querySelector(`.quote-entry[data-index="${quote.quote_index}"]`);
+    if (entry) {
+      setRadioValue(`quote_source_${quote.quote_index}`, quote.quote_source, entry);
+      setInputValue(`quote_source_other_${quote.quote_index}`, quote.quote_source_other, entry);
+      setInputValue(`quote_price_${quote.quote_index}`, quote.quote_price, entry);
+    }
+  });
+}
+
+function populateTrucking(entries) {
+  const container = document.getElementById('truckingEntries');
+  if (!container) return;
+  
+  // Clear existing entries beyond the first
+  const existingEntries = container.querySelectorAll('.trucking-entry');
+  existingEntries.forEach((entry, idx) => {
+    if (idx > 0) entry.remove();
+  });
+  
+  entries.forEach((data, idx) => {
+    if (idx > 0) {
+      truckingCount++;
+      const entry = createTruckingEntry(data.entry_index);
+      container.appendChild(entry);
+      initializeCheckboxes();
+    }
+    
+    const entry = container.querySelector(`.trucking-entry[data-index="${data.entry_index}"]`);
+    if (entry) {
+      setCheckboxValues(`truck_source_${data.entry_index}`, data.truck_source, entry);
+      setInputValue(`truck_source_${data.entry_index}_other`, data.truck_source_other, entry);
+      setInputValue(`truck_quote_enterprise_${data.entry_index}`, data.truck_quote_enterprise, entry);
+      setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
+      setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
+      setRadioValue(`pickup_warehouse_${data.entry_index}`, data.pickup_warehouse, entry);
+      setInputValue(`pickup_warehouse_other_${data.entry_index}`, data.pickup_warehouse_other, entry);
+      setInputValue(`delivery_address_${data.entry_index}`, data.delivery_address, entry);
+      setInputValue(`delivery_instructions_${data.entry_index}`, data.delivery_instructions, entry);
+      
+      if (data.pickup_warehouse === 'other') {
+        const otherDiv = entry.querySelector('.address-other-input');
+        if (otherDiv) otherDiv.style.display = 'block';
+      }
+    }
+  });
+  
+  updateSaveStatus('trucking', true);
+}
+
+function populateInstallation(data) {
+  const section = document.querySelector('[data-section="installation"]');
+  if (!section) return;
+  
+  setCheckboxValues('install_installer', data.install_installer, section);
+  setInputValue('install_installer_other', data.install_installer_other, section);
+  setInputValue('install_datetime', fromISODateTime(data.install_datetime), section);
+  setInputValue('install_location', data.install_location, section);
+  setCheckboxValues('dismantle_installer', data.dismantle_installer, section);
+  setInputValue('dismantle_installer_other', data.dismantle_installer_other, section);
+  setInputValue('dismantle_datetime', fromISODateTime(data.dismantle_datetime), section);
+  setInputValue('dismantle_location', data.dismantle_location, section);
+  
+  updateSaveStatus('installation', true);
+}
+
+function populatePostevent(data) {
+  const section = document.querySelector('[data-section="postevent"]');
+  if (!section) return;
+  
+  setCheckboxValues('warehouse_receiving', data.warehouse_receiving, section);
+  setInputValue('warehouse_receiving_other', data.warehouse_receiving_other, section);
+  setRadioValue('return_address', data.return_address, section);
+  setInputValue('return_address_other_1', data.return_address_other, section);
+  
+  if (data.return_address === 'other') {
+    const otherDiv = section.querySelector('.address-other-input');
+    if (otherDiv) otherDiv.style.display = 'block';
+  }
+  
+  updateSaveStatus('postevent', true);
+}
+
+function populateTravel(entries) {
+  const container = document.getElementById('travelEntries');
+  if (!container) return;
+  
+  // Clear existing entries beyond the first
+  const existingEntries = container.querySelectorAll('.travel-entry');
+  existingEntries.forEach((entry, idx) => {
+    if (idx > 0) entry.remove();
+  });
+  
+  entries.forEach((data, idx) => {
+    if (idx > 0) {
+      travelCount++;
+      const entry = createTravelEntry(data.traveler_index);
+      container.appendChild(entry);
+      initializeRadios();
+    }
+    
+    const entry = container.querySelector(`.travel-entry[data-index="${data.traveler_index}"]`);
+    if (entry) {
+      setRadioValue(`traveler_name_${data.traveler_index}`, data.traveler_name, entry);
+      setInputValue(`traveler_name_other_${data.traveler_index}`, data.traveler_name_other, entry);
+      setInputValue(`travel_from_${data.traveler_index}`, data.travel_from, entry);
+      setInputValue(`travel_to_${data.traveler_index}`, data.travel_to, entry);
+      setInputValue(`traveler_from_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_from_datetime), entry);
+      setInputValue(`traveler_to_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_to_datetime), entry);
+      setInputValue(`flight_number_${data.traveler_index}`, data.flight_number, entry);
+      setInputValue(`flight_departure_${data.traveler_index}`, fromISODateTime(data.flight_departure), entry);
+      setInputValue(`flight_arrival_${data.traveler_index}`, fromISODateTime(data.flight_arrival), entry);
+      setInputValue(`car_company_${data.traveler_index}`, data.car_company, entry);
+      setInputValue(`car_pickup_${data.traveler_index}`, fromISODateTime(data.car_pickup), entry);
+      setInputValue(`car_dropoff_${data.traveler_index}`, fromISODateTime(data.car_dropoff), entry);
+    }
+  });
+  
+  updateSaveStatus('travel', true);
 }
 
 // ============================================
@@ -136,13 +798,11 @@ function loadSavedData() {
 function initializeAccordions() {
   document.querySelectorAll('.section-header').forEach(header => {
     header.addEventListener('click', (e) => {
-      // Don't toggle if clicking on a button inside header
       if (e.target.closest('button')) return;
       
       const section = header.closest('.section-card');
       const isExpanded = section.classList.contains('expanded');
       
-      // Toggle current section
       section.classList.toggle('expanded');
       section.classList.toggle('active', !isExpanded);
     });
@@ -154,13 +814,11 @@ function initializeAccordions() {
 // ============================================
 
 function initializeCheckboxes() {
-  // Multi-select checkboxes
   document.querySelectorAll('.checkbox-item').forEach(item => {
     if (item.dataset.initialized) return;
     item.dataset.initialized = 'true';
     
     item.addEventListener('click', (e) => {
-      // Prevent the native label → checkbox toggle so we only toggle once
       e.preventDefault();
       
       const checkbox = item.querySelector('input[type="checkbox"]');
@@ -168,7 +826,6 @@ function initializeCheckboxes() {
         checkbox.checked = !checkbox.checked;
         item.classList.toggle('checked', checkbox.checked);
         
-        // Handle "other" input
         const wrapper = item.closest('.other-input-wrapper');
         if (wrapper) {
           const otherInput = wrapper.querySelector('.other-input');
@@ -178,19 +835,16 @@ function initializeCheckboxes() {
           }
         }
         
-        // Trigger change event
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
   });
   
-  // Single checkboxes
   document.querySelectorAll('.single-checkbox').forEach(item => {
     if (item.dataset.initialized) return;
     item.dataset.initialized = 'true';
     
     item.addEventListener('click', (e) => {
-      // Prevent native toggle, we handle the state manually
       e.preventDefault();
       
       const checkbox = item.querySelector('input[type="checkbox"]');
@@ -219,14 +873,12 @@ function initializeRadios() {
       if (radio) {
         radio.checked = true;
         
-        // Update visual state for radio group
         const group = item.closest('.radio-group');
         if (group) {
           group.querySelectorAll('.radio-item').forEach(r => r.classList.remove('selected'));
         }
         item.classList.add('selected');
         
-        // Handle "other" input
         const groupWrapper = item.closest('.radio-group');
         if (groupWrapper) {
           const otherInput = groupWrapper.querySelector('.other-input');
@@ -242,31 +894,26 @@ function initializeRadios() {
     });
   });
   
-  // Address options
-  document.querySelectorAll('.address-option').forEach(item => {
-    if (item.dataset.initialized) return;
-    item.dataset.initialized = 'true';
+  // Address option radios
+  document.querySelectorAll('.address-option').forEach(option => {
+    if (option.dataset.initialized) return;
+    option.dataset.initialized = 'true';
     
-    item.addEventListener('click', (e) => {
-      // Prevent native label/radio behavior so we fully control visual + checked state
-      e.preventDefault();
+    option.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       
-      const radio = item.querySelector('input[type="radio"]');
+      const radio = option.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
         
-        const wrapper = item.closest('.address-options');
-        if (wrapper) {
-          wrapper.querySelectorAll('.address-option').forEach(o => o.classList.remove('selected'));
-          item.classList.add('selected');
+        const container = option.closest('.address-options');
+        if (container) {
+          container.querySelectorAll('.address-option').forEach(opt => opt.classList.remove('selected'));
+          option.classList.add('selected');
           
-          const otherInput = wrapper.querySelector('.address-other-input');
+          const otherInput = container.querySelector('.address-other-input');
           if (otherInput) {
-            const isOther = radio.value === 'other';
-            otherInput.style.display = isOther ? 'block' : 'none';
-            if (isOther) {
-              otherInput.querySelector('textarea')?.focus();
-            }
+            otherInput.style.display = radio.value === 'other' ? 'block' : 'none';
           }
         }
         
@@ -281,45 +928,37 @@ function initializeRadios() {
 // ============================================
 
 function initializeTabs() {
-  document.querySelectorAll('.tabs-container').forEach(tabContainer => {
-    const tabs = tabContainer.querySelectorAll('.tab-btn');
-    const section = tabContainer.closest('.section-content');
-    
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
-        
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        
-        section.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.toggle('active', content.dataset.content === target);
-        });
-      });
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const container = btn.closest('.section-content');
+      const tabId = btn.dataset.tab;
+      
+      container.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      btn.classList.add('active');
+      container.querySelector(`[data-content="${tabId}"]`)?.classList.add('active');
     });
   });
 }
 
 // ============================================
-// Dynamic Entries (Quotes, Trucking & Travel)
+// Dynamic Entry Templates
 // ============================================
-
-let quoteCount = 1;
-let truckingCount = 1;
-let travelCount = 1;
 
 function createQuoteEntry(index) {
   const entry = document.createElement('div');
   entry.className = 'quote-entry';
   entry.dataset.index = index;
+  
   entry.innerHTML = `
     <div class="entry-header">
       <div class="entry-number">
         <span class="entry-badge">${index}</span>
         <span class="entry-label">Quote #${index}</span>
       </div>
-      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove quote">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -344,6 +983,11 @@ function createQuoteEntry(index) {
         </div>
       </div>
     </div>
+    
+    <div class="form-group">
+      <label class="form-label">Quote Price</label>
+      <input type="text" class="form-input" name="quote_price_${index}" placeholder="$0.00">
+    </div>
   `;
   
   return entry;
@@ -353,14 +997,15 @@ function createTruckingEntry(index) {
   const entry = document.createElement('div');
   entry.className = 'trucking-entry';
   entry.dataset.index = index;
+  
   entry.innerHTML = `
     <div class="entry-header">
       <div class="entry-number">
         <span class="entry-badge">${index}</span>
         <span class="entry-label">Trucking Route #${index}</span>
       </div>
-      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove trucking route">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -386,7 +1031,7 @@ function createTruckingEntry(index) {
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </span>
-          <span class="checkbox-label">Axle Logistics</span>
+          <span class="checkbox-label">Alex Logistics</span>
         </label>
         <label class="checkbox-item">
           <input type="checkbox" name="truck_source_${index}" value="edward">
@@ -400,12 +1045,12 @@ function createTruckingEntry(index) {
         <div class="other-input-wrapper">
           <label class="checkbox-item">
             <input type="checkbox" name="truck_source_${index}" value="other">
-              <span class="checkbox-custom">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </span>
-              <span class="checkbox-label">Other</span>
+            <span class="checkbox-custom">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span class="checkbox-label">Other</span>
           </label>
           <input type="text" class="other-input" name="truck_source_${index}_other" placeholder="Enter name..." disabled>
         </div>
@@ -436,10 +1081,7 @@ function createTruckingEntry(index) {
           <input type="radio" name="pickup_warehouse_${index}" value="nyc">
           <span class="radio-custom"></span>
           <div class="address-content">
-            <div class="address-title">
-              NYC Warehouse
-              <span class="tag">East Coast</span>
-            </div>
+            <div class="address-title">NYC Warehouse <span class="tag">East Coast</span></div>
             <div class="address-details">123 Industrial Blvd, Brooklyn, NY 11201</div>
           </div>
         </label>
@@ -447,10 +1089,7 @@ function createTruckingEntry(index) {
           <input type="radio" name="pickup_warehouse_${index}" value="hayward">
           <span class="radio-custom"></span>
           <div class="address-content">
-            <div class="address-title">
-              Hayward Warehouse
-              <span class="tag">West Coast</span>
-            </div>
+            <div class="address-title">Hayward Warehouse <span class="tag">West Coast</span></div>
             <div class="address-details">456 Commerce Way, Hayward, CA 94545</div>
           </div>
         </label>
@@ -486,14 +1125,15 @@ function createTravelEntry(index) {
   const entry = document.createElement('div');
   entry.className = 'travel-entry';
   entry.dataset.index = index;
+  
   entry.innerHTML = `
     <div class="entry-header">
       <div class="entry-number">
         <span class="entry-badge">${index}</span>
         <span class="entry-label">Traveler #${index}</span>
       </div>
-      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove traveler">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -613,7 +1253,6 @@ function removeEntry(button) {
 }
 
 function initializeDynamicSections() {
-  // Add Quote button
   const addQuoteBtn = document.getElementById('addQuoteBtn');
   const quoteContainer = document.getElementById('printingQuotes');
   
@@ -627,7 +1266,6 @@ function initializeDynamicSections() {
     });
   }
   
-  // Add Trucking button
   const addTruckingBtn = document.getElementById('addTruckingBtn');
   const truckingContainer = document.getElementById('truckingEntries');
   
@@ -637,11 +1275,11 @@ function initializeDynamicSections() {
       const entry = createTruckingEntry(truckingCount);
       truckingContainer.appendChild(entry);
       initializeCheckboxes();
+      initializeRadios();
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
   
-  // Add Travel button
   const addTravelBtn = document.getElementById('addTravelBtn');
   const travelContainer = document.getElementById('travelEntries');
   
@@ -650,7 +1288,7 @@ function initializeDynamicSections() {
       travelCount++;
       const entry = createTravelEntry(travelCount);
       travelContainer.appendChild(entry);
-      initializeCheckboxes();
+      initializeRadios();
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
@@ -659,45 +1297,6 @@ function initializeDynamicSections() {
 // ============================================
 // Section Save Buttons
 // ============================================
-
-function saveSection(sectionId) {
-  const section = document.querySelector(`[data-section="${sectionId}"]`);
-  if (!section) {
-    showToast('Section not found', 'error');
-    return;
-  }
-  
-  const sectionData = getSectionData(section);
-  saveSectionData(sectionId, sectionData);
-  
-  // Update save status
-  const saveStatus = section.querySelector('.save-status');
-  if (saveStatus) {
-    saveStatus.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <span>Saved just now</span>
-    `;
-    saveStatus.classList.add('saved');
-  }
-  
-  showToast(`${getSectionName(sectionId)} saved successfully!`, 'success');
-}
-
-function getSectionName(sectionId) {
-  const names = {
-    'preplanning': 'Pre-planning',
-    'artwork': 'Artwork & Branding',
-    'printing': 'Printing & Production',
-    'trucking': 'Trucking & Logistics',
-    'installation': 'Installation & Dismantle',
-    'postevent': 'Post-Event',
-    'travel': 'Travel & Lodging'
-  };
-  return names[sectionId] || 'Section';
-}
 
 function initializeSectionSaveButtons() {
   document.querySelectorAll('.section-save-btn').forEach(btn => {
@@ -730,43 +1329,17 @@ function initializeCopyButtons() {
 }
 
 // ============================================
-// Footer Action Buttons
-// ============================================
-
-function initializeFooterActions() {
-  // Save All Draft
-  document.getElementById('saveDraftBtn')?.addEventListener('click', () => {
-    const data = getAllFormData();
-    localStorage.setItem('zenspace_draft', JSON.stringify(data));
-    showToast('All sections saved to draft!', 'success');
-  });
-  
-  // Export Data
-  document.getElementById('exportBtn')?.addEventListener('click', () => {
-    const data = getAllFormData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `zenspace-event-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Data exported successfully!', 'success');
-  });
-  
-  // Submit Form
-  document.getElementById('submitBtn')?.addEventListener('click', () => {
-    const data = getAllFormData();
-    console.log('Form data:', data);
-    showToast('Form submitted successfully!', 'success');
-  });
-}
-
-// ============================================
 // Initialize Application
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  // Get event_id from URL
+  currentEventId = getEventIdFromURL();
+  
+  if (!currentEventId) {
+    console.warn('No event_id provided in URL. Save functionality will be limited.');
+  }
+  
   // Initialize all components
   initializeAccordions();
   initializeCheckboxes();
@@ -775,10 +1348,11 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeDynamicSections();
   initializeSectionSaveButtons();
   initializeCopyButtons();
-  initializeFooterActions();
   
-  // Load saved data
-  loadSavedData();
+  // Load existing data if event_id is present
+  if (currentEventId) {
+    await loadAllSectionData(currentEventId);
+  }
   
   // Expand first section by default
   const firstSection = document.querySelector('.section-card');
@@ -786,8 +1360,10 @@ document.addEventListener('DOMContentLoaded', function() {
     firstSection.classList.add('expanded', 'active');
   }
   
-  console.log('ZenSpace Onboarding App initialized');
+  console.log('ZenSpace Onboarding App initialized', { eventId: currentEventId });
 });
 
-// Make removeEntry globally available
+// Make functions globally available
 window.removeEntry = removeEntry;
+window.saveSection = saveSection;
+window.loadAllSectionData = loadAllSectionData;
