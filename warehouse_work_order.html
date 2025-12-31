@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warehouse Work Order</title>
+
+  <!-- Client-side PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+    :root{
+      --header:#0B4F6C;
+      --grid:#BFC7CE;
+      --alt:#F6F8FA;
+      --text:#111827;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:#f3f4f6}
+    .topbar{
+      position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #e5e7eb;
+      padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between
+    }
+    .topbar .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{
+      border:1px solid #d1d5db;background:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600
+    }
+    button.primary{background:var(--header);border-color:var(--header);color:#fff}
+    button:active{transform:translateY(1px)}
+    .container{max-width:980px;margin:20px auto;padding:0 16px 28px}
+    .paper{
+      background:#fff;border:1px solid #e5e7eb;border-radius:12px;
+      box-shadow:0 8px 22px rgba(0,0,0,.06);padding:22px 22px 26px
+    }
+    .title{font-size:22px;font-weight:800;text-align:center;margin:0 0 12px}
+    .meta{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;margin-bottom:10px;font-size:14px}
+    .meta b{font-weight:700}
+    .section{margin-top:14px}
+    .section h2{margin:14px 0 8px;font-size:14px;font-weight:800;letter-spacing:.2px}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+    thead{display:table-header-group;}
+    thead th{
+      background:var(--header);color:#fff;padding:8px 10px;border:1px solid var(--grid);
+      text-align:center;font-weight:800
+    }
+    tbody td{
+      padding:8px 10px;border:1px solid var(--grid);vertical-align:top;
+      word-wrap:break-word;overflow-wrap:anywhere
+    }
+    tbody tr:nth-child(even) td{background:var(--alt)}
+    tr{break-inside: avoid; page-break-inside: avoid;}
+    @media print{
+      body{background:#fff}
+      .topbar{display:none !important}
+      .container{max-width:none;margin:0;padding:0}
+      .paper{border:none;box-shadow:none;border-radius:0;padding:0.6in}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="font-weight:800;">Warehouse Work Order</div>
+    <div class="actions">
+      <button onclick="window.print()">Print</button>
+      <button class="primary" id="btnPdf">Download PDF</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="paper" id="workOrder">
+      <h1 class="title">Warehouse Work Order</h1>
+
+      <div class="meta">
+        <div><b>Event Name:</b> <span id="dealName">—</span></div>
+        <div><b>Generated:</b> <span id="generatedAt">—</span></div>
+      </div>
+
+      <div class="meta">
+        <div style="flex:1; min-width:420px; max-width:900px"><b>Warehouse Address:</b>
+          <div id="warehouseAddr" style="margin-top:6px; white-space:pre-line; line-height:1.35;">—</div>
+        </div>
+        <div style="flex:0 0 auto"><b>Due Date:</b> <span id="dueDate">—</span></div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="section">
+        <h2>Order Summary</h2>
+        <table>
+          <thead><tr><th style="width:28%;">Field</th><th>Value</th></tr></thead>
+          <tbody id="orderSummaryBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pods Booked -->
+      <div class="section">
+        <h2>Pods Booked</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:14%;">Pod Type</th>
+              <th style="width:10%;">Quantity</th>
+              <th style="width:22%;">Pod IDs</th>
+              <!-- Commented out per request: remove Warehouse columns (can re-enable later)
+              <th style="width:18%;">Warehouse</th>
+              <th>Warehouse Address</th>
+              -->
+            </tr>
+          </thead>
+          <tbody id="podsBookedBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Branding Add Ons -->
+      <div class="section">
+        <h2>Branding Add Ons</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%;">Pod Type</th>
+              <th style="width:18%;">Pod ID</th>
+              <th>Branding Name</th>
+            </tr>
+          </thead>
+          <tbody id="brandingAddOnsBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Booking App Add On -->
+      <div class="section">
+        <h2>Booking App Add On</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%;">Pod Type</th>
+              <th>Product</th>
+              <th style="width:18%;">Bookable</th>
+            </tr>
+          </thead>
+          <tbody id="bookingAppAddOnBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Monitor Use -->
+      <div class="section">
+        <h2>Monitor Use</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30%;">Pod Type</th>
+              <th style="width:35%;">Product</th>
+              <th>Monitor Use</th>
+            </tr>
+          </thead>
+          <tbody id="monitorUseBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function nowStamp(){
+      const d = new Date();
+      const pad = (n)=>String(n).padStart(2,'0');
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${pad(d.getDate())}-${months[d.getMonth()]}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function safeText(v){
+      if (v === null || v === undefined || v === "") return "—";
+      return String(v);
+    }
+    function setTbodyRows(tbodyId, rows, columns){
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = "";
+      if (!rows || !rows.length){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = columns.length;
+        td.textContent = "—";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(r=>{
+        const tr = document.createElement("tr");
+        columns.forEach(col=>{
+          const td = document.createElement("td");
+          td.textContent = safeText(r[col]);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setWorkOrderData(data){
+      document.getElementById("dealName").textContent = safeText(data?.dealName);
+      document.getElementById("generatedAt").textContent = safeText(data?.generatedAt || nowStamp());
+      // Format warehouse address for multi-line display: split title/details and commas
+      const rawAddr = data?.warehouseAddress || "";
+      console.log("Raw warehouse address:", rawAddr);
+      const formatted = String(rawAddr)
+        .split('\u2014') // em-dash if present
+        .join('\n')
+        .split('—') // fallback en-dash char
+        .join('\n');
+        // .split(', ')
+        // .join('\n');
+      // Render full address (no line cap). Convert newlines to <br> for display.
+      const lines = String(formatted).split('\n').map(l => l.trim()).filter(Boolean);
+      const outHtml = lines.length ? lines.map(l => safeText(l)).join('<br>') : '—';
+      document.getElementById("warehouseAddr").innerHTML = outHtml;
+
+      // Format packing deadline to `DD-MMM-YYYY HH:MM` (e.g., 31-Dec-2025 17:26)
+      function formatPackingDeadline(input){
+        if (!input) return "";
+        const s = String(input).trim();
+        // Prefer parsing YYYY-MM-DDTHH:MM (no timezone) as local
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        if (m){
+          const [, y, mo, d, hh, mm] = m;
+          return `${String(parseInt(d,10)).padStart(2,'0')}-${months[parseInt(mo,10)-1]}-${y} ${hh}:${mm}`;
+        }
+        // Fallback to Date parsing
+        const dt = new Date(s);
+        if (isNaN(dt)) return s;
+        const pad = n => String(n).padStart(2,'0');
+        return `${pad(dt.getDate())}-${months[dt.getMonth()]}-${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      }
+
+      document.getElementById("dueDate").textContent = safeText(formatPackingDeadline(data?.packingDeadline));
+
+      const os = document.getElementById("orderSummaryBody");
+      os.innerHTML = "";
+      [
+        ["Event Name", data?.dealName],
+        ["Event Address", data?.eventAddress],
+        ["Event Start Date", data?.eventStartDate],
+        ["Event End Date", data?.eventEndDate],
+      ].forEach(([k,v])=>{
+        const tr = document.createElement("tr");
+        const td1 = document.createElement("td"); td1.textContent = k;
+        const td2 = document.createElement("td"); td2.textContent = safeText(v);
+        tr.appendChild(td1); tr.appendChild(td2);
+        os.appendChild(tr);
+      });
+
+      // Pods table: currently only show Pod Type, Quantity and Pod IDs.
+      setTbodyRows("podsBookedBody", data?.podsBooked, ["podType","quantity","podIds"]);
+      // If you want to re-enable warehouse columns later, use the line below:
+      // setTbodyRows("podsBookedBody", data?.podsBooked, ["podType","quantity","podIds","warehouse","warehouseAddress"]);
+      setTbodyRows("brandingAddOnsBody", data?.brandingAddOns, ["podType","podId","brandingName"]);
+      setTbodyRows("bookingAppAddOnBody", data?.bookingAppAddOn, ["podType","product","bookable"]);
+      setTbodyRows("monitorUseBody", data?.monitorUse, ["podType","product","monitorUse"]);
+    }
+
+    function getParam(name){
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+
+    // Load payload from localStorage
+    document.addEventListener("DOMContentLoaded", () => {
+      const key = getParam("woKey");
+      if (key){
+        try{
+          const raw = localStorage.getItem(key);
+          if (raw){
+            const data = JSON.parse(raw);
+            setWorkOrderData(data);
+            localStorage.removeItem(key);
+          } else {
+            setWorkOrderData({});
+          }
+        }catch(e){
+          console.error(e);
+          setWorkOrderData({});
+        }
+      } else {
+        setWorkOrderData({});
+      }
+    });
+
+    // Download PDF (vector-ish via html2pdf)
+    document.getElementById("btnPdf").addEventListener("click", () => {
+      const element = document.getElementById("workOrder");
+      const opt = {
+        margin:       [0.4, 0.35, 0.4, 0.35],
+        filename:     `Warehouse_Work_Order_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    });
+  </script>
+</body>
+</html>

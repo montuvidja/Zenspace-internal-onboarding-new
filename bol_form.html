@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Stop Bill of Lading Form</title>
+    
+    <!-- jsPDF Library for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        label .required {
+            color: #dc3545;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .stop-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            position: relative;
+        }
+
+        .stop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .stop-number {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .items-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .items-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 120px 80px 1fr 100px;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: end;
+        }
+
+        .item-row input {
+            padding: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        #message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            font-size: 0.95em;
+        }
+
+        small {
+            margin-top: 5px;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .item-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚛 Multi-Stop Bill of Lading</h1>
+        <p class="subtitle">Complete the form below to generate your BOL PDF</p>
+
+        <div id="message"></div>
+
+        <form id="bolForm">
+            <!-- Basic Information -->
+            <div class="section">
+                <div class="section-title">📋 Basic Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bolNumber">BOL Number <span class="required">*</span></label>
+                        <input type="text" id="bolNumber" name="bolNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bolDate">Date <span class="required">*</span></label>
+                        <input type="date" id="bolDate" name="bolDate" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventName">Event Name <span class="required">*</span></label>
+                        <input type="text" id="eventName" name="eventName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <!-- <label for="eventName">Event Name <span class="required">*</span></label>
+                        <input type="text" id="eventName" name="eventName" required> -->
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Stops Section -->
+            <div class="section">
+                <div class="section-title">📍 Stops (In Route Order)</div>
+                <div id="stopsContainer"></div>
+                <button type="button" class="btn btn-secondary" onclick="addStop()">+ Add Stop</button>
+            </div>
+
+            <!-- Freight Charge Terms -->
+            <div class="section">
+                <div class="section-title">💰 Freight Charge Terms</div>
+                <p style="margin-bottom: 15px; color: #555; font-style: italic;">
+                    Freight charges are prepaid unless marked otherwise:
+                </p>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freightPrepaid" name="freightPrepaid">
+                    <label for="freightPrepaid">Prepaid</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freightCollect" name="freightCollect">
+                    <label for="freightCollect">Collect</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freight3rdParty" name="freight3rdParty">
+                    <label for="freight3rdParty">3rd Party</label>
+                </div>
+                <p style="margin-bottom: 15px; color: #555; font-style: italic;">
+                    Master bill of lading with attached underlying bills of lading
+                </p>
+            </div>
+
+            <!-- Trailer Loaded -->
+            <div class="section">
+                <div class="section-title">🚛 Trailer Loaded</div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="trailerLoadedShipper" name="trailerLoadedShipper">
+                    <label for="trailerLoadedShipper">By shipper</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="trailerLoadedDriver" name="trailerLoadedDriver">
+                    <label for="trailerLoadedDriver">By driver</label>
+                </div>
+            </div>
+
+            <!-- Freight Counted -->
+            <div class="section">
+                <div class="section-title">📊 Freight Counted</div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freightCountedShipper" name="freightCountedShipper">
+                    <label for="freightCountedShipper">By shipper</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freightCountedDriverPallets" name="freightCountedDriverPallets">
+                    <label for="freightCountedDriverPallets">By driver/pallets said to contain</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="freightCountedDriverPieces" name="freightCountedDriverPieces">
+                    <label for="freightCountedDriverPieces">By driver/pieces</label>
+                </div>
+            </div>
+
+            <!-- Value Declaration & COD -->
+            <div class="section">
+                <div class="section-title">💵 Value Declaration & COD</div>
+                <p style="margin-bottom: 15px; color: #555; font-size: 0.9em; line-height: 1.6;">
+                    Where the rate is dependent on value, shippers are required to state specifically in writing 
+                    the agreed or declared value of the property as follows: <br>
+                    <strong>"The agreed or declared value of the property is specifically stated by the shipper to be not exceeding 
+                    ______ per ______"</strong>
+                </p>
+                
+                <div class="form-row">
+                    <div class="form-group-row">
+                        <label for="codAmount">COD Amount: $</label>
+                        <input type="number" id="codAmount" name="codAmount" placeholder="0.00" step="0.01" min="0" style="width: 180px; margin-left: 20px;">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <p style="margin-bottom: 10px; font-weight: 500; color: #333;">Fee Terms:</p>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feeCollect" name="feeCollect">
+                            <label for="feeCollect">Collect</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feePrepaid" name="feePrepaid">
+                            <label for="feePrepaid">Prepaid</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="customerCheck" name="customerCheck">
+                            <label for="customerCheck">Customer check acceptable</label>
+                        </div>
+                </div>
+            </div>
+
+            <!-- Carrier & Shipper Information -->
+            <div class="section">
+                <div class="section-title">👥 Carrier & Shipper Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="carrierName">Carrier Name</label>
+                        <input type="text" id="carrierName" name="carrierName">
+                    </div>
+                    <div class="form-group">
+                        <label for="driverName">Driver Name / ID</label>
+                        <input type="text" id="driverName" name="driverName">
+                    </div>
+                    <div class="form-group">
+                        <label for="shipperRep">Shipper Representative</label>
+                        <input type="text" id="shipperRep" name="shipperRep">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">📄 Generate PDF</button>
+                <button type="reset" class="btn btn-secondary">🔄 Reset Form</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let stopCounter = 0;
+        let stopMapImages = {}; // Store map images as base64
+
+        // Initialize with one stop
+        
+        // Initialize form
+        window.onload = function() {
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bolDate').value = today;
+
+            // Try to load prefill payload (if opened from main app)
+            initFromPrefill();
+
+            // If nothing loaded, default to two stops (Pickup + Drop-off)
+            if (document.querySelectorAll('.stop-container').length === 0) {
+                createDefaultStops();
+            }
+        };
+
+        function getQueryParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+
+        function createDefaultStops() {
+            document.getElementById('stopsContainer').innerHTML = '';
+            stopCounter = 0;
+            itemCounter = 0;
+            stopMapImages = {};
+
+            addStop(); // Stop 1
+            addStop(); // Stop 2
+
+            // Stop 1 default Pickup
+            const s1 = document.querySelector('select[name="stopType_1"]');
+            if (s1) { s1.value = "Pickup"; updateStopSections(1); }
+
+            // Stop 2 default Drop-off
+            const s2 = document.querySelector('select[name="stopType_2"]');
+            if (s2) { s2.value = "Drop-off"; updateStopSections(2); }
+        }
+
+        function initFromPrefill() {
+            const key = getQueryParam('bolKey');
+            if (!key) return;
+
+            const raw = localStorage.getItem(key);
+            if (!raw) return;
+
+            let payload;
+            try { payload = JSON.parse(raw); } catch (e) { console.warn("Invalid BOL payload JSON", e); return; }
+
+            // Basic info
+            if (payload.bolNumber) document.getElementById('bolNumber').value = payload.bolNumber;
+            if (payload.bolDate) document.getElementById('bolDate').value = payload.bolDate;
+            if (payload.eventName) document.getElementById('eventName').value = payload.eventName;
+
+            // Stops
+            const stops = Array.isArray(payload.stops) ? payload.stops : [];
+            const n = Math.max(2, stops.length || 0);
+
+            document.getElementById('stopsContainer').innerHTML = '';
+            stopCounter = 0;
+            itemCounter = 0;
+            stopMapImages = {};
+
+            for (let i = 0; i < n; i++) addStop();
+
+            // Fill each stop
+            for (let i = 0; i < n; i++) {
+                const stopId = i + 1;
+                const s = stops[i] || {};
+
+                // Defaults
+                const defaultType = (stopId === 1) ? "Pickup" : (stopId === 2) ? "Drop-off" : "";
+                const type = s.type || defaultType;
+
+                const typeSel = document.querySelector(`select[name="stopType_${stopId}"]`);
+                if (typeSel) { typeSel.value = type; updateStopSections(stopId); }
+
+                const setVal = (selector, val) => {
+                    const el = document.querySelector(selector);
+                    if (el && val !== undefined && val !== null) el.value = val;
+                };
+
+                setVal(`input[name="locationName_${stopId}"]`, s.locationName || "");
+                setVal(`input[name="address_${stopId}"]`, s.address || "");
+                setVal(`input[name="dateTime_${stopId}"]`, s.dateTime || "");
+                setVal(`input[name="contactName_${stopId}"]`, s.contactName || "");
+                setVal(`input[name="contactNumber_${stopId}"]`, s.contactNumber || "");
+                setVal(`input[name="mapLink_${stopId}"]`, s.mapLink || "");
+                setVal(`textarea[name="instructions_${stopId}"]`, s.instructions || "");
+
+                // Items
+                if (Array.isArray(s.pickupItems) && s.pickupItems.length) {
+                    setItems(stopId, 'pickup', s.pickupItems);
+                }
+                if (Array.isArray(s.dropoffItems) && s.dropoffItems.length) {
+                    setItems(stopId, 'dropoff', s.dropoffItems);
+                }
+            }
+        }
+
+        function setItems(stopId, type, items) {
+            const containerId = type === 'pickup' ? `pickupItems_${stopId}` : `dropoffItems_${stopId}`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = '';
+            items.forEach(it => {
+                addItem(stopId, type);
+                const row = container.lastElementChild;
+                if (!row) return;
+                const inputs = row.querySelectorAll('input');
+                if (inputs.length >= 5) {
+                    inputs[0].value = it.qty ?? "";
+                    inputs[1].value = it.itemName ?? "";
+                    inputs[2].value = it.type ?? "";
+                    inputs[3].value = it.weight ?? "";
+                    inputs[4].value = it.hm ?? "";
+                }
+            });
+        }
+
+
+        // Handle image upload and preview
+        function handleImageUpload(stopId, event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Store base64 image data
+                    stopMapImages[stopId] = {
+                        data: e.target.result,
+                        name: file.name
+                    };
+                    
+                    // Show preview
+                    const previewContainer = document.getElementById(`mapPreview_${stopId}`);
+                    const previewImg = document.getElementById(`mapPreviewImg_${stopId}`);
+                    
+                    if (previewContainer && previewImg) {
+                        previewImg.src = e.target.result;
+                        previewContainer.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Add a new stop
+        function addStop() {
+            stopCounter++;
+            const stopsContainer = document.getElementById('stopsContainer');
+            
+            const stopDiv = document.createElement('div');
+            stopDiv.className = 'stop-container';
+            stopDiv.id = `stop-${stopCounter}`;
+            stopDiv.dataset.stopId = stopCounter;
+            
+            stopDiv.innerHTML = `
+                <div class="stop-header">
+                    <div class="stop-number">Stop #${stopCounter}</div>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeStop(${stopCounter})">Remove Stop</button>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Stop Type <span class="required">*</span></label>
+                        <select name="stopType_${stopCounter}" required onchange="updateStopSections(${stopCounter})">
+                            <option value="">Select Type</option>
+                            <option value="Pickup">Pickup</option>
+                            <option value="Drop-off">Drop-off</option>
+                            <option value="Both">Both (Pickup & Drop-off)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location Name <span class="required">*</span></label>
+                        <input type="text" name="locationName_${stopCounter}" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Address <span class="required">*</span></label>
+                        <input type="text" name="address_${stopCounter}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time <span class="required">*</span></label>
+                        <input type="datetime-local" name="dateTime_${stopCounter}" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Contact Name</label>
+                        <input type="text" name="contactName_${stopCounter}">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input type="tel" name="contactNumber_${stopCounter}">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Truck Access Map (URL)</label>
+                        <input type="url" name="mapLink_${stopCounter}" placeholder="https://maps.google.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Truck Access Map (Upload Image)</label>
+                        <input type="file" name="mapImage_${stopCounter}" accept="image/*" onchange="handleImageUpload(${stopCounter}, event)">
+                        <small style="color: #666; font-size: 0.85em;">Upload PNG, JPG, or other image formats</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Special Instructions</label>
+                        <textarea name="instructions_${stopCounter}" rows="3"></textarea>
+                    </div>
+                    <div class="form-group" id="mapPreview_${stopCounter}" style="display: none;">
+                        <label>Map Preview</label>
+                        <img id="mapPreviewImg_${stopCounter}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 2px solid #e0e0e0;">
+                    </div>
+                </div>
+                
+                <!-- Pickup Items Section -->
+                <div id="pickupSection_${stopCounter}" style="display:none;">
+                    <div class="items-section">
+                        <div class="items-title">📦 Items for Pickup</div>
+                        <div id="pickupItems_${stopCounter}"></div>
+                        <button type="button" class="btn btn-success btn-small" onclick="addItem(${stopCounter}, 'pickup')">+ Add Pickup Item</button>
+                    </div>
+                </div>
+                
+                <!-- Drop-off Items Section -->
+                <div id="dropoffSection_${stopCounter}" style="display:none;">
+                    <div class="items-section">
+                        <div class="items-title">📤 Items for Drop-off</div>
+                        <div id="dropoffItems_${stopCounter}"></div>
+                        <button type="button" class="btn btn-success btn-small" onclick="addItem(${stopCounter}, 'dropoff')">+ Add Drop-off Item</button>
+                    </div>
+                </div>
+            `;
+            
+            stopsContainer.appendChild(stopDiv);
+            renumberStops();
+        }
+
+        // Remove a stop
+        function removeStop(stopId) {
+            const stopElement = document.getElementById(`stop-${stopId}`);
+            if (stopElement) {
+                stopElement.remove();
+                renumberStops();
+            }
+        }
+
+        // Renumber stops after addition/removal
+        function renumberStops() {
+            const stops = document.querySelectorAll('.stop-container');
+            stops.forEach((stop, index) => {
+                const stopNumber = stop.querySelector('.stop-number');
+                if (stopNumber) {
+                    stopNumber.textContent = `Stop #${index + 1}`;
+                }
+            });
+        }
+
+        // Update item sections based on stop type
+        function updateStopSections(stopId) {
+            const stopType = document.querySelector(`select[name="stopType_${stopId}"]`).value;
+            const pickupSection = document.getElementById(`pickupSection_${stopId}`);
+            const dropoffSection = document.getElementById(`dropoffSection_${stopId}`);
+            
+            pickupSection.style.display = 'none';
+            dropoffSection.style.display = 'none';
+            
+            if (stopType === 'Pickup' || stopType === 'Both') {
+                pickupSection.style.display = 'block';
+                // Add default item if none exist
+                const pickupItems = document.getElementById(`pickupItems_${stopId}`);
+                if (pickupItems.children.length === 0) {
+                    addItem(stopId, 'pickup');
+                }
+            }
+            
+            if (stopType === 'Drop-off' || stopType === 'Both') {
+                dropoffSection.style.display = 'block';
+                // Add default item if none exist
+                const dropoffItems = document.getElementById(`dropoffItems_${stopId}`);
+                if (dropoffItems.children.length === 0) {
+                    addItem(stopId, 'dropoff');
+                }
+            }
+        }
+
+        let itemCounter = 0;
+
+        // Add item to pickup or drop-off
+        function addItem(stopId, type) {
+            itemCounter++;
+            const containerId = type === 'pickup' ? `pickupItems_${stopId}` : `dropoffItems_${stopId}`;
+            const container = document.getElementById(containerId);
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item-row';
+            itemDiv.id = `item_${type}_${stopId}_${itemCounter}`;
+            
+            itemDiv.innerHTML = `
+                <input type="number" name="${type}_qty_${stopId}_${itemCounter}" placeholder="Qty" min="0">
+                <input type="text" name="${type}_itemName_${stopId}_${itemCounter}" placeholder="Item Name">
+                <input type="text" name="${type}_type_${stopId}_${itemCounter}" placeholder="Type">
+                <input type="number" name="${type}_weight_${stopId}_${itemCounter}" placeholder="Weight" min="0" step="0.1">
+                <input type="text" name="${type}_hm_${stopId}_${itemCounter}" placeholder="HM (X)">
+                <button type="button" class="btn btn-danger btn-small" onclick="removeItem('item_${type}_${stopId}_${itemCounter}')">Remove</button>
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+
+        // Remove an item
+        function removeItem(itemId) {
+            const itemElement = document.getElementById(itemId);
+            if (itemElement) {
+                itemElement.remove();
+            }
+        }
+
+        // Form submission - Generate PDF
+        document.getElementById('bolForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generatePDF();
+        });
+
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return 'Not specified';
+            
+            const date = new Date(dateTimeString);
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            
+            return date.toLocaleString('en-US', options).replace(',', ' at');
+        }
+        // Generate PDF function
+        function generatePDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                let yPos = 20;
+                
+                // Title
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('BILL OF LADING (BOL)', 105, yPos, { align: 'center' });
+                yPos += 10;
+                
+                // BOL Info
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                const bolNumber = document.getElementById('bolNumber').value;
+                const bolDate = document.getElementById('bolDate').value;
+                const eventName = document.getElementById('eventName').value;
+                doc.text(`BOL Number: ${bolNumber}`, 20, yPos);
+                doc.text(`Date: ${bolDate}`, 120, yPos);
+                yPos += 5;
+                doc.text(`Event Name: ${eventName}`, 20, yPos);
+                yPos += 8;
+                
+                // Line separator
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.3);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 8;
+                
+                // Collect stops data
+                const stops = collectStopsData();
+                
+                // Stops Summary Table
+                doc.setFontSize(13);
+                doc.setFont(undefined, 'bold');
+                doc.text('Stops (in Route)', 20, yPos);
+                yPos += 6;
+                
+                const stopsSummary = stops.map((stop, index) => [
+                    index + 1,
+                    stop.type,
+                    stop.locationName,
+                    stop.address,
+                    formatDateTime(stop.dateTime)
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['#', 'Stop Type', 'Location', 'Address', 'Date & Time']],
+                    body: stopsSummary,
+                    theme: 'grid',
+                    headStyles: { 
+                        fillColor: [102, 126, 234],
+                        fontSize: 10,
+                        fontStyle: 'bold'
+                    },
+                    bodyStyles: { fontSize: 9 },
+                    margin: { left: 20, right: 20 }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+                
+                // Detailed Stop Information
+                stops.forEach((stop, index) => {
+                    // Check if we need a new page
+                    if (yPos > 240) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Add some spacing before each stop
+                    if (index > 0) {
+                        yPos += 3;
+                    }
+                    
+                    doc.setFontSize(13);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Stop ${index + 1} - ${stop.type}`, 20, yPos);
+                    yPos += 7;
+                    
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Location: ${stop.locationName}`, 20, yPos);
+                    yPos += 6;
+                    doc.text(`Address: ${stop.address}`, 20, yPos);
+                    yPos += 6;
+                    doc.text(`Contact: ${stop.contactName || '_____________________'}`, 20, yPos);
+                    yPos += 6;
+                    doc.text(`Contact Number: ${stop.contactNumber || '_____________________'}`, 20, yPos);
+                    yPos += 6;
+                    doc.text(`Date & Time: ${formatDateTime(stop.dateTime)}`, 20, yPos);
+                    yPos += 6;
+                    
+                    if (stop.mapLink) {
+                        doc.setTextColor(0, 0, 255);
+                        doc.textWithLink('View Map', 20, yPos, { url: stop.mapLink });
+                        doc.setTextColor(0, 0, 0);
+                        yPos += 6;
+                    }
+                    
+                    if (stop.instructions) {
+                        const instructionLines = doc.splitTextToSize(`Instructions: ${stop.instructions}`, 170);
+                        doc.text(instructionLines, 20, yPos);
+                        yPos += (instructionLines.length * 5);
+                    }
+                    
+                    yPos += 4;
+                    
+                    // Pickup Items
+                    if (stop.pickupItems && stop.pickupItems.length > 0) {
+                        if (yPos > 220) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Items for Pickup:', 20, yPos);
+                        yPos += 3;
+                        
+                        const pickupData = stop.pickupItems.map(item => [
+                            item.qty,
+                            item.itemName,
+                            item.type,
+                            item.weight,
+                            item.hm
+                        ]);
+                        
+                        doc.autoTable({
+                            startY: yPos,
+                            head: [['Qty', 'Item Name', 'Type', 'Weight', 'HM (X)']],
+                            body: pickupData,
+                            theme: 'striped',
+                            headStyles: { fillColor: [40, 167, 69], fontSize: 9 },
+                            bodyStyles: { fontSize: 9 },
+                            margin: { left: 20, right: 20 , bottom: 10 }
+                        });
+                        
+                        yPos = doc.lastAutoTable.finalY + 6;
+                        
+                        // Totals
+                        const totalQty = stop.pickupItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
+                        const totalWeight = stop.pickupItems.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+                        doc.setFont(undefined, 'bold');
+                        doc.setFontSize(9);
+                        doc.text(`Total Qty: ${totalQty}  |  Total Weight: ${totalWeight}`, 20, yPos);
+                        doc.setFontSize(10);
+                        yPos += 8;
+                    }
+                    
+                    // Drop-off Items
+                    if (stop.dropoffItems && stop.dropoffItems.length > 0) {
+                        if (yPos > 220) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Items for Drop-off:', 20, yPos);
+                        yPos += 3;
+                        
+                        const dropoffData = stop.dropoffItems.map(item => [
+                            item.qty,
+                            item.itemName,
+                            item.type,
+                            item.weight,
+                            item.hm
+                        ]);
+                        
+                        doc.autoTable({
+                            startY: yPos,
+                            head: [['Qty', 'Item Name', 'Type', 'Weight', 'HM (X)']],
+                            body: dropoffData,
+                            theme: 'striped',
+                            headStyles: { fillColor: [220, 53, 69], fontSize: 9 },
+                            bodyStyles: { fontSize: 9 },
+                            margin: { left: 20, right: 20,  bottom: 10 }
+                        });
+                        
+                        yPos = doc.lastAutoTable.finalY + 6;
+                        
+                        // Totals
+                        const totalQty = stop.dropoffItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
+                        const totalWeight = stop.dropoffItems.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+                        doc.setFont(undefined, 'bold');
+                        doc.setFontSize(9);
+                        doc.text(`Total Qty: ${totalQty}  |  Total Weight: ${totalWeight}`, 20, yPos);
+                        doc.setFontSize(10);
+                        yPos += 8;
+                    }
+                    
+                    // Separator line
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(20, yPos, 190, yPos);
+                    yPos += 8;
+                });
+                
+                // Freight Charge Terms
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Freight Charge Terms:', 20, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'italic');
+                doc.text('(Freight charges are prepaid unless marked otherwise)', 20, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const freightPrepaid = document.getElementById('freightPrepaid').checked ? '[X]' : '[ ]';
+                const freightCollect = document.getElementById('freightCollect').checked ? '[X]' : '[ ]';
+                const freight3rdParty = document.getElementById('freight3rdParty').checked ? '[X]' : '[ ]';
+              //  const masterBillLading = document.getElementById('masterBillLading').checked ? '[X]' : '[ ]';
+                
+                doc.text(`${freightPrepaid} Prepaid`, 20, yPos);
+                doc.text(`${freightCollect} Collect`, 70, yPos);
+                doc.text(`${freight3rdParty} 3rd Party`, 120, yPos);
+                yPos += 6;
+                doc.text(`Master bill of lading with attached underlying bills of lading`, 20, yPos);
+                yPos += 6;
+                
+                 // Separator line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 8;
+
+                // Trailer Loaded
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Trailer Loaded:', 20, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const trailerLoadedShipper = document.getElementById('trailerLoadedShipper').checked ? '[X]' : '[ ]';
+                const trailerLoadedDriver = document.getElementById('trailerLoadedDriver').checked ? '[X]' : '[ ]';
+                
+                doc.text(`${trailerLoadedShipper} By shipper`, 20, yPos);
+                doc.text(`${trailerLoadedDriver} By driver`, 70, yPos);
+                yPos += 6;
+
+                 // Separator line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 8;
+                
+                // Freight Counted
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Freight Counted:', 20, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const freightCountedShipper = document.getElementById('freightCountedShipper').checked ? '[X]' : '[ ]';
+                const freightCountedDriverPallets = document.getElementById('freightCountedDriverPallets').checked ? '[X]' : '[ ]';
+                const freightCountedDriverPieces = document.getElementById('freightCountedDriverPieces').checked ? '[X]' : '[ ]';
+                
+                doc.text(`${freightCountedShipper} By shipper`, 20, yPos);
+                yPos += 6;
+                doc.text(`${freightCountedDriverPallets} By driver/pallets said to contain`, 20, yPos);
+                yPos += 6;
+                doc.text(`${freightCountedDriverPieces} By driver/pieces`, 20, yPos);
+                yPos += 6;
+
+                 // Separator line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 8;
+                
+                // Value Declaration & COD
+                if (yPos > 220) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Value Declaration & COD:', 20, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'italic');
+                const maxWidth = 170;
+                const declarationText = 'Where the rate is dependent on value, shippers are required to state specifically in writing the agreed or declared value of the property as follows: "The agreed or declared value of the property is specifically stated by the shipper to be not exceeding ______ per ______"';
+                const splitText = doc.splitTextToSize(declarationText, maxWidth);
+                doc.text(splitText, 20, yPos);
+                yPos += (splitText.length * 4) + 4;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const codAmount = document.getElementById('codAmount').value || '__________';
+                
+               // doc.text(`Declared Value: ${declaredValue}`, 20, yPos);
+                yPos += 6;
+                doc.text(`COD Amount: $${codAmount}`, 20, yPos);
+                yPos += 8;
+                
+                doc.setFont(undefined, 'bold');
+                doc.text('Fee Terms:', 20, yPos);
+                yPos += 6;
+                
+                doc.setFont(undefined, 'normal');
+                const feeCollect = document.getElementById('feeCollect').checked ? '[X]' : '[ ]';
+                const feePrepaid = document.getElementById('feePrepaid').checked ? '[X]' : '[ ]';
+                const customerCheck = document.getElementById('customerCheck').checked ? '[X]' : '[ ]';
+                
+                doc.text(`${feeCollect} Collect`, 20, yPos);
+                doc.text(`${feePrepaid} Prepaid`, 70, yPos);
+                doc.text(`${customerCheck} Customer check acceptable`, 120, yPos);
+                yPos += 8;
+
+                // Separator line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(20, yPos, 190, yPos);
+                yPos += 8;
+                
+                // Carrier & Shipper Information
+                if (yPos > 230) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Carrier & Shipper Information:', 20, yPos);
+                yPos += 7;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const carrierName = document.getElementById('carrierName').value || '__________________________';
+                const driverName = document.getElementById('driverName').value || '____________________________';
+                const shipperRep = document.getElementById('shipperRep').value || '__________________________';
+                
+                doc.text(`Carrier Name: ${carrierName}`, 20, yPos);
+                yPos += 6;
+                doc.text(`Driver Name / ID: ${driverName}`, 20, yPos);
+                yPos += 6;
+                doc.text(`Shipper Representative: ${shipperRep}`, 20, yPos);
+                yPos += 12;
+                
+                // Signature Lines
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('Carrier Acknowledgment', 20, yPos);
+                doc.text('Shipper Certification', 120, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('Driver Signature:', 20, yPos);
+                doc.text('Shipper Signature:', 120, yPos);
+                yPos += 2;
+                doc.line(20, yPos, 80, yPos);
+                doc.line(120, yPos, 180, yPos);
+                yPos += 6;
+                
+                doc.text('Date/Time:', 20, yPos);
+                doc.text('Date/Time:', 120, yPos);
+                yPos += 2;
+                doc.line(20, yPos, 80, yPos);
+                doc.line(120, yPos, 180, yPos);
+                yPos += 10;
+                
+                // Add Truck Access Maps Section at the end
+                const stopsWithImages = stops.filter(stop => stop.mapImage);
+                
+                if (stopsWithImages.length > 0) {
+                    // Add new page for maps
+                    doc.addPage();
+                    yPos = 20;
+                    
+                    doc.setFontSize(16);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Truck Access Maps', 105, yPos, { align: 'center' });
+                    yPos += 10;
+                    
+                    // Add separator line
+                    doc.setDrawColor(102, 126, 234);
+                    doc.setLineWidth(0.5);
+                    doc.line(20, yPos, 190, yPos);
+                    yPos += 10;
+                    
+                    stopsWithImages.forEach((stop, idx) => {
+                        // Find the actual stop number
+                        const stopNumber = stops.findIndex(s => s === stop) + 1;
+                        
+                        // Check if we need a new page
+                        if (yPos > 235) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        // Stop title
+                        doc.setFontSize(12);
+                        doc.setFont(undefined, 'bold');
+                        doc.setDrawColor(200, 200, 200);
+                        doc.setLineWidth(0.2);
+                        doc.text(`Stop ${stopNumber} - ${stop.locationName}`, 20, yPos);
+                        yPos += 6;
+                        
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(`${stop.address}`, 20, yPos);
+                        yPos += 12;
+                        
+                        // Add image
+                        try {
+                            // Calculate image dimensions to fit page width
+                            const maxWidth = 170; // Max width in mm
+                            const maxHeight = 110; // Reduced height for better spacing
+                            
+                            // Add image to PDF
+                            doc.addImage(stop.mapImage.data, 'JPEG', 20, yPos, maxWidth, maxHeight);
+                            yPos += maxHeight + 14;
+                            
+                        } catch (error) {
+                            console.error('Error adding image to PDF:', error);
+                            doc.setFontSize(10);
+                            doc.setTextColor(255, 0, 0);
+                            doc.text('Error loading map image', 20, yPos);
+                            doc.setTextColor(0, 0, 0);
+                            yPos += 8;
+                        }
+                    });
+                }
+                
+                // Save PDF
+                const fileName = `BOL_${eventName}_${bolDate}.pdf`;
+                doc.save(fileName);
+                
+                showMessage('PDF generated successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showMessage('Error generating PDF. Please check the console for details.', 'error');
+            }
+        }
+
+        // Collect all stops data from form
+        function collectStopsData() {
+            const stops = [];
+            const stopContainers = document.querySelectorAll('.stop-container');
+            
+            stopContainers.forEach((container, index) => {
+                const stopId = container.dataset.stopId;
+                
+                const stopData = {
+                    type: document.querySelector(`select[name="stopType_${stopId}"]`).value,
+                    locationName: document.querySelector(`input[name="locationName_${stopId}"]`).value,
+                    address: document.querySelector(`input[name="address_${stopId}"]`).value,
+                    dateTime: document.querySelector(`input[name="dateTime_${stopId}"]`).value,
+                    contactName: document.querySelector(`input[name="contactName_${stopId}"]`).value,
+                    contactNumber: document.querySelector(`input[name="contactNumber_${stopId}"]`).value,
+                    mapLink: document.querySelector(`input[name="mapLink_${stopId}"]`).value,
+                    mapImage: stopMapImages[stopId] || null, // Include uploaded image
+                    instructions: document.querySelector(`textarea[name="instructions_${stopId}"]`).value,
+                    pickupItems: [],
+                    dropoffItems: []
+                };
+                
+                // Collect pickup items
+                const pickupContainer = document.getElementById(`pickupItems_${stopId}`);
+                if (pickupContainer) {
+                    const pickupRows = pickupContainer.querySelectorAll('.item-row');
+                    pickupRows.forEach(row => {
+                        const inputs = row.querySelectorAll('input');
+                        if (inputs.length >= 5) {
+                            const qty = inputs[0].value;
+                            const itemName = inputs[1].value;
+                            const type = inputs[2].value;
+                            const weight = inputs[3].value;
+                            const hm = inputs[4].value;
+                            
+                            if (qty || itemName) {  // Only add if there's data
+                                stopData.pickupItems.push({ qty, itemName, type, weight, hm });
+                            }
+                        }
+                    });
+                }
+                
+                // Collect drop-off items
+                const dropoffContainer = document.getElementById(`dropoffItems_${stopId}`);
+                if (dropoffContainer) {
+                    const dropoffRows = dropoffContainer.querySelectorAll('.item-row');
+                    dropoffRows.forEach(row => {
+                        const inputs = row.querySelectorAll('input');
+                        if (inputs.length >= 5) {
+                            const qty = inputs[0].value;
+                            const itemName = inputs[1].value;
+                            const type = inputs[2].value;
+                            const weight = inputs[3].value;
+                            const hm = inputs[4].value;
+                            
+                            if (qty || itemName) {  // Only add if there's data
+                                stopData.dropoffItems.push({ qty, itemName, type, weight, hm });
+                            }
+                        }
+                    });
+                }
+                
+                stops.push(stopData);
+            });
+            
+            return stops;
+        }
+
+        // Show message to user
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Reset form handler
+        document.getElementById('bolForm').addEventListener('reset', function() {
+            setTimeout(() => {
+                document.getElementById('stopsContainer').innerHTML = '';
+                stopCounter = 0;
+                itemCounter = 0;
+                stopMapImages = {}; // Clear stored images
+                addStop();
+            }, 10);
+        });
+    </script>
+</body>
+</html>
