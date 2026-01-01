@@ -44,7 +44,7 @@ function showToast(message, type = 'info') {
 // Get event_id from URL parameters
 function getEventIdFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
-  return '4718866000034408037'; // urlParams.get('event_id');
+  return  urlParams.get('event_id'); //'4718866000034408037';
 }
 
 // Convert datetime-local value to ISO string for Supabase

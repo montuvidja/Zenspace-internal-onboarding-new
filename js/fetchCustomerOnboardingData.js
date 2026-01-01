@@ -38,9 +38,10 @@ let jsonData;
 
 async function loadEventData() {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
       await ensureSupabaseClient();
     //  showLoader("Loading event data...");
-      const eventId = '4718866000034408037';//getEventContext().event_id; // eventName is your event_id from URL
+      const eventId = urlParams.get('event_id');// '4718866000034408037';
       console.log("Loading data for event:", eventId);
   
   
