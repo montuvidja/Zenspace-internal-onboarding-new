@@ -55,6 +55,7 @@
       .topbar{display:none !important}
       .container{max-width:none;margin:0;padding:0}
       .paper{border:none;box-shadow:none;border-radius:0;padding:0.6in}
+      .no-pdf{display:none !important}
     }
   </style>
 </head>
@@ -82,6 +83,8 @@
         </div>
         <div style="flex:0 0 auto"><b>Due Date:</b> <span id="dueDate">—</span></div>
       </div>
+
+      
 
       <!-- Order Summary -->
       <div class="section">
@@ -154,6 +157,28 @@
           </thead>
           <tbody id="monitorUseBody"></tbody>
         </table>
+      </div>
+
+      <div class="section">
+        <div style="margin-bottom:10px;">
+          <label style="display:block;margin-bottom:6px;font-weight:700">Special Instruction</label>
+          <textarea id="specialInstruction" placeholder="Enter any special instructions for warehouse/pickup..." rows="3" style="width:100%;padding:10px;border:1px solid var(--grid);border-radius:6px;resize:vertical;font-size:13px"></textarea>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <label style="display:block;margin-bottom:6px;font-weight:700">Checklist</label>
+          <div id="specialChecklistContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+            <label><input type="checkbox" name="special_checklist" value="Labels"> Labels</label>
+            <label><input type="checkbox" name="special_checklist" value="Bubble Wrap"> Bubble Wrap</label>
+            <label><input type="checkbox" name="special_checklist" value="Straps"> Straps</label>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="no-pdf" id="newChecklistItem" placeholder="Add checklist item..." style="flex:1;padding:8px;border:1px solid var(--grid);border-radius:6px;font-size:13px">
+            <button class="no-pdf" type="button" id="addChecklistItemBtn">Add</button>
+          </div>
+        </div>
+
+        <div class="no-pdf" style="font-size:13px;color:#374151"><b>Selected Items:</b> <span id="selectedChecklistDisplay">—</span></div>
       </div>
     </div>
   </div>
@@ -245,6 +270,24 @@
         os.appendChild(tr);
       });
 
+      // Append manual fields (Special Instruction & Checklist) from the DOM so they are visible in summary/pdf
+      try{
+        const specialText = document.getElementById('specialInstruction')?.value || '';
+        const checks = document.querySelectorAll('#specialChecklistContainer input[type="checkbox"]');
+        const selected = Array.from(checks).filter(cb=>cb.checked).map(cb=>cb.value).join(', ');
+        const tr1 = document.createElement("tr");
+        const td1a = document.createElement("td"); td1a.textContent = 'Special Instruction';
+        const td1b = document.createElement("td"); td1b.textContent = safeText(specialText);
+        tr1.appendChild(td1a); tr1.appendChild(td1b); os.appendChild(tr1);
+
+        const tr2 = document.createElement("tr");
+        const td2a = document.createElement("td"); td2a.textContent = 'Checklist';
+        const td2b = document.createElement("td"); td2b.textContent = safeText(selected);
+        tr2.appendChild(td2a); tr2.appendChild(td2b); os.appendChild(tr2);
+      }catch(e){
+        // ignore if DOM elements not present
+      }
+
       // Pods table: currently only show Pod Type, Quantity and Pod IDs.
       setTbodyRows("podsBookedBody", data?.podsBooked, ["podType","quantity","podIds"]);
       // If you want to re-enable warehouse columns later, use the line below:
@@ -259,7 +302,7 @@
       return url.searchParams.get(name);
     }
 
-    // Load payload from localStorage
+    // Load payload from localStorage and initialize manual fields
     document.addEventListener("DOMContentLoaded", () => {
       const key = getParam("woKey");
       if (key){
@@ -279,6 +322,54 @@
       } else {
         setWorkOrderData({});
       }
+
+      // Checklist helpers
+      function updateSelectedChecklistDisplay(){
+        const checks = document.querySelectorAll('#specialChecklistContainer input[type="checkbox"]');
+        const selected = Array.from(checks).filter(cb=>cb.checked).map(cb=>cb.value);
+        const disp = document.getElementById('selectedChecklistDisplay');
+        disp.textContent = selected.length ? selected.join(', ') : '—';
+      }
+
+      function addChecklistItem(value){
+        const container = document.getElementById('specialChecklistContainer');
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.name = 'special_checklist';
+        input.value = value;
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(' ' + value));
+        container.appendChild(label);
+        // update display whenever changed
+        input.addEventListener('change', updateSelectedChecklistDisplay);
+        updateSelectedChecklistDisplay();
+      }
+
+      // Wire add button and Enter key
+      const addBtn = document.getElementById('addChecklistItemBtn');
+      const newItemInput = document.getElementById('newChecklistItem');
+      if (addBtn && newItemInput){
+        addBtn.addEventListener('click', ()=>{
+          const v = newItemInput.value.trim();
+          if (!v) return;
+          addChecklistItem(v);
+          newItemInput.value = '';
+        });
+        newItemInput.addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter'){
+            e.preventDefault();
+            addBtn.click();
+          }
+        });
+      }
+
+      // Update selected display on any checkbox change
+      const checklistContainer = document.getElementById('specialChecklistContainer');
+      if (checklistContainer) checklistContainer.addEventListener('change', updateSelectedChecklistDisplay);
+
+      // Initialize selected display (no pre-filled values)
+      updateSelectedChecklistDisplay();
     });
 
     // Download PDF (vector-ish via html2pdf)
@@ -291,7 +382,18 @@
         html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
-      html2pdf().set(opt).from(element).save();
+
+      // Hide elements marked .no-pdf before generating PDF, then restore after
+      const noPdfEls = Array.from(document.querySelectorAll('.no-pdf'));
+      const previousDisplays = noPdfEls.map(el => ({ el, display: el.style.display }));
+      noPdfEls.forEach(el => el.style.display = 'none');
+
+      // generate PDF and restore UI afterwards
+      html2pdf().set(opt).from(element).save().then(()=>{
+        previousDisplays.forEach(r => r.el.style.display = r.display || '');
+      }).catch(()=>{
+        previousDisplays.forEach(r => r.el.style.display = r.display || '');
+      });
     });
   </script>
 </body>
