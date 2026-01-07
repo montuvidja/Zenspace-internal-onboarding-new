@@ -73,6 +73,9 @@ async function loadEventData() {
         "main_onboarding_sheet_link": ev.main_onboarding_sheet_link || ""
       };
       console.log("Event data:", data);
+
+      fetchEventFolderLinks(ev.event_name || "", ev.event_start_at);
+      
       
       // 2) Branding items
       const { data: branding, error: bErr } = await supabase
@@ -157,6 +160,14 @@ async function loadEventData() {
       populateHeaderData(data);
       populateOnboardingLink(data);
   
+      // Fetch and populate folder links
+      if (ev.event_name && ev.event_start_at) {
+        const folderLinks = await fetchEventFolderLinks(ev.event_name, ev.event_start_at);
+        if (folderLinks) {
+          populateFolderLinks(folderLinks);
+        }
+      }
+  
       // Build Availability calendar from BookingApp
       const anyBookable = (data.BookingApp || []).some(x => !!x.Bookable);
       return data;
@@ -191,6 +202,83 @@ function populateOnboardingLink(data) {
   } else {
     linkEl.style.display = "none";
   }
+}
+
+function populateFolderLinks(folderLinks) {
+  const container = document.getElementById("foldersListContainer");
+  const noMessage = document.getElementById("noFoldersMessage");
+  const loader = document.getElementById("foldersLoader");
+  
+  if (!container) return;
+  
+  // Hide loader
+  if (loader) loader.style.display = "none";
+  
+  // Clear existing content
+  container.innerHTML = "";
+  
+  if (!folderLinks || !folderLinks.subfoldersList || folderLinks.subfoldersList.length === 0) {
+    if (noMessage) noMessage.style.display = "flex";
+    return;
+  }
+  
+  if (noMessage) noMessage.style.display = "none";
+  if (container) container.style.display = "grid";
+  
+  // Create folder items from subfoldersList
+  folderLinks.subfoldersList.forEach(folder => {
+    const folderItem = document.createElement("div");
+    folderItem.className = "folder-item";
+    folderItem.innerHTML = `
+      <div class="folder-item-header">
+        <div class="folder-item-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="folder-item-name" title="${folder.name || ''}">${folder.name || 'Untitled Folder'}</div>
+      </div>
+      <div class="folder-item-actions">
+        <button type="button" class="folder-item-copy-btn" data-url="${folder.url || ''}" title="Copy folder link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+        <a href="${folder.url || '#'}" target="_blank" rel="noopener noreferrer" class="folder-item-link">
+          <span>Open Folder</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+      </div>
+    `;
+    container.appendChild(folderItem);
+    
+    // Add copy button event listener
+    const copyBtn = folderItem.querySelector(".folder-item-copy-btn");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const url = copyBtn.getAttribute("data-url");
+        if (url) {
+          navigator.clipboard.writeText(url).then(() => {
+            showToast("Folder link copied to clipboard!", "success");
+            // Visual feedback on button
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            setTimeout(() => {
+              copyBtn.innerHTML = originalHTML;
+            }, 2000);
+          }).catch(() => {
+            showToast("Failed to copy link", "error");
+          });
+        }
+      });
+    }
+  });
 }
 
   function setText(id, value) {
@@ -373,6 +461,8 @@ function buildBolPayload(data) {
     bolNumber: "",
     bolDate: "",
     eventName: data["event-name-detail"] || "",
+    eventStartDate: data["start-date"] || "",
+    eventEndDate: data["end-date"] || "",
     stops: [
       {
         type: "Pickup",
@@ -399,3 +489,40 @@ function buildBolPayload(data) {
     ]
   };
 }
+
+
+async function fetchEventFolderLinks(eventName, startDate) {
+  try {
+
+    if(eventName && startDate) {
+      eventName = createFolderName(eventName, startDate);
+      console.log("Fetching folder links for event:", eventName);
+      const url = "https://script.google.com/macros/s/AKfycby3cy0xKc_kft-dGPfQWFCTWbhze-9GG6-NzWdy5V4TlerPwq_a6vBfx1lVRHJk5UQb/exec";
+
+    
+      const res = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ eventName })
+      });
+
+      const result = await res.json();
+
+      if (!result?.data?.ok) {
+        console.warn("⚠️ Server error:", result?.data?.error || result);
+        return null;
+      }
+
+    
+      console.log("✅ Folder links:", result.data);
+
+      return result.data;
+    }
+  } catch (err) {
+    console.error("❌ fetchEventFolderLinks error:", err);
+    return null;
+  } finally {
+    
+  }
+  
+}
+

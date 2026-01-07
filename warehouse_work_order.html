@@ -9,6 +9,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+  <!-- Utility helpers (createFolderName, formatEventDate, etc.) -->
+  <script src="js/utility.js"></script>
+
   <style>
     :root{
       --header:#0B4F6C;
@@ -57,6 +60,85 @@
       .paper{border:none;box-shadow:none;border-radius:0;padding:0.6in}
       .no-pdf{display:none !important}
     }
+
+    /* Toast Notifications */
+    .upload-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+      transition: all 0.3s ease;
+    }
+
+    .upload-toast.success {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #047857;
+    }
+
+    .upload-toast.success .toast-icon {
+      color: #10b981;
+    }
+
+    .upload-toast.error {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+
+    .upload-toast.error .toast-icon {
+      color: #ef4444;
+    }
+
+    .upload-toast.info {
+      background: #f0f9ff;
+      border-color: #0ea5e9;
+      color: #0c4a6e;
+    }
+
+    .upload-toast.info .toast-icon {
+      color: #0ea5e9;
+    }
+
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .toast-message {
+      flex: 1;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -75,6 +157,7 @@
       <div class="meta">
         <div><b>Event Name:</b> <span id="dealName">—</span></div>
         <div><b>Generated:</b> <span id="generatedAt">—</span></div>
+        <div><b>Event Start Date:</b> <span id="eventStartDate">—</span></div>
       </div>
 
       <div class="meta">
@@ -220,6 +303,7 @@
     function setWorkOrderData(data){
       document.getElementById("dealName").textContent = safeText(data?.dealName);
       document.getElementById("generatedAt").textContent = safeText(data?.generatedAt || nowStamp());
+      document.getElementById("eventStartDate").textContent = safeText(data?.eventStartDate);
       // Format warehouse address for multi-line display: split title/details and commas
       const rawAddr = data?.warehouseAddress || "";
       console.log("Raw warehouse address:", rawAddr);
@@ -269,6 +353,8 @@
         tr.appendChild(td1); tr.appendChild(td2);
         os.appendChild(tr);
       });
+
+      console.log("data?.eventStartDate:", data?.eventStartDate);
 
       // Append manual fields (Special Instruction & Checklist) from the DOM so they are visible in summary/pdf
       try{
@@ -389,12 +475,165 @@
       noPdfEls.forEach(el => el.style.display = 'none');
 
       // generate PDF and restore UI afterwards
-      html2pdf().set(opt).from(element).save().then(()=>{
+      html2pdf().set(opt).from(element).save().then(async () => {
         previousDisplays.forEach(r => r.el.style.display = r.display || '');
-      }).catch(()=>{
+        
+        // After PDF is generated, upload to Google Drive
+        try {
+          await uploadPdfToEventFolder('WAREHOUSE');
+        } catch (err) {
+          console.error("Upload to Drive failed:", err);
+          alert("PDF generated, but upload to Drive failed: " + err.message);
+        }
+      }).catch((err) => {
         previousDisplays.forEach(r => r.el.style.display = r.display || '');
+        console.error("PDF generation failed:", err);
       });
     });
+
+    /**
+     * Helper: Upload PDF to event folder in Google Drive
+     * Generates PDF blob and calls uploadDocToEventFolder()
+     */
+    async function uploadPdfToEventFolder(documentType = 'WAREHOUSE') {
+      try {
+        // Show toast while uploading
+        showUploadToast("Uploading to Google Drive...", "info");
+
+        const element = document.getElementById("workOrder");
+        let dealName = document.getElementById("dealName")?.textContent || "Warehouse_Work_Order";
+        const eventStartDate = document.getElementById("eventStartDate")?.textContent || "";
+
+        // Format eventName using createFolderName
+        if (eventStartDate && typeof createFolderName === 'function') {
+          dealName = createFolderName(dealName, eventStartDate);
+        }
+
+        // Generate PDF as blob
+        const opt = {
+          margin: [0.4, 0.35, 0.4, 0.35],
+          filename: `Warehouse_Work_Order_${new Date().toISOString().slice(0, 10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Get PDF blob
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+
+        // Create File object from blob
+        const fileName = `Work_Order_${dealName}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        console.log("Uploading PDF file:", dealName);
+
+        // Upload to Google Drive
+        const result = await uploadDocToEventFolder({
+          eventName: dealName,
+          documentType: documentType,
+          file: pdfFile,
+          replaceExisting: false,
+          shareFile: true
+        });
+
+        showUploadToast("✓ Uploaded to Google Drive successfully!", "success");
+        console.log("Upload result:", result);
+        return result;
+      } catch (err) {
+        showUploadToast("✗ Upload failed: " + err.message, "error");
+        throw err;
+      }
+    }
+
+    /**
+     * Upload document to event folder in Google Drive
+     * @param {Object} options
+     * @param {string} options.eventName - Event name
+     * @param {string} options.documentType - "BOL" or "WAREHOUSE"
+     * @param {File} options.file - File object
+     * @param {boolean} options.replaceExisting - Replace if exists
+     * @param {boolean} options.shareFile - Share the file
+     */
+    async function uploadDocToEventFolder({
+      eventName,
+      documentType,
+      file,
+      replaceExisting = false,
+      shareFile = true
+    }) {
+      const WEBAPP_URL =
+        "https://script.google.com/macros/s/AKfycbxzLwS_a2C9mtdT9DJHQHiV6njg0YBJZhbw6TDEtzK7mDApm09ISF6Jg9AWrvu7I0nVqw/exec";
+
+      // 1) Read file -> base64
+      const base64Content = await fileToBase64(file);
+
+      // 2) Send as form-urlencoded
+      const body = new URLSearchParams();
+      body.append("eventName", eventName);
+      body.append("document", documentType);
+      body.append("fileName", file.name);
+      body.append("mimeType", file.type || "application/pdf");
+      body.append("content", base64Content);
+      body.append("replaceExisting", String(replaceExisting));
+      body.append("shareFile", String(shareFile));
+
+      const res = await fetch(WEBAPP_URL, {
+        method: "POST",
+        body
+      });
+
+      const result = await res.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "Upload failed");
+      }
+
+      return result;
+    }
+
+    /**
+     * Helper: File -> base64 (without "data:...base64," prefix)
+     */
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          const base64 = String(dataUrl).split(",")[1];
+          resolve(base64);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /**
+     * Show upload toast notification
+     */
+    function showUploadToast(message, type = 'info') {
+      const existing = document.querySelector('.upload-toast');
+      if (existing) existing.remove();
+
+      const iconSVG = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `upload-toast ${type}`;
+      toast.innerHTML = `
+        <span class="toast-icon">${iconSVG[type] || iconSVG.info}</span>
+        <span class="toast-message">${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
   </script>
 </body>
 </html>

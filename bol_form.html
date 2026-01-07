@@ -8,6 +8,8 @@
     <!-- jsPDF Library for PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Utility helpers (createFolderName, formatEventDate, etc.) -->
+    <script src="js/utility.js"></script>
     
     <style>
         * {
@@ -299,8 +301,8 @@
                     </div>
 
                     <div class="form-group">
-                        <!-- <label for="eventName">Event Name <span class="required">*</span></label>
-                        <input type="text" id="eventName" name="eventName" required> -->
+                        <label for="eventStartDate">Event Start Date <span class="required">*</span></label>
+                        <input type="text" id="eventStartDate" name="eventStartDate">
                     </div>
                     
                 </div>
@@ -480,12 +482,17 @@
 
             let payload;
             try { payload = JSON.parse(raw); } catch (e) { console.warn("Invalid BOL payload JSON", e); return; }
-
+            
+            // Expose payload for other helpers (used to obtain event start date)
+            window.prefillPayload = payload;
+            console.log("Prefilling BOL form with payload:", payload);
             // Basic info
             if (payload.bolNumber) document.getElementById('bolNumber').value = payload.bolNumber;
             if (payload.bolDate) document.getElementById('bolDate').value = payload.bolDate;
             if (payload.eventName) document.getElementById('eventName').value = payload.eventName;
+            if (payload.eventStartDate) document.getElementById('eventStartDate').value = payload.eventStartDate;
 
+        
             // Stops
             const stops = Array.isArray(payload.stops) ? payload.stops : [];
             const n = Math.max(2, stops.length || 0);
@@ -765,7 +772,7 @@
             generatePDF();
         });
 
-        function formatDateTime(dateTimeString) {
+        async function formatDateTime(dateTimeString) {
             if (!dateTimeString) return 'Not specified';
             
             const date = new Date(dateTimeString);
@@ -780,8 +787,23 @@
             
             return date.toLocaleString('en-US', options).replace(',', ' at');
         }
+
+        // Helper: prefer event start date (from prefill or page) over BOL date
+        function getEventStartDate() {
+            // Check for explicit element (some pages expose eventStartDate)
+            const el = document.getElementById('eventStartDate');
+            if (el) return el.value || el.textContent || "";
+
+            // Check prefill payload stored during init
+            if (window.prefillPayload) {
+                return window.prefillPayload.eventStartDate || window.prefillPayload['start-date'] || window.prefillPayload.startDate || "";
+            }
+
+            // Fallback to bolDate field
+            return document.getElementById('bolDate')?.value || "";
+        }
         // Generate PDF function
-        function generatePDF() {
+        async function generatePDF() {
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -799,7 +821,9 @@
                 doc.setFont(undefined, 'normal');
                 const bolNumber = document.getElementById('bolNumber').value;
                 const bolDate = document.getElementById('bolDate').value;
+              
                 const eventName = document.getElementById('eventName').value;
+                const eventStartDate = document.getElementById('eventStartDate').value;
                 doc.text(`BOL Number: ${bolNumber}`, 20, yPos);
                 doc.text(`Date: ${bolDate}`, 120, yPos);
                 yPos += 5;
@@ -1216,15 +1240,119 @@
                 }
                 
                 // Save PDF
-                const fileName = `BOL_${eventName}_${bolDate}.pdf`;
+             //   const fileName = `BOL_${eventName}_${(eventStartDate || bolDate)}.pdf`;
+                const fileName = `BOL_${eventName}.pdf`;
                 doc.save(fileName);
                 
                 showMessage('PDF generated successfully!', 'success');
+                
+                // Upload PDF to Google Drive after generation
+                try {
+                  await uploadBolPdfToEventFolder(doc, fileName, eventName, eventStartDate);
+                } catch (err) {
+                  console.error("Upload to Drive failed:", err);
+                  showMessage('PDF generated, but upload to Drive failed: ' + err.message, 'warning');
+                }
                 
             } catch (error) {
                 console.error('Error generating PDF:', error);
                 showMessage('Error generating PDF. Please check the console for details.', 'error');
             }
+        }
+
+        /**
+         * Upload BOL PDF to event folder in Google Drive
+         */
+        async function uploadBolPdfToEventFolder(doc, fileName, eventName,eventStartDate) {
+          try {
+            showMessage("Uploading BOL to Google Drive...", "info");
+
+                        // Prefer event start date (from payload or page); fall back to bolDate
+                     //   const eventStartDate = getEventStartDate() || (document.getElementById('bolDate')?.value || "");
+
+                        // Format eventName using createFolderName if function is available
+                if (eventStartDate && typeof createFolderName === 'function') {
+                    eventName = createFolderName(eventName, eventStartDate);
+                }
+
+            // Get PDF blob from jsPDF
+            const pdfBlob = doc.output('blob');
+            
+            // Create File object
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            // Upload to Google Drive
+            const result = await uploadDocToEventFolder({
+              eventName: eventName,
+              documentType: 'BOL',
+              file: pdfFile,
+              replaceExisting: false,
+              shareFile: true
+            });
+
+            showMessage('✓ BOL uploaded to Google Drive successfully!', 'success');
+            console.log("Upload result:", result);
+            return result;
+          } catch (err) {
+            showMessage('✗ Upload failed: ' + err.message, 'error');
+            throw err;
+          }
+        }
+
+        /**
+         * Upload document to event folder in Google Drive
+         */
+        async function uploadDocToEventFolder({
+          eventName,
+          documentType,
+          file,
+          replaceExisting = false,
+          shareFile = true
+        }) {
+          const WEBAPP_URL =
+            "https://script.google.com/macros/s/AKfycbxzLwS_a2C9mtdT9DJHQHiV6njg0YBJZhbw6TDEtzK7mDApm09ISF6Jg9AWrvu7I0nVqw/exec";
+
+          // Read file -> base64
+          const base64Content = await fileToBase64(file);
+
+          // Send as form-urlencoded
+          const body = new URLSearchParams();
+          body.append("eventName", eventName);
+          body.append("document", documentType);
+          body.append("fileName", file.name);
+          body.append("mimeType", file.type || "application/pdf");
+          body.append("content", base64Content);
+          body.append("replaceExisting", String(replaceExisting));
+          body.append("shareFile", String(shareFile));
+
+          const res = await fetch(WEBAPP_URL, {
+            method: "POST",
+            body
+          });
+
+          const result = await res.json();
+
+          if (!result.ok) {
+            throw new Error(result.error || "Upload failed");
+          }
+
+          return result;
+        }
+
+        /**
+         * Helper: File -> base64 (without "data:...base64," prefix)
+         */
+        function fileToBase64(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = reject;
+            reader.onload = () => {
+              const dataUrl = reader.result;
+              const base64 = String(dataUrl).split(",")[1];
+              resolve(base64);
+            };
+            reader.readAsDataURL(file);
+          });
         }
 
         // Collect all stops data from form
