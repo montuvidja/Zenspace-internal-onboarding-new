@@ -271,6 +271,85 @@
                 padding: 20px;
             }
         }
+
+         /* Toast Notifications */
+    .upload-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+      transition: all 0.3s ease;
+    }
+
+    .upload-toast.success {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #047857;
+    }
+
+    .upload-toast.success .toast-icon {
+      color: #10b981;
+    }
+
+    .upload-toast.error {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+
+    .upload-toast.error .toast-icon {
+      color: #ef4444;
+    }
+
+    .upload-toast.info {
+      background: #f0f9ff;
+      border-color: #0ea5e9;
+      color: #0c4a6e;
+    }
+
+    .upload-toast.info .toast-icon {
+      color: #0ea5e9;
+    }
+
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .toast-message {
+      flex: 1;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
     </style>
 </head>
 <body>
@@ -424,7 +503,7 @@
             <!-- Submit Buttons -->
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">📄 Generate PDF</button>
-                <button type="reset" class="btn btn-secondary">🔄 Reset Form</button>
+                <button type="reset" class="btn btn-secondary" hidden>🔄 Reset Form</button>
             </div>
         </form>
     </div>
@@ -1265,7 +1344,7 @@
          */
         async function uploadBolPdfToEventFolder(doc, fileName, eventName,eventStartDate) {
           try {
-            showMessage("Uploading BOL to Google Drive...", "info");
+            showUploadToast("Uploading to Google Drive...", "info");
 
                         // Prefer event start date (from payload or page); fall back to bolDate
                      //   const eventStartDate = getEventStartDate() || (document.getElementById('bolDate')?.value || "");
@@ -1290,7 +1369,8 @@
               shareFile: true
             });
 
-            showMessage('✓ BOL uploaded to Google Drive successfully!', 'success');
+          //  showMessage('✓ BOL uploaded to Google Drive successfully!', 'success');
+           showUploadToast("✓ Uploaded to Google Drive successfully!", "success");
             console.log("Upload result:", result);
             return result;
           } catch (err) {
@@ -1445,6 +1525,35 @@
                 addStop();
             }, 10);
         });
+
+    /**
+     * Show upload toast notification
+     */
+    function showUploadToast(message, type = 'info') {
+      const existing = document.querySelector('.upload-toast');
+      if (existing) existing.remove();
+
+      const iconSVG = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `upload-toast ${type}`;
+      toast.innerHTML = `
+        <span class="toast-icon">${iconSVG[type] || iconSVG.info}</span>
+        <span class="toast-message">${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
     </script>
 </body>
 </html>

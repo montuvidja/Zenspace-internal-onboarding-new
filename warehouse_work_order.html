@@ -145,8 +145,8 @@
   <div class="topbar">
     <div style="font-weight:800;">Warehouse Work Order</div>
     <div class="actions">
-      <button onclick="window.print()">Print</button>
-      <button class="primary" id="btnPdf">Download PDF</button>
+      <button onclick="window.print()" hidden>Print</button>
+      <button class="primary" id="btnPdf">Generate PDF</button>
     </div>
   </div>
 
@@ -251,9 +251,9 @@
         <div style="margin-bottom:8px;">
           <label style="display:block;margin-bottom:6px;font-weight:700">Checklist</label>
           <div id="specialChecklistContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
-            <label><input type="checkbox" name="special_checklist" value="Labels"> Labels</label>
-            <label><input type="checkbox" name="special_checklist" value="Bubble Wrap"> Bubble Wrap</label>
-            <label><input type="checkbox" name="special_checklist" value="Straps"> Straps</label>
+            <label><input type="checkbox" name="special_checklist" value="Labels"> Verify POD identity & booking match</label>
+            <label><input type="checkbox" name="special_checklist" value="Bubble Wrap"> Physical condition & damage inspection</label>
+            <label><input type="checkbox" name="special_checklist" value="Straps"> Functional & safety check</label>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <input class="no-pdf" id="newChecklistItem" placeholder="Add checklist item..." style="flex:1;padding:8px;border:1px solid var(--grid);border-radius:6px;font-size:13px">
@@ -261,7 +261,7 @@
           </div>
         </div>
 
-        <div class="no-pdf" style="font-size:13px;color:#374151"><b>Selected Items:</b> <span id="selectedChecklistDisplay">—</span></div>
+        <div class="no-pdf" style="font-size:13px;color:#374151" hidden><b>Selected Items:</b> <span id="selectedChecklistDisplay">—</span></div>
       </div>
     </div>
   </div>
@@ -632,7 +632,7 @@
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(20px)';
         setTimeout(() => toast.remove(), 300);
-      }, 4000);
+      }, 6000);
     }
   </script>
 </body>
