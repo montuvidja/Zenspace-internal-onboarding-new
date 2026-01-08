@@ -873,16 +873,53 @@
                 </div>
               </div>
               
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Installation Date & Time</label>
-                  <input type="datetime-local" class="form-input" name="install_datetime">
+              <div id="installationDates">
+                <div class="installation-date-entry" data-index="1">
+                  <div class="entry-header">
+                    <div class="entry-number">
+                      <span class="entry-badge">1</span>
+                      <span class="entry-label">Installation Date #1</span>
+                    </div>
+                    <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove installation date" style="display:none;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Date</label>
+                      <input type="date" class="form-input" name="install_date_1">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">From Time</label>
+                      <input type="time" class="form-input" name="install_from_time_1">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">To Time</label>
+                      <input type="time" class="form-input" name="install_to_time_1">
+                    </div>
+                  </div>
                 </div>
               </div>
+              
+              <button type="button" class="add-more-btn" id="addInstallationDateBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Add Another Installation Date</span>
+              </button>
               
               <div class="form-group">
                 <label class="form-label">Installation Location</label>
                 <textarea class="form-textarea" name="install_location" placeholder="Enter installation location details..." rows="2"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Installation Special Instructions</label>
+                <textarea class="form-textarea" name="installation_special_instructions" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
               </div>
             </div>
             
@@ -933,23 +970,56 @@
                 </div>
               </div>
               
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Dismantle Date & Time</label>
-                  <input type="datetime-local" class="form-input" name="dismantle_datetime">
+              <div id="dismantleDates">
+                <div class="dismantle-date-entry" data-index="1">
+                  <div class="entry-header">
+                    <div class="entry-number">
+                      <span class="entry-badge">1</span>
+                      <span class="entry-label">Dismantle Date #1</span>
+                    </div>
+                    <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove dismantle date" style="display:none;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Date</label>
+                      <input type="date" class="form-input" name="dismantle_date_1">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">From Time</label>
+                      <input type="time" class="form-input" name="dismantle_from_time_1">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">To Time</label>
+                      <input type="time" class="form-input" name="dismantle_to_time_1">
+                    </div>
+                  </div>
                 </div>
               </div>
+              
+              <button type="button" class="add-more-btn" id="addDismantleDateBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Add Another Dismantle Date</span>
+              </button>
               
               <div class="form-group">
                 <label class="form-label">Dismantle Location</label>
                 <textarea class="form-textarea" name="dismantle_location" placeholder="Enter dismantle location details..." rows="2"></textarea>
               </div>
+
+              <div class="form-group">
+              <label class="form-label">Dismantle Special Instructions</label>
+              <textarea class="form-textarea" name="dismantle_special_instructions" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">Special Instructions</label>
-              <textarea class="form-textarea" name="special_instructions_installation" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
-            </div>
 
             <!-- Section Actions -->
             <div class="section-actions">

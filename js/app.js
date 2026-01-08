@@ -1339,11 +1339,16 @@ function createTravelEntry(index) {
 }
 
 function removeEntry(button) {
-  const entry = button.closest('.quote-entry, .trucking-entry, .travel-entry');
+  const entry = button.closest('.quote-entry, .trucking-entry, .travel-entry, .installation-date-entry, .dismantle-date-entry');
   if (entry) {
     entry.style.opacity = '0';
     entry.style.transform = 'translateY(-20px)';
-    setTimeout(() => entry.remove(), 300);
+    setTimeout(() => {
+      entry.remove();
+      // Update remove button visibility after deletion
+      updateInstallationRemoveButtons();
+      updateDismantleRemoveButtons();
+    }, 300);
   }
 }
 
@@ -1374,6 +1379,92 @@ function initializeDynamicSections() {
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
+
+  const addInstallationDateBtn = document.getElementById('addInstallationDateBtn');
+  const installationDatesContainer = document.getElementById('installationDates');
+  
+  if (addInstallationDateBtn && installationDatesContainer) {
+    addInstallationDateBtn.addEventListener('click', () => {
+      const installCount = installationDatesContainer.querySelectorAll('.installation-date-entry').length + 1;
+      const entry = document.createElement('div');
+      entry.className = 'installation-date-entry';
+      entry.dataset.index = installCount;
+      entry.innerHTML = `
+        <div class="entry-header">
+          <div class="entry-number">
+            <span class="entry-badge">${installCount}</span>
+            <span class="entry-label">Installation Date #${installCount}</span>
+          </div>
+          <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove installation date">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" name="install_date_${installCount}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">From Time</label>
+            <input type="time" class="form-input" name="install_from_time_${installCount}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Time</label>
+            <input type="time" class="form-input" name="install_to_time_${installCount}">
+          </div>
+        </div>
+      `;
+      installationDatesContainer.appendChild(entry);
+      updateInstallationRemoveButtons();
+      entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  const addDismantleDateBtn = document.getElementById('addDismantleDateBtn');
+  const dismantleDatesContainer = document.getElementById('dismantleDates');
+  
+  if (addDismantleDateBtn && dismantleDatesContainer) {
+    addDismantleDateBtn.addEventListener('click', () => {
+      const dismantleCount = dismantleDatesContainer.querySelectorAll('.dismantle-date-entry').length + 1;
+      const entry = document.createElement('div');
+      entry.className = 'dismantle-date-entry';
+      entry.dataset.index = dismantleCount;
+      entry.innerHTML = `
+        <div class="entry-header">
+          <div class="entry-number">
+            <span class="entry-badge">${dismantleCount}</span>
+            <span class="entry-label">Dismantle Date #${dismantleCount}</span>
+          </div>
+          <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove dismantle date">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" name="dismantle_date_${dismantleCount}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">From Time</label>
+            <input type="time" class="form-input" name="dismantle_from_time_${dismantleCount}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Time</label>
+            <input type="time" class="form-input" name="dismantle_to_time_${dismantleCount}">
+          </div>
+        </div>
+      `;
+      dismantleDatesContainer.appendChild(entry);
+      updateDismantleRemoveButtons();
+      entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
   
   const addTravelBtn = document.getElementById('addTravelBtn');
   const travelContainer = document.getElementById('travelEntries');
@@ -1387,6 +1478,26 @@ function initializeDynamicSections() {
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
+
+  // Initialize remove button visibility
+  updateInstallationRemoveButtons();
+  updateDismantleRemoveButtons();
+}
+
+function updateInstallationRemoveButtons() {
+  const entries = document.querySelectorAll('.installation-date-entry');
+  entries.forEach((entry) => {
+    const btn = entry.querySelector('.remove-entry-btn');
+    if (btn) btn.style.display = entries.length > 1 ? 'block' : 'none';
+  });
+}
+
+function updateDismantleRemoveButtons() {
+  const entries = document.querySelectorAll('.dismantle-date-entry');
+  entries.forEach((entry) => {
+    const btn = entry.querySelector('.remove-entry-btn');
+    if (btn) btn.style.display = entries.length > 1 ? 'block' : 'none';
+  });
 }
 
 // ============================================
