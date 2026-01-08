@@ -245,6 +245,11 @@
               <input type="datetime-local" class="form-input" name="packing_deadline">
             </div>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_preplanning" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left">
@@ -340,6 +345,11 @@
               <input type="date" class="form-input" name="proofs_due_date">
             </div>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_artwork" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left"></div>
@@ -447,6 +457,40 @@
               <label class="form-label">Installation Quote (if separate from printing and if Eliseo/Clint are not installing)</label>
               <input type="text" class="form-input" name="installation_quote" placeholder="$0.00">
             </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Assign Graphics installer</label>
+                <div class="radio-group">
+                  <label class="radio-item">
+                    <input type="radio" name="assigned_graphic_installer" value="alan">
+                    <span class="radio-custom"></span>
+                    <span class="radio-label">Alan</span>
+                  </label>
+
+                  <label class="radio-item">
+                    <input type="radio" name="assigned_graphic_installer" value="Eliseo">
+                    <span class="radio-custom"></span>
+                    <span class="radio-label">Eliseo</span>
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" name="assigned_graphic_installer" value="Clint">
+                    <span class="radio-custom"></span>
+                    <span class="radio-label">Clint</span>
+                  </label>
+                  
+                  
+                  <div class="other-input-wrapper">
+                    <label class="radio-item">
+                      <input type="radio" name="assigned_graphic_installer" value="third_party">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">3rd Party</span>
+                    </label>
+                    <input type="text" class="other-input" name="assigned_graphic_installer_other" placeholder="Enter name..." disabled>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div class="form-row">
               <div class="form-group">
@@ -464,6 +508,11 @@
               <textarea class="form-textarea" name="installation_location" placeholder="Enter installation location details..." rows="2"></textarea>
             </div>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_printing" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left"></div>
@@ -520,7 +569,7 @@
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                       </span>
-                      <span class="checkbox-label">ZenSpace Truck</span>
+                      <span class="checkbox-label">Enterprise</span>
                     </label>
                     <label class="checkbox-item">
                       <input type="checkbox" name="truck_source_1" value="alex_logistics">
@@ -631,6 +680,7 @@
               <span>Add Another Trucking Route</span>
             </button>
             
+          
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left">
@@ -800,6 +850,11 @@
               </div>
             </div>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_installation" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left"></div>
@@ -921,6 +976,11 @@
               </div>
             </div>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_postevent" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left"></div>
@@ -1076,6 +1136,11 @@
               <span>Add Another Traveler</span>
             </button>
             
+            <div class="form-group">
+              <label class="form-label">Special Instructions</label>
+              <textarea class="form-textarea" name="special_instructions_travel" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+            </div>
+
             <!-- Section Actions -->
             <div class="section-actions">
               <div class="section-actions-left"></div>

@@ -388,26 +388,57 @@
       return url.searchParams.get(name);
     }
 
-    // Load payload from localStorage and initialize manual fields
-    document.addEventListener("DOMContentLoaded", () => {
-      const key = getParam("woKey");
-      if (key){
-        try{
-          const raw = localStorage.getItem(key);
-          if (raw){
-            const data = JSON.parse(raw);
-            setWorkOrderData(data);
-            localStorage.removeItem(key);
-          } else {
-            setWorkOrderData({});
+    /**
+     * Load work order data from localStorage
+     * - First checks woKey URL param (temporary key)
+     * - Falls back to persistent storage key
+     * - Saves to persistent storage on first load
+     */
+    function initFromPrefillData() {
+      const woKey = getParam('woKey');
+      let data = null;
+
+      // Try temporary key from URL first
+      if (woKey) {
+        const raw = localStorage.getItem(woKey);
+        if (raw) {
+          try {
+            data = JSON.parse(raw);
+            console.log("Loaded data from woKey:", woKey, data);
+            // Save to persistent key for refresh survival
+            localStorage.setItem('wo_persistentData', JSON.stringify(data));
+          } catch (e) {
+            console.warn("Invalid woKey payload JSON", e);
           }
-        }catch(e){
-          console.error(e);
-          setWorkOrderData({});
         }
+      }
+
+      // Fall back to persistent storage
+      if (!data) {
+        const persistentRaw = localStorage.getItem('wo_persistentData');
+        if (persistentRaw) {
+          try {
+            data = JSON.parse(persistentRaw);
+            console.log("Loaded data from persistent storage", data);
+          } catch (e) {
+            console.warn("Invalid persistent data JSON", e);
+          }
+        }
+      }
+
+      // Populate form if data exists
+      if (data) {
+        setWorkOrderData(data);
+        window.workOrderData = data; // Expose globally for other functions
       } else {
         setWorkOrderData({});
       }
+    }
+
+    // Load payload from localStorage and initialize manual fields
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load data from localStorage (survives refresh)
+      initFromPrefillData();
 
       // Checklist helpers
       function updateSelectedChecklistDisplay(){
