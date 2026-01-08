@@ -100,6 +100,7 @@ function getPreplanningData() {
     onboarding_filled_by_other: getInputValue('onboarding_filled_by_other', section),
     preplanning_installer: getCheckedValues('preplanning_installer', section),
     preplanning_installer_other: getInputValue('preplanning_installer_other', section),
+    preplanning_installer_other_email: getInputValue('preplanning_installer_other_email', section),
     warehouse_address: getRadioValue('warehouse_address', section),
     warehouse_address_other: getInputValue('warehouse_address_other', section),
     packing_deadline: toISODateTime(getInputValue('packing_deadline', section))
@@ -113,6 +114,7 @@ function getArtworkData() {
     event_id: currentEventId,
     proofs_responsible: getRadioValue('proofs_responsible', section),
     proofs_responsible_other: getInputValue('proofs_responsible_other', section),
+    proofs_responsible_other_email: getInputValue('proofs_responsible_other_email', section),
     graphics_upload_link: getInputValue('graphics_upload_link', section),
     proofs_folder_link: getInputValue('proofs_folder_link', section),
     proofs_due_date: getInputValue('proofs_due_date', section) || null
@@ -145,6 +147,7 @@ function getPrintingQuotesData() {
       quote_index: index,
       quote_source: getRadioValue(`quote_source_${index}`, entry),
       quote_source_other: getInputValue(`quote_source_other_${index}`, entry),
+      quote_source_other_email: getInputValue(`quote_source_other_${index}_email`, entry),
       quote_price: getInputValue(`quote_price_${index}`, entry)
     });
   });
@@ -164,6 +167,7 @@ function getTruckingData() {
       entry_index: index,
       truck_source: getCheckedValues(`truck_source_${index}`, entry),
       truck_source_other: getInputValue(`truck_source_${index}_other`, entry),
+      truck_source_other_email: getInputValue(`truck_source_${index}_other_email`, entry),
       truck_quote_enterprise: getInputValue(`truck_quote_enterprise_${index}`, entry),
       truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
@@ -184,10 +188,12 @@ function getInstallationData() {
     event_id: currentEventId,
     install_installer: getCheckedValues('install_installer', section),
     install_installer_other: getInputValue('install_installer_other', section),
+    install_installer_other_email: getInputValue('install_installer_other_email', section),
     install_datetime: toISODateTime(getInputValue('install_datetime', section)),
     install_location: getInputValue('install_location', section),
     dismantle_installer: getCheckedValues('dismantle_installer', section),
     dismantle_installer_other: getInputValue('dismantle_installer_other', section),
+    dismantle_installer_other_email: getInputValue('dismantle_installer_other_email', section),
     dismantle_datetime: toISODateTime(getInputValue('dismantle_datetime', section)),
     dismantle_location: getInputValue('dismantle_location', section)
   };
@@ -200,6 +206,7 @@ function getPosteventData() {
     event_id: currentEventId,
     warehouse_receiving: getCheckedValues('warehouse_receiving', section),
     warehouse_receiving_other: getInputValue('warehouse_receiving_other', section),
+    warehouse_receiving_other_email: getInputValue('warehouse_receiving_other_email', section),
     return_address: getRadioValue('return_address', section),
     return_address_other: getInputValue('return_address_other_1', section)
   };
@@ -217,6 +224,7 @@ function getTravelData() {
       traveler_index: index,
       traveler_name: getRadioValue(`traveler_name_${index}`, entry),
       traveler_name_other: getInputValue(`traveler_name_other_${index}`, entry),
+      traveler_name_other_email: getInputValue(`traveler_name_other_${index}_email`, entry),
       travel_from: getInputValue(`travel_from_${index}`, entry),
       travel_to: getInputValue(`travel_to_${index}`, entry),
       traveler_from_datetime: toISODateTime(getInputValue(`traveler_from_datetime_${index}`, entry)),
@@ -568,16 +576,20 @@ function setRadioValue(name, value, container = document) {
     radio.closest('.radio-item')?.classList.add('selected');
     radio.closest('.address-option')?.classList.add('selected');
     
-    // Handle "other" input enabling
+    // Handle "other" / "third_party" input enabling (enable all other-inputs)
     if (value === 'other' || value === 'third_party') {
       const wrapper = radio.closest('.radio-group, .address-options');
-      const otherInput = wrapper?.querySelector('.other-input, .address-other-input textarea');
-      if (otherInput) {
-        otherInput.disabled = false;
-        if (otherInput.closest('.address-other-input')) {
-          otherInput.closest('.address-other-input').style.display = 'block';
-        }
+      const otherInputs = wrapper?.querySelectorAll('.other-input');
+      if (otherInputs && otherInputs.length) {
+        otherInputs.forEach((oi, i) => {
+          oi.disabled = false;
+          if (i === 0) oi.focus();
+        });
       }
+
+      // Address other textarea handling
+      const addressOther = wrapper?.querySelector('.address-other-input');
+      if (addressOther) addressOther.style.display = 'block';
     }
   }
 }
@@ -592,8 +604,13 @@ function setCheckboxValues(name, values, container = document) {
       
       if (value === 'other') {
         const wrapper = checkbox.closest('.other-input-wrapper');
-        const otherInput = wrapper?.querySelector('.other-input');
-        if (otherInput) otherInput.disabled = false;
+        const otherInputs = wrapper?.querySelectorAll('.other-input');
+        if (otherInputs && otherInputs.length) {
+          otherInputs.forEach((oi, i) => {
+            oi.disabled = false;
+            if (i === 0) oi.focus();
+          });
+        }
       }
     }
   });
@@ -614,6 +631,7 @@ function populatePreplanning(data) {
   setInputValue('onboarding_filled_by_other', data.onboarding_filled_by_other, section);
   setCheckboxValues('preplanning_installer', data.preplanning_installer, section);
   setInputValue('preplanning_installer_other', data.preplanning_installer_other, section);
+  setInputValue('preplanning_installer_other_email', data.preplanning_installer_other_email, section);
   setRadioValue('warehouse_address', data.warehouse_address, section);
   setInputValue('warehouse_address_other', data.warehouse_address_other, section);
   setInputValue('packing_deadline', fromISODateTime(data.packing_deadline), section);
@@ -632,6 +650,7 @@ function populateArtwork(data) {
   
   setRadioValue('proofs_responsible', data.proofs_responsible, section);
   setInputValue('proofs_responsible_other', data.proofs_responsible_other, section);
+  setInputValue('proofs_responsible_other_email', data.proofs_responsible_other_email, section);
   setInputValue('graphics_upload_link', data.graphics_upload_link, section);
   setInputValue('proofs_folder_link', data.proofs_folder_link, section);
   setInputValue('proofs_due_date', data.proofs_due_date, section);
@@ -675,6 +694,7 @@ function populatePrintingQuotes(quotes) {
     if (entry) {
       setRadioValue(`quote_source_${quote.quote_index}`, quote.quote_source, entry);
       setInputValue(`quote_source_other_${quote.quote_index}`, quote.quote_source_other, entry);
+      setInputValue(`quote_source_other_${quote.quote_index}_email`, quote.quote_source_other_email, entry);
       setInputValue(`quote_price_${quote.quote_index}`, quote.quote_price, entry);
     }
   });
@@ -702,6 +722,7 @@ function populateTrucking(entries) {
     if (entry) {
       setCheckboxValues(`truck_source_${data.entry_index}`, data.truck_source, entry);
       setInputValue(`truck_source_${data.entry_index}_other`, data.truck_source_other, entry);
+      setInputValue(`truck_source_${data.entry_index}_other_email`, data.truck_source_other_email, entry);
       setInputValue(`truck_quote_enterprise_${data.entry_index}`, data.truck_quote_enterprise, entry);
       setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
@@ -726,10 +747,12 @@ function populateInstallation(data) {
   
   setCheckboxValues('install_installer', data.install_installer, section);
   setInputValue('install_installer_other', data.install_installer_other, section);
+  setInputValue('install_installer_other_email', data.install_installer_other_email, section);
   setInputValue('install_datetime', fromISODateTime(data.install_datetime), section);
   setInputValue('install_location', data.install_location, section);
   setCheckboxValues('dismantle_installer', data.dismantle_installer, section);
   setInputValue('dismantle_installer_other', data.dismantle_installer_other, section);
+  setInputValue('dismantle_installer_other_email', data.dismantle_installer_other_email, section);
   setInputValue('dismantle_datetime', fromISODateTime(data.dismantle_datetime), section);
   setInputValue('dismantle_location', data.dismantle_location, section);
   
@@ -742,6 +765,7 @@ function populatePostevent(data) {
   
   setCheckboxValues('warehouse_receiving', data.warehouse_receiving, section);
   setInputValue('warehouse_receiving_other', data.warehouse_receiving_other, section);
+  setInputValue('warehouse_receiving_other_email', data.warehouse_receiving_other_email, section);
   setRadioValue('return_address', data.return_address, section);
   setInputValue('return_address_other_1', data.return_address_other, section);
   
@@ -775,6 +799,7 @@ function populateTravel(entries) {
     if (entry) {
       setRadioValue(`traveler_name_${data.traveler_index}`, data.traveler_name, entry);
       setInputValue(`traveler_name_other_${data.traveler_index}`, data.traveler_name_other, entry);
+      setInputValue(`traveler_name_other_${data.traveler_index}_email`, data.traveler_name_other_email, entry);
       setInputValue(`travel_from_${data.traveler_index}`, data.travel_from, entry);
       setInputValue(`travel_to_${data.traveler_index}`, data.travel_to, entry);
       setInputValue(`traveler_from_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_from_datetime), entry);
@@ -828,11 +853,11 @@ function initializeCheckboxes() {
         
         const wrapper = item.closest('.other-input-wrapper');
         if (wrapper) {
-          const otherInput = wrapper.querySelector('.other-input');
-          if (otherInput) {
-            otherInput.disabled = !checkbox.checked;
-            if (checkbox.checked) otherInput.focus();
-          }
+            const otherInputs = wrapper.querySelectorAll('.other-input');
+            otherInputs.forEach(oi => {
+              oi.disabled = !checkbox.checked;
+              if (checkbox.checked) oi.focus();
+            });
         }
         
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
@@ -881,11 +906,13 @@ function initializeRadios() {
         
         const groupWrapper = item.closest('.radio-group');
         if (groupWrapper) {
-          const otherInput = groupWrapper.querySelector('.other-input');
-          if (otherInput) {
+          const otherInputs = groupWrapper.querySelectorAll('.other-input');
+          if (otherInputs && otherInputs.length) {
             const isOther = radio.value === 'other' || radio.value === 'third_party';
-            otherInput.disabled = !isOther;
-            if (isOther) otherInput.focus();
+            otherInputs.forEach((oi, i) => {
+              oi.disabled = !isOther;
+              if (isOther && i === 0) oi.focus();
+            });
           }
         }
         
@@ -980,6 +1007,7 @@ function createQuoteEntry(index) {
             <span class="radio-label">3rd Party</span>
           </label>
           <input type="text" class="other-input" name="quote_source_other_${index}" placeholder="Enter vendor name..." disabled>
+          <input type="email" class="other-input" name="quote_source_other_${index}_email" placeholder="Enter email..." disabled>
         </div>
       </div>
     </div>
@@ -1053,6 +1081,7 @@ function createTruckingEntry(index) {
             <span class="checkbox-label">Other</span>
           </label>
           <input type="text" class="other-input" name="truck_source_${index}_other" placeholder="Enter name..." disabled>
+          <input type="email" class="other-input" name="truck_source_${index}_other_email" placeholder="Enter email..." disabled>
         </div>
       </div>
     </div>
@@ -1260,6 +1289,7 @@ function createTravelEntry(index) {
             <span class="radio-label">Other</span>
           </label>
           <input type="text" class="other-input" name="traveler_name_other_${index}" placeholder="Enter traveler name..." disabled>
+          <input type="email" class="other-input" name="traveler_name_other_${index}_email" placeholder="Enter email..." disabled>
         </div>
       </div>
     </div>
@@ -1294,19 +1324,31 @@ function createTravelEntry(index) {
         <span>Flight Details</span>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Flight Number</label>
-          <input type="text" class="form-input" name="flight_number_${index}" placeholder="e.g., AA 1234">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Departure</label>
-          <input type="datetime-local" class="form-input" name="flight_departure_${index}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Arrival</label>
-          <input type="datetime-local" class="form-input" name="flight_arrival_${index}">
-        </div>
-      </div>
+                    <div class="form-group">
+                      <label class="form-label">Flight Name</label>
+                      <input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Flight Number</label>
+                      <input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number">
+                    </div>
+                  </div> 
+                  <div class="form-row"> 
+                    <div class="form-group">
+                      <label class="form-label">Departure</label>
+                      <input type="datetime-local" class="form-input" name="flight_departure_${index}">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Arrival</label>
+                      <input type="datetime-local" class="form-input" name="flight_arrival_${index}">
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Quote</label>
+                      <input type="text" class="form-input" name="flight_quote_${index}">
+                    </div>
+                  </div>
     </div>
     
     <div class="travel-subsection">
@@ -1321,8 +1363,14 @@ function createTravelEntry(index) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Car Company</label>
-          <input type="text" class="form-input" name="car_company_${index}" placeholder="e.g., Enterprise">
+          <input type="text" class="form-input" name="car_company_${index}" placeholder="Car Company">
         </div>
+        <div class="form-group">
+          <label class="form-label">Car Number</label>
+          <input type="text" class="form-input" name="car_number_${index}" placeholder="Car Number">
+        </div>
+      </div>
+      <div class="form-row">  
         <div class="form-group">
           <label class="form-label">Pickup</label>
           <input type="datetime-local" class="form-input" name="car_pickup_${index}">
@@ -1332,7 +1380,102 @@ function createTravelEntry(index) {
           <input type="datetime-local" class="form-input" name="car_dropoff_${index}">
         </div>
       </div>
+      <div class="form-row">  
+        <div class="form-group">
+          <label class="form-label">Quote</label>
+          <input type="text" class="form-input" name="car_quote_${index}">
+        </div>
+      </div>
     </div>
+    <div class="travel-subsection">
+      <div class="travel-subsection-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+          <circle cx="6.5" cy="16.5" r="2.5"></circle>
+          <circle cx="16.5" cy="16.5" r="2.5"></circle>
+        </svg>
+        <span>Rental Truck</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Truck Company</label>
+          <input type="text" class="form-input" name="truck_company_1" placeholder="e.g., Enterprise">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Truck Number</label>
+          <input type="text" class="form-input" name="truck_number_1" placeholder="e.g., Enterprise">
+        </div>
+      </div>
+      <div class="form-row">  
+        <div class="form-group">
+          <label class="form-label">Pickup</label>
+          <input type="datetime-local" class="form-input" name="truck_pickup_1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Drop-off</label>
+          <input type="datetime-local" class="form-input" name="truck_dropoff_1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quote</label>
+          <input type="text" class="form-input" name="truck_quote_1">
+        </div>
+      </div>
+    </div>
+    <div class="travel-subsection">
+      <div class="travel-subsection-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+            <circle cx="6.5" cy="16.5" r="2.5"></circle>
+            <circle cx="16.5" cy="16.5" r="2.5"></circle>
+        </svg>
+        <span>Personal</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quote</label>
+          <input type="text" class="form-input" name="personal_quote_1">
+        </div>
+      </div>
+    </div>
+    <div class="travel-subsection">
+      <div class="travel-subsection-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+          <circle cx="6.5" cy="16.5" r="2.5"></circle>
+          <circle cx="16.5" cy="16.5" r="2.5"></circle>
+        </svg>
+        <span>Hotel</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hotel Name</label>
+          <input type="text" class="form-input" name="hotel_name_${index}" placeholder="Hotel Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hotel Location</label>
+          <textarea class="form-input" name="hotel_location_${index}" placeholder="Hotel Location"></textarea>
+        </div>              
+      </div>
+      <div class="form-row">  
+        <div class="form-group">
+          <label class="form-label">Check In</label>
+          <input type="datetime-local" class="form-input" name="check_in_${index}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Check Out</label>
+          <input type="datetime-local" class="form-input" name="check_out_${index}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+        <label class="form-label">Quote</label>
+        <input type="text" class="form-input" name="hotel_quote_${index}">
+      </div>
+    </div>              
+  </div>
+    
   `;
   
   return entry;
