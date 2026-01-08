@@ -1022,7 +1022,7 @@ function createTruckingEntry(index) {
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </span>
-          <span class="checkbox-label">ZenSpace Truck</span>
+          <span class="checkbox-label">Enterprise</span>
         </label>
         <label class="checkbox-item">
           <input type="checkbox" name="truck_source_${index}" value="alex_logistics">
@@ -1055,6 +1055,58 @@ function createTruckingEntry(index) {
           <input type="text" class="other-input" name="truck_source_${index}_other" placeholder="Enter name..." disabled>
         </div>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Truck Type</label>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="truck_type_${index}" value="FTL">
+          <span class="radio-custom"></span>
+          <span class="radio-label">FTL</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="truck_type_${index}" value="PTL">
+          <span class="radio-custom"></span>
+          <span class="radio-label">PTL</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="truck_type_${index}" value="LTL">
+          <span class="radio-custom"></span>
+          <span class="radio-label">LTL</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Sub Truck Type</label>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="sub_truck_type_${index}" value="small_pickup">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Small Pickup</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="sub_truck_type_${index}" value="full_size_pickup">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Full Size Pickup</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="sub_truck_type_${index}" value="box_truck">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Box Truck</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="sub_truck_type_${index}" value="stakebed_flatbed">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Stakebed & Flatbed Truck</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Truck Size</label>
+      <input type="text" class="form-input" name="truck_size_${index}" placeholder="Enter truck size...">
     </div>
     
     <div class="form-group">
@@ -1111,10 +1163,53 @@ function createTruckingEntry(index) {
       <label class="form-label">Delivery Address</label>
       <input type="text" class="form-input" name="delivery_address_${index}" placeholder="Enter delivery address">
     </div>
+
+    <div class="form-group" style="flex:0 0 220px; min-width:160px;">
+      <label class="form-label">Driver Details</label>
+                  
+      <div  style="flex:1; display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; gap:8px;">
+        <div style="flex:1;"><label class="form-label">Name</label></div>
+        <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
+        <div style="flex:1;"><label class="form-label">Email</label></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" class="form-input" name="driver_name_${index}" placeholder="Driver Name" style="flex:1; min-width:0;">
+        <input type="text" class="form-input" name="driver_mobile_${index}" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+        <input type="email" class="form-input" name="driver_email_${index}" placeholder="Driver Email" style="flex:1; min-width:0;">
+      </div>
+    </div>
+              
     
     <div class="form-group">
       <label class="form-label">Special Delivery Instructions</label>
       <textarea class="form-textarea" name="delivery_instructions_${index}" placeholder="Enter any special instructions..." rows="3"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Truck Payment Status</label>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="truck_payment_status_${index}" value="paid">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Paid</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="truck_payment_status_${index}" value="partially_paid">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Partially Paid</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="truck_payment_status_${index}" value="unpaid">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Unpaid</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Attach Invoice</label>
+      <input type="file" class="form-input" name="attach_invoice_${index}" accept="image/*">
     </div>
   `;
   

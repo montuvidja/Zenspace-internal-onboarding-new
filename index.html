@@ -603,6 +603,56 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="form-group">
+                  <label class="form-label">Truck Type</label>
+                  <div class="radio-group">
+                    <label class="radio-item">
+                      <input type="radio" name="truck_type" value="FTL">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">FTL</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_type" value="PTL">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">PTL</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_type" value="LTL">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">LTL</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Sub Truck Type</label>
+                  <div class="radio-group">
+                    <label class="radio-item">
+                      <input type="radio" name="sub_truck_type" value="small_pickup">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Small Pickup</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="sub_truck_type" value="full_size_pickup">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Full Size Pickup</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="sub_truck_type" value="box_truck">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Box Truck</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="sub_truck_type" value="stakebed_flatbed">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Stakebed & Flatbed Truck</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Truck Size</label>
+                  <input type="text" class="form-input" name="truck_size" placeholder="Enter truck size...">
+                </div>
                 
                 <div class="form-group">
                   <label class="form-label">Quote Price from Enterprise (if rented)</label>
@@ -664,10 +714,56 @@
                   <label class="form-label">Delivery Address</label>
                   <input type="text" class="form-input" name="delivery_address_1" placeholder="Enter delivery address">
                 </div>
+
+                
+                  <div class="form-group" style="flex:0 0 220px; min-width:160px;">
+                    <label class="form-label">Driver Details</label>
+                  
+                    <div  style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; gap:8px;">
+                          <div style="flex:1;"><label class="form-label">Name</label></div>
+                          <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
+                          <div style="flex:1;"><label class="form-label">Email</label></div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                          <input type="text" class="form-input" name="driver_name" placeholder="Driver Name" style="flex:1; min-width:0;">
+                          <input type="text" class="form-input" name="driver_mobile" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+                          <input type="email" class="form-input" name="driver_email" placeholder="Driver Email" style="flex:1; min-width:0;">
+                        </div>
+                    </div>
+                  </div>
+                
                 
                 <div class="form-group">
                   <label class="form-label">Special Delivery Instructions</label>
                   <textarea class="form-textarea" name="delivery_instructions_1" placeholder="Enter any special instructions..." rows="3"></textarea>
+                </div>
+                
+                
+                <div class="form-group">
+                  <label class="form-label">Truck Payment Status</label>
+                  <div class="radio-group">
+                    <label class="radio-item">
+                      <input type="radio" name="truck_payment_status" value="paid">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Paid</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_payment_status" value="partially_paid">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Partially Paid</span>
+                    </label>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_payment_status" value="unpaid">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Unpaid</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">Attach Invoice</label>
+                  <input type="file" class="form-input" name="attach_invoice" accept="image/*">
                 </div>
               </div>
             </div>
