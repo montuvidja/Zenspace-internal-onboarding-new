@@ -1501,6 +1501,25 @@ function updateDismantleRemoveButtons() {
 }
 
 // ============================================
+// Post-Event Damage Items Handler
+// ============================================
+
+function initializeDamageItemsHandler() {
+  const damageRadios = document.querySelectorAll('input[name="items_damage"]');
+  const damageImagesContainer = document.getElementById('damageImagesContainer');
+  
+  damageRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'yes') {
+        damageImagesContainer.style.display = 'block';
+      } else {
+        damageImagesContainer.style.display = 'none';
+      }
+    });
+  });
+}
+
+// ============================================
 // Section Save Buttons
 // ============================================
 
@@ -1554,6 +1573,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeDynamicSections();
   initializeSectionSaveButtons();
   initializeCopyButtons();
+  initializeDamageItemsHandler();
   
   // Load existing data if event_id is present
   if (currentEventId) {

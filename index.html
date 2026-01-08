@@ -1102,6 +1102,11 @@
                 
               </div>
             </div>
+
+            <div class="form-group">
+              <label class="form-label">Return Date and Time</label>
+              <input type="datetime-local" class="form-input" name="return_datetime">
+            </div>
             
             <div class="form-group">
               <label class="form-label">Return Location</label>
@@ -1140,6 +1145,37 @@
                   <textarea class="form-textarea" name="return_address_other_1" placeholder="Enter full address..." rows="2"></textarea>
                 </div>
               </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Is any items damage?</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" name="items_damage" value="yes">
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">Yes</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="items_damage" value="no">
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">No</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" id="damageImagesContainer" style="display: none;">
+              <label class="form-label">Upload Damage Images</label>
+              <input type="file" class="form-input" name="damage_images" accept="image/*" multiple>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Event Images</label>
+              <input type="file" class="form-input" name="event_images" accept="image/*" multiple>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Debrief Note</label>
+              <textarea class="form-textarea" name="debrief_note" placeholder="Enter debrief notes..." rows="3"></textarea>
             </div>
             
             <div class="form-group">
