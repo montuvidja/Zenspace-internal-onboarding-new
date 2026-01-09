@@ -954,6 +954,33 @@ function initializeRadios() {
 // Tabs
 // ============================================
 
+// COI handling: show/hide file input when 'Yes' selected
+function initializeCOI() {
+  const wrapper = document.querySelector('.coi-file-wrapper');
+  const radios = document.querySelectorAll('input[name="coi_required"]');
+  if (!radios || radios.length === 0) return;
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (!wrapper) return;
+      if (radio.checked && radio.value === 'yes') {
+        wrapper.style.display = 'block';
+      } else if (radio.checked && radio.value === 'no') {
+        // hide and clear file input
+        wrapper.style.display = 'none';
+        const fileInput = wrapper.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+      }
+    });
+  });
+
+  // initial state
+  const selected = document.querySelector('input[name="coi_required"]:checked');
+  if (selected && wrapper) {
+    wrapper.style.display = selected.value === 'yes' ? 'block' : 'none';
+  }
+}
+
 function initializeTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1732,6 +1759,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeAccordions();
   initializeCheckboxes();
   initializeRadios();
+  initializeCOI();
   initializeTabs();
   initializeDynamicSections();
   initializeSectionSaveButtons();
