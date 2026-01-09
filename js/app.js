@@ -1,6 +1,7 @@
 /* ============================================
-   ZenSpace Operations - Main JavaScript
+   ZenSpace Operations - Main JavaScript V2
    With Supabase Integration for Section Saving
+   Updated for new form structure
    ============================================ */
 
 // ============================================
@@ -44,7 +45,7 @@ function showToast(message, type = 'info') {
 // Get event_id from URL parameters
 function getEventIdFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
-  return  urlParams.get('event_id'); //'4718866000034408037';
+  return urlParams.get('event_id');
 }
 
 // Convert datetime-local value to ISO string for Supabase
@@ -66,6 +67,12 @@ function fromISODateTime(isoString) {
   } catch (e) {
     return '';
   }
+}
+
+// Convert time string (HH:MM:SS) to input time format (HH:MM)
+function fromTimeString(timeString) {
+  if (!timeString) return '';
+  return timeString.slice(0, 5);
 }
 
 // Get array of checked checkbox values
@@ -103,7 +110,8 @@ function getPreplanningData() {
     preplanning_installer_other_email: getInputValue('preplanning_installer_other_email', section),
     warehouse_address: getRadioValue('warehouse_address', section),
     warehouse_address_other: getInputValue('warehouse_address_other', section),
-    packing_deadline: toISODateTime(getInputValue('packing_deadline', section))
+    packing_deadline: toISODateTime(getInputValue('packing_deadline', section)),
+    special_instructions: getInputValue('special_instructions_preplanning', section)
   };
 }
 
@@ -117,7 +125,8 @@ function getArtworkData() {
     proofs_responsible_other_email: getInputValue('proofs_responsible_other_email', section),
     graphics_upload_link: getInputValue('graphics_upload_link', section),
     proofs_folder_link: getInputValue('proofs_folder_link', section),
-    proofs_due_date: getInputValue('proofs_due_date', section) || null
+    proofs_due_date: getInputValue('proofs_due_date', section) || null,
+    special_instructions: getInputValue('special_instructions_artwork', section)
   };
 }
 
@@ -128,10 +137,15 @@ function getPrintingData() {
     event_id: currentEventId,
     assigned_printer: getRadioValue('assigned_printer', section),
     assigned_printer_other: getInputValue('assigned_printer_other', section),
+    assigned_printer_other_email: getInputValue('assigned_printer_other_email', section),
     installation_quote: getInputValue('installation_quote', section),
+    assigned_graphic_installer: getRadioValue('assigned_graphic_installer', section),
+    assigned_graphic_installer_other: getInputValue('assigned_graphic_installer_other', section),
+    assigned_graphic_installer_other_email: getInputValue('assigned_graphic_installer_other_email', section),
     printing_start_date: getInputValue('printing_start_date', section) || null,
     installation_date: getInputValue('installation_date', section) || null,
-    installation_location: getInputValue('installation_location', section)
+    installation_location: getInputValue('installation_location', section),
+    special_instructions: getInputValue('special_instructions_printing', section)
   };
 }
 
@@ -168,13 +182,20 @@ function getTruckingData() {
       truck_source: getCheckedValues(`truck_source_${index}`, entry),
       truck_source_other: getInputValue(`truck_source_${index}_other`, entry),
       truck_source_other_email: getInputValue(`truck_source_${index}_other_email`, entry),
+      truck_type: getRadioValue(`truck_type_${index}`, entry),
+      sub_truck_type: getRadioValue(`sub_truck_type_${index}`, entry),
+      truck_size: getInputValue(`truck_size_${index}`, entry),
       truck_quote_enterprise: getInputValue(`truck_quote_enterprise_${index}`, entry),
       truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
       pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
       pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
       delivery_address: getInputValue(`delivery_address_${index}`, entry),
-      delivery_instructions: getInputValue(`delivery_instructions_${index}`, entry)
+      delivery_instructions: getInputValue(`delivery_instructions_${index}`, entry),
+      driver_name: getInputValue(`driver_name_${index}`, entry),
+      driver_mobile: getInputValue(`driver_mobile_${index}`, entry),
+      driver_email: getInputValue(`driver_email_${index}`, entry),
+      truck_payment_status: getRadioValue(`truck_payment_status_${index}`, entry)
     });
   });
   
@@ -189,14 +210,49 @@ function getInstallationData() {
     install_installer: getCheckedValues('install_installer', section),
     install_installer_other: getInputValue('install_installer_other', section),
     install_installer_other_email: getInputValue('install_installer_other_email', section),
-    install_datetime: toISODateTime(getInputValue('install_datetime', section)),
     install_location: getInputValue('install_location', section),
+    install_special_instructions: getInputValue('installation_special_instructions', section),
     dismantle_installer: getCheckedValues('dismantle_installer', section),
     dismantle_installer_other: getInputValue('dismantle_installer_other', section),
     dismantle_installer_other_email: getInputValue('dismantle_installer_other_email', section),
-    dismantle_datetime: toISODateTime(getInputValue('dismantle_datetime', section)),
-    dismantle_location: getInputValue('dismantle_location', section)
+    dismantle_location: getInputValue('dismantle_location', section),
+    dismantle_special_instructions: getInputValue('dismantle_special_instructions', section)
   };
+}
+
+// Section 5: Installation Dates (multiple)
+function getInstallationDatesData() {
+  const dates = [];
+  
+  // Installation dates
+  const installEntries = document.querySelectorAll('.installation-date-entry');
+  installEntries.forEach((entry, idx) => {
+    const index = parseInt(entry.dataset.index) || (idx + 1);
+    dates.push({
+      event_id: currentEventId,
+      date_type: 'install',
+      date_index: index,
+      date_value: getInputValue(`install_date_${index}`, entry) || null,
+      from_time: getInputValue(`install_from_time_${index}`, entry) || null,
+      to_time: getInputValue(`install_to_time_${index}`, entry) || null
+    });
+  });
+  
+  // Dismantle dates
+  const dismantleEntries = document.querySelectorAll('.dismantle-date-entry');
+  dismantleEntries.forEach((entry, idx) => {
+    const index = parseInt(entry.dataset.index) || (idx + 1);
+    dates.push({
+      event_id: currentEventId,
+      date_type: 'dismantle',
+      date_index: index,
+      date_value: getInputValue(`dismantle_date_${index}`, entry) || null,
+      from_time: getInputValue(`dismantle_from_time_${index}`, entry) || null,
+      to_time: getInputValue(`dismantle_to_time_${index}`, entry) || null
+    });
+  });
+  
+  return dates;
 }
 
 // Section 6: Post-Event
@@ -207,8 +263,12 @@ function getPosteventData() {
     warehouse_receiving: getCheckedValues('warehouse_receiving', section),
     warehouse_receiving_other: getInputValue('warehouse_receiving_other', section),
     warehouse_receiving_other_email: getInputValue('warehouse_receiving_other_email', section),
+    return_datetime: toISODateTime(getInputValue('return_datetime', section)),
     return_address: getRadioValue('return_address', section),
-    return_address_other: getInputValue('return_address_other_1', section)
+    return_address_other: getInputValue('return_address_other_1', section),
+    items_damage: getRadioValue('items_damage', section),
+    debrief_note: getInputValue('debrief_note', section),
+    special_instructions: getInputValue('special_instructions_postevent', section)
   };
 }
 
@@ -229,16 +289,59 @@ function getTravelData() {
       travel_to: getInputValue(`travel_to_${index}`, entry),
       traveler_from_datetime: toISODateTime(getInputValue(`traveler_from_datetime_${index}`, entry)),
       traveler_to_datetime: toISODateTime(getInputValue(`traveler_to_datetime_${index}`, entry)),
+      travel_type: getRadioValue(`travel_type_${index}`, entry),
+      // Flight details
+      flight_name: getInputValue(`flight_name_${index}`, entry),
       flight_number: getInputValue(`flight_number_${index}`, entry),
       flight_departure: toISODateTime(getInputValue(`flight_departure_${index}`, entry)),
       flight_arrival: toISODateTime(getInputValue(`flight_arrival_${index}`, entry)),
+      flight_quote: getInputValue(`flight_quote_${index}`, entry),
+      // Car details
       car_company: getInputValue(`car_company_${index}`, entry),
+      car_number: getInputValue(`car_number_${index}`, entry),
       car_pickup: toISODateTime(getInputValue(`car_pickup_${index}`, entry)),
-      car_dropoff: toISODateTime(getInputValue(`car_dropoff_${index}`, entry))
+      car_dropoff: toISODateTime(getInputValue(`car_dropoff_${index}`, entry)),
+      car_pickup_address: getInputValue(`car_pickup_address_${index}`, entry),
+      car_dropoff_address: getInputValue(`car_dropoff_address_${index}`, entry),
+      car_quote: getInputValue(`car_quote_${index}`, entry),
+      // Truck details
+      truck_company: getInputValue(`truck_company_${index}`, entry),
+      truck_number: getInputValue(`truck_number_${index}`, entry),
+      truck_pickup: toISODateTime(getInputValue(`truck_pickup_${index}`, entry)),
+      truck_dropoff: toISODateTime(getInputValue(`truck_dropoff_${index}`, entry)),
+      truck_pickup_address: getInputValue(`truck_pickup_address_${index}`, entry),
+      truck_dropoff_address: getInputValue(`truck_dropoff_address_${index}`, entry),
+      truck_quote: getInputValue(`truck_quote_${index}`, entry),
+      // Personal
+      personal_quote: getInputValue(`personal_quote_${index}`, entry),
+      // Hotel details
+      hotel_name: getInputValue(`hotel_name_${index}`, entry),
+      hotel_location: getInputValue(`hotel_location_${index}`, entry),
+      check_in: toISODateTime(getInputValue(`check_in_${index}`, entry)),
+      check_out: toISODateTime(getInputValue(`check_out_${index}`, entry)),
+      hotel_quote: getInputValue(`hotel_quote_${index}`, entry)
     });
   });
   
   return entries;
+}
+
+// Section 7: Travel Meta (section-level)
+function getTravelMetaData() {
+  const section = document.querySelector('[data-section="travel"]');
+  return {
+    event_id: currentEventId,
+    special_instructions: getInputValue('special_instructions_travel', section)
+  };
+}
+
+// Section 8: COI
+function getCOIData() {
+  const section = document.querySelector('[data-section="coi"]');
+  return {
+    event_id: currentEventId,
+    coi_required: getRadioValue('coi_required', section)
+  };
 }
 
 // ============================================
@@ -320,7 +423,8 @@ async function saveArtwork() {
   
   const data = getArtworkData();
   const result = await upsertSectionData('internal_artwork', data);
-    console.log('Artwork save result:', result);
+  console.log('Artwork save result:', result);
+  
   if (result.success) {
     updateSaveStatus('artwork', true);
     showToast('Artwork & Branding saved successfully!', 'success');
@@ -385,17 +489,27 @@ async function saveInstallation() {
     return false;
   }
   
-  const data = getInstallationData();
-  const result = await upsertSectionData('internal_installation', data);
+  // Save main installation data
+  const mainData = getInstallationData();
+  const mainResult = await upsertSectionData('internal_installation', mainData);
   
-  if (result.success) {
+  if (!mainResult.success) {
+    showToast(`Error saving installation: ${mainResult.error}`, 'error');
+    return false;
+  }
+  
+  // Save installation dates
+  const datesData = getInstallationDatesData();
+  const datesResult = await saveMultipleEntries('internal_installation_dates', datesData, currentEventId);
+  
+  if (datesResult.success) {
     updateSaveStatus('installation', true);
     showToast('Installation & Dismantle saved successfully!', 'success');
   } else {
-    showToast(`Error saving: ${result.error}`, 'error');
+    showToast(`Error saving dates: ${datesResult.error}`, 'error');
   }
   
-  return result.success;
+  return datesResult.success;
 }
 
 async function savePostevent() {
@@ -423,12 +537,41 @@ async function saveTravel() {
     return false;
   }
   
+  // Save travel entries
   const entries = getTravelData();
   const result = await saveMultipleEntries('internal_travel', entries, currentEventId);
   
-  if (result.success) {
+  if (!result.success) {
+    showToast(`Error saving travel: ${result.error}`, 'error');
+    return false;
+  }
+  
+  // Save travel meta
+  const metaData = getTravelMetaData();
+  const metaResult = await upsertSectionData('internal_travel_meta', metaData);
+  
+  if (metaResult.success) {
     updateSaveStatus('travel', true);
     showToast('Travel & Lodging saved successfully!', 'success');
+  } else {
+    showToast(`Error saving travel meta: ${metaResult.error}`, 'error');
+  }
+  
+  return metaResult.success;
+}
+
+async function saveCOI() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const data = getCOIData();
+  const result = await upsertSectionData('internal_coi', data);
+  
+  if (result.success) {
+    updateSaveStatus('coi', true);
+    showToast('COI saved successfully!', 'success');
   } else {
     showToast(`Error saving: ${result.error}`, 'error');
   }
@@ -472,6 +615,9 @@ async function saveSection(sectionId) {
       break;
     case 'travel':
       success = await saveTravel();
+      break;
+    case 'coi':
+      success = await saveCOI();
       break;
     default:
       showToast('Unknown section', 'error');
@@ -533,8 +679,11 @@ async function loadAllSectionData(eventId) {
       printingQuotes,
       trucking,
       installation,
+      installationDates,
       postevent,
-      travel
+      travel,
+      travelMeta,
+      coi
     ] = await Promise.all([
       supabase.from('internal_preplanning').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_artwork').select('*').eq('event_id', eventId).single(),
@@ -542,8 +691,11 @@ async function loadAllSectionData(eventId) {
       supabase.from('internal_printing_quotes').select('*').eq('event_id', eventId).order('quote_index'),
       supabase.from('internal_trucking').select('*').eq('event_id', eventId).order('entry_index'),
       supabase.from('internal_installation').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_installation_dates').select('*').eq('event_id', eventId).order('date_index'),
       supabase.from('internal_postevent').select('*').eq('event_id', eventId).single(),
-      supabase.from('internal_travel').select('*').eq('event_id', eventId).order('traveler_index')
+      supabase.from('internal_travel').select('*').eq('event_id', eventId).order('traveler_index'),
+      supabase.from('internal_travel_meta').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_coi').select('*').eq('event_id', eventId).single()
     ]);
     
     // Populate forms with loaded data
@@ -553,8 +705,11 @@ async function loadAllSectionData(eventId) {
     if (printingQuotes.data?.length) populatePrintingQuotes(printingQuotes.data);
     if (trucking.data?.length) populateTrucking(trucking.data);
     if (installation.data) populateInstallation(installation.data);
+    if (installationDates.data?.length) populateInstallationDates(installationDates.data);
     if (postevent.data) populatePostevent(postevent.data);
     if (travel.data?.length) populateTravel(travel.data);
+    if (travelMeta.data) populateTravelMeta(travelMeta.data);
+    if (coi.data) populateCOI(coi.data);
     
     console.log('All section data loaded successfully');
   } catch (error) {
@@ -635,6 +790,7 @@ function populatePreplanning(data) {
   setRadioValue('warehouse_address', data.warehouse_address, section);
   setInputValue('warehouse_address_other', data.warehouse_address_other, section);
   setInputValue('packing_deadline', fromISODateTime(data.packing_deadline), section);
+  setInputValue('special_instructions_preplanning', data.special_instructions, section);
   
   if (data.warehouse_address === 'other') {
     const otherDiv = section.querySelector('.address-other-input');
@@ -654,6 +810,7 @@ function populateArtwork(data) {
   setInputValue('graphics_upload_link', data.graphics_upload_link, section);
   setInputValue('proofs_folder_link', data.proofs_folder_link, section);
   setInputValue('proofs_due_date', data.proofs_due_date, section);
+  setInputValue('special_instructions_artwork', data.special_instructions, section);
   
   updateSaveStatus('artwork', true);
 }
@@ -664,10 +821,15 @@ function populatePrinting(data) {
   
   setRadioValue('assigned_printer', data.assigned_printer, section);
   setInputValue('assigned_printer_other', data.assigned_printer_other, section);
+  setInputValue('assigned_printer_other_email', data.assigned_printer_other_email, section);
   setInputValue('installation_quote', data.installation_quote, section);
+  setRadioValue('assigned_graphic_installer', data.assigned_graphic_installer, section);
+  setInputValue('assigned_graphic_installer_other', data.assigned_graphic_installer_other, section);
+  setInputValue('assigned_graphic_installer_other_email', data.assigned_graphic_installer_other_email, section);
   setInputValue('printing_start_date', data.printing_start_date, section);
   setInputValue('installation_date', data.installation_date, section);
   setInputValue('installation_location', data.installation_location, section);
+  setInputValue('special_instructions_printing', data.special_instructions, section);
   
   updateSaveStatus('printing', true);
 }
@@ -716,6 +878,7 @@ function populateTrucking(entries) {
       const entry = createTruckingEntry(data.entry_index);
       container.appendChild(entry);
       initializeCheckboxes();
+      initializeRadios();
     }
     
     const entry = container.querySelector(`.trucking-entry[data-index="${data.entry_index}"]`);
@@ -723,6 +886,9 @@ function populateTrucking(entries) {
       setCheckboxValues(`truck_source_${data.entry_index}`, data.truck_source, entry);
       setInputValue(`truck_source_${data.entry_index}_other`, data.truck_source_other, entry);
       setInputValue(`truck_source_${data.entry_index}_other_email`, data.truck_source_other_email, entry);
+      setRadioValue(`truck_type_${data.entry_index}`, data.truck_type, entry);
+      setRadioValue(`sub_truck_type_${data.entry_index}`, data.sub_truck_type, entry);
+      setInputValue(`truck_size_${data.entry_index}`, data.truck_size, entry);
       setInputValue(`truck_quote_enterprise_${data.entry_index}`, data.truck_quote_enterprise, entry);
       setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
@@ -730,6 +896,10 @@ function populateTrucking(entries) {
       setInputValue(`pickup_warehouse_other_${data.entry_index}`, data.pickup_warehouse_other, entry);
       setInputValue(`delivery_address_${data.entry_index}`, data.delivery_address, entry);
       setInputValue(`delivery_instructions_${data.entry_index}`, data.delivery_instructions, entry);
+      setInputValue(`driver_name_${data.entry_index}`, data.driver_name, entry);
+      setInputValue(`driver_mobile_${data.entry_index}`, data.driver_mobile, entry);
+      setInputValue(`driver_email_${data.entry_index}`, data.driver_email, entry);
+      setRadioValue(`truck_payment_status_${data.entry_index}`, data.truck_payment_status, entry);
       
       if (data.pickup_warehouse === 'other') {
         const otherDiv = entry.querySelector('.address-other-input');
@@ -748,15 +918,134 @@ function populateInstallation(data) {
   setCheckboxValues('install_installer', data.install_installer, section);
   setInputValue('install_installer_other', data.install_installer_other, section);
   setInputValue('install_installer_other_email', data.install_installer_other_email, section);
-  setInputValue('install_datetime', fromISODateTime(data.install_datetime), section);
   setInputValue('install_location', data.install_location, section);
+  setInputValue('installation_special_instructions', data.install_special_instructions, section);
   setCheckboxValues('dismantle_installer', data.dismantle_installer, section);
   setInputValue('dismantle_installer_other', data.dismantle_installer_other, section);
   setInputValue('dismantle_installer_other_email', data.dismantle_installer_other_email, section);
-  setInputValue('dismantle_datetime', fromISODateTime(data.dismantle_datetime), section);
   setInputValue('dismantle_location', data.dismantle_location, section);
+  setInputValue('dismantle_special_instructions', data.dismantle_special_instructions, section);
   
   updateSaveStatus('installation', true);
+}
+
+function populateInstallationDates(datesData) {
+  const installDates = datesData.filter(d => d.date_type === 'install');
+  const dismantleDates = datesData.filter(d => d.date_type === 'dismantle');
+  
+  // Populate installation dates
+  const installContainer = document.getElementById('installationDates');
+  if (installContainer && installDates.length > 0) {
+    // Clear existing entries beyond the first
+    const existingEntries = installContainer.querySelectorAll('.installation-date-entry');
+    existingEntries.forEach((entry, idx) => {
+      if (idx > 0) entry.remove();
+    });
+    
+    installDates.forEach((data, idx) => {
+      if (idx > 0) {
+        // Create new entry
+        const entry = document.createElement('div');
+        entry.className = 'installation-date-entry';
+        entry.dataset.index = data.date_index;
+        entry.innerHTML = `
+          <div class="entry-header">
+            <div class="entry-number">
+              <span class="entry-badge">${data.date_index}</span>
+              <span class="entry-label">Installation Date #${data.date_index}</span>
+            </div>
+            <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove installation date">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-input" name="install_date_${data.date_index}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">From Time</label>
+              <input type="time" class="form-input" name="install_from_time_${data.date_index}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Time</label>
+              <input type="time" class="form-input" name="install_to_time_${data.date_index}">
+            </div>
+          </div>
+        `;
+        installContainer.appendChild(entry);
+      }
+      
+      const entry = installContainer.querySelector(`.installation-date-entry[data-index="${data.date_index}"]`);
+      if (entry) {
+        setInputValue(`install_date_${data.date_index}`, data.date_value, entry);
+        setInputValue(`install_from_time_${data.date_index}`, fromTimeString(data.from_time), entry);
+        setInputValue(`install_to_time_${data.date_index}`, fromTimeString(data.to_time), entry);
+      }
+    });
+    
+    updateInstallationRemoveButtons();
+  }
+  
+  // Populate dismantle dates
+  const dismantleContainer = document.getElementById('dismantleDates');
+  if (dismantleContainer && dismantleDates.length > 0) {
+    // Clear existing entries beyond the first
+    const existingEntries = dismantleContainer.querySelectorAll('.dismantle-date-entry');
+    existingEntries.forEach((entry, idx) => {
+      if (idx > 0) entry.remove();
+    });
+    
+    dismantleDates.forEach((data, idx) => {
+      if (idx > 0) {
+        // Create new entry
+        const entry = document.createElement('div');
+        entry.className = 'dismantle-date-entry';
+        entry.dataset.index = data.date_index;
+        entry.innerHTML = `
+          <div class="entry-header">
+            <div class="entry-number">
+              <span class="entry-badge">${data.date_index}</span>
+              <span class="entry-label">Dismantle Date #${data.date_index}</span>
+            </div>
+            <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove dismantle date">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-input" name="dismantle_date_${data.date_index}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">From Time</label>
+              <input type="time" class="form-input" name="dismantle_from_time_${data.date_index}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Time</label>
+              <input type="time" class="form-input" name="dismantle_to_time_${data.date_index}">
+            </div>
+          </div>
+        `;
+        dismantleContainer.appendChild(entry);
+      }
+      
+      const entry = dismantleContainer.querySelector(`.dismantle-date-entry[data-index="${data.date_index}"]`);
+      if (entry) {
+        setInputValue(`dismantle_date_${data.date_index}`, data.date_value, entry);
+        setInputValue(`dismantle_from_time_${data.date_index}`, fromTimeString(data.from_time), entry);
+        setInputValue(`dismantle_to_time_${data.date_index}`, fromTimeString(data.to_time), entry);
+      }
+    });
+    
+    updateDismantleRemoveButtons();
+  }
 }
 
 function populatePostevent(data) {
@@ -766,12 +1055,22 @@ function populatePostevent(data) {
   setCheckboxValues('warehouse_receiving', data.warehouse_receiving, section);
   setInputValue('warehouse_receiving_other', data.warehouse_receiving_other, section);
   setInputValue('warehouse_receiving_other_email', data.warehouse_receiving_other_email, section);
+  setInputValue('return_datetime', fromISODateTime(data.return_datetime), section);
   setRadioValue('return_address', data.return_address, section);
   setInputValue('return_address_other_1', data.return_address_other, section);
+  setRadioValue('items_damage', data.items_damage, section);
+  setInputValue('debrief_note', data.debrief_note, section);
+  setInputValue('special_instructions_postevent', data.special_instructions, section);
   
   if (data.return_address === 'other') {
     const otherDiv = section.querySelector('.address-other-input');
     if (otherDiv) otherDiv.style.display = 'block';
+  }
+  
+  // Show damage images container if items_damage is yes
+  if (data.items_damage === 'yes') {
+    const damageImagesContainer = document.getElementById('damageImagesContainer');
+    if (damageImagesContainer) damageImagesContainer.style.display = 'block';
   }
   
   updateSaveStatus('postevent', true);
@@ -804,16 +1103,79 @@ function populateTravel(entries) {
       setInputValue(`travel_to_${data.traveler_index}`, data.travel_to, entry);
       setInputValue(`traveler_from_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_from_datetime), entry);
       setInputValue(`traveler_to_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_to_datetime), entry);
+      setRadioValue(`travel_type_${data.traveler_index}`, data.travel_type, entry);
+      
+      // Show the appropriate travel type subsection
+      if (data.travel_type) {
+        const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
+        subsections.forEach(sub => {
+          sub.style.display = sub.dataset.travelType === data.travel_type ? 'block' : 'none';
+        });
+      }
+      
+      // Flight details
+      setInputValue(`flight_name_${data.traveler_index}`, data.flight_name, entry);
       setInputValue(`flight_number_${data.traveler_index}`, data.flight_number, entry);
       setInputValue(`flight_departure_${data.traveler_index}`, fromISODateTime(data.flight_departure), entry);
       setInputValue(`flight_arrival_${data.traveler_index}`, fromISODateTime(data.flight_arrival), entry);
+      setInputValue(`flight_quote_${data.traveler_index}`, data.flight_quote, entry);
+      
+      // Car details
       setInputValue(`car_company_${data.traveler_index}`, data.car_company, entry);
+      setInputValue(`car_number_${data.traveler_index}`, data.car_number, entry);
       setInputValue(`car_pickup_${data.traveler_index}`, fromISODateTime(data.car_pickup), entry);
       setInputValue(`car_dropoff_${data.traveler_index}`, fromISODateTime(data.car_dropoff), entry);
+      setInputValue(`car_pickup_address_${data.traveler_index}`, data.car_pickup_address, entry);
+      setInputValue(`car_dropoff_address_${data.traveler_index}`, data.car_dropoff_address, entry);
+      setInputValue(`car_quote_${data.traveler_index}`, data.car_quote, entry);
+      
+      // Truck details
+      setInputValue(`truck_company_${data.traveler_index}`, data.truck_company, entry);
+      setInputValue(`truck_number_${data.traveler_index}`, data.truck_number, entry);
+      setInputValue(`truck_pickup_${data.traveler_index}`, fromISODateTime(data.truck_pickup), entry);
+      setInputValue(`truck_dropoff_${data.traveler_index}`, fromISODateTime(data.truck_dropoff), entry);
+      setInputValue(`truck_pickup_address_${data.traveler_index}`, data.truck_pickup_address, entry);
+      setInputValue(`truck_dropoff_address_${data.traveler_index}`, data.truck_dropoff_address, entry);
+      setInputValue(`truck_quote_${data.traveler_index}`, data.truck_quote, entry);
+      
+      // Personal
+      setInputValue(`personal_quote_${data.traveler_index}`, data.personal_quote, entry);
+      
+      // Hotel details
+      setInputValue(`hotel_name_${data.traveler_index}`, data.hotel_name, entry);
+      setInputValue(`hotel_location_${data.traveler_index}`, data.hotel_location, entry);
+      setInputValue(`check_in_${data.traveler_index}`, fromISODateTime(data.check_in), entry);
+      setInputValue(`check_out_${data.traveler_index}`, fromISODateTime(data.check_out), entry);
+      setInputValue(`hotel_quote_${data.traveler_index}`, data.hotel_quote, entry);
     }
   });
   
+  // Reinitialize travel type handlers
+  initializeTravelType();
+  
   updateSaveStatus('travel', true);
+}
+
+function populateTravelMeta(data) {
+  const section = document.querySelector('[data-section="travel"]');
+  if (!section) return;
+  
+  setInputValue('special_instructions_travel', data.special_instructions, section);
+}
+
+function populateCOI(data) {
+  const section = document.querySelector('[data-section="coi"]');
+  if (!section) return;
+  
+  setRadioValue('coi_required', data.coi_required, section);
+  
+  // Show/hide file wrapper
+  const wrapper = document.querySelector('.coi-file-wrapper');
+  if (wrapper) {
+    wrapper.style.display = data.coi_required === 'yes' ? 'block' : 'none';
+  }
+  
+  updateSaveStatus('coi', true);
 }
 
 // ============================================
@@ -1417,31 +1779,31 @@ function createTravelEntry(index) {
         <span>Flight Details</span>
       </div>
       <div class="form-row">
-                    <div class="form-group">
-                      <label class="form-label">Flight Name</label>
-                      <input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Flight Number</label>
-                      <input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number">
-                    </div>
-                  </div> 
-                  <div class="form-row"> 
-                    <div class="form-group">
-                      <label class="form-label">Departure</label>
-                      <input type="datetime-local" class="form-input" name="flight_departure_${index}">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Arrival</label>
-                      <input type="datetime-local" class="form-input" name="flight_arrival_${index}">
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label class="form-label">Quote</label>
-                      <input type="text" class="form-input" name="flight_quote_${index}">
-                    </div>
-                  </div>
+        <div class="form-group">
+          <label class="form-label">Flight Name</label>
+          <input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Flight Number</label>
+          <input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number">
+        </div>
+      </div> 
+      <div class="form-row"> 
+        <div class="form-group">
+          <label class="form-label">Departure</label>
+          <input type="datetime-local" class="form-input" name="flight_departure_${index}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Arrival</label>
+          <input type="datetime-local" class="form-input" name="flight_arrival_${index}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quote</label>
+          <input type="text" class="form-input" name="flight_quote_${index}">
+        </div>
+      </div>
     </div>
     
     <div class="travel-subsection" data-travel-type="rental_car" style="display: none;">
@@ -1490,6 +1852,7 @@ function createTravelEntry(index) {
         </div>
       </div>
     </div>
+    
     <div class="travel-subsection" data-travel-type="rental_truck" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1506,7 +1869,7 @@ function createTravelEntry(index) {
         </div>
         <div class="form-group">
           <label class="form-label">Truck Number</label>
-          <input type="text" class="form-input" name="truck_number_${index}" placeholder="e.g., Enterprise">
+          <input type="text" class="form-input" name="truck_number_${index}" placeholder="Truck Number">
         </div>
       </div>
       <div class="form-row">  
@@ -1536,12 +1899,13 @@ function createTravelEntry(index) {
         </div>
       </div>
     </div>
+    
     <div class="travel-subsection" data-travel-type="personal" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
-            <circle cx="6.5" cy="16.5" r="2.5"></circle>
-            <circle cx="16.5" cy="16.5" r="2.5"></circle>
+          <circle cx="6.5" cy="16.5" r="2.5"></circle>
+          <circle cx="16.5" cy="16.5" r="2.5"></circle>
         </svg>
         <span>Personal</span>
       </div>
@@ -1552,12 +1916,11 @@ function createTravelEntry(index) {
         </div>
       </div>
     </div>
+    
     <div class="travel-subsection">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
-          <circle cx="6.5" cy="16.5" r="2.5"></circle>
-          <circle cx="16.5" cy="16.5" r="2.5"></circle>
+          <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M5 21V10.85M19 21V10.85"></path>
         </svg>
         <span>Hotel</span>
       </div>
@@ -1583,12 +1946,11 @@ function createTravelEntry(index) {
       </div>
       <div class="form-row">
         <div class="form-group">
-        <label class="form-label">Quote</label>
-        <input type="text" class="form-input" name="hotel_quote_${index}">
-      </div>
-    </div>              
-  </div>
-    
+          <label class="form-label">Quote</label>
+          <input type="text" class="form-input" name="hotel_quote_${index}">
+        </div>
+      </div>              
+    </div>
   `;
   
   return entry;
@@ -1767,10 +2129,8 @@ function initializeDamageItemsHandler() {
   
   damageRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
-      if (e.target.value === 'yes') {
-        damageImagesContainer.style.display = 'block';
-      } else {
-        damageImagesContainer.style.display = 'none';
+      if (damageImagesContainer) {
+        damageImagesContainer.style.display = e.target.value === 'yes' ? 'block' : 'none';
       }
     });
   });
@@ -1845,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     firstSection.classList.add('expanded', 'active');
   }
   
-  console.log('ZenSpace Onboarding App initialized', { eventId: currentEventId });
+  console.log('ZenSpace Onboarding App V2 initialized', { eventId: currentEventId });
 });
 
 // Make functions globally available

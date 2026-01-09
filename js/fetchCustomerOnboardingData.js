@@ -496,6 +496,7 @@ async function fetchEventFolderLinks(eventName, startDate) {
 
     if(eventName && startDate) {
       eventName = createFolderName(eventName, startDate);
+      currentEventName = eventName;
       console.log("Fetching folder links for event:", eventName);
       const url = "https://script.google.com/macros/s/AKfycby3cy0xKc_kft-dGPfQWFCTWbhze-9GG6-NzWdy5V4TlerPwq_a6vBfx1lVRHJk5UQb/exec";
 

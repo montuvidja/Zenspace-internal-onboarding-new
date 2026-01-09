@@ -14,6 +14,9 @@
   <!-- Supabase JS -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabaseClient.js"></script>
+  <script>
+     let currentEventName = "";
+  </script>
 
 </head>
 <body>
@@ -615,17 +618,17 @@
                   <label class="form-label">Truck Type</label>
                   <div class="radio-group">
                     <label class="radio-item">
-                      <input type="radio" name="truck_type" value="FTL">
+                      <input type="radio" name="truck_type_1" value="FTL">
                       <span class="radio-custom"></span>
                       <span class="radio-label">FTL</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_type" value="PTL">
+                      <input type="radio" name="truck_type_1" value="PTL">
                       <span class="radio-custom"></span>
                       <span class="radio-label">PTL</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_type" value="LTL">
+                      <input type="radio" name="truck_type_1" value="LTL">
                       <span class="radio-custom"></span>
                       <span class="radio-label">LTL</span>
                     </label>
@@ -635,22 +638,22 @@
                   <label class="form-label">Sub Truck Type</label>
                   <div class="radio-group">
                     <label class="radio-item">
-                      <input type="radio" name="sub_truck_type" value="small_pickup">
+                      <input type="radio" name="sub_truck_type_1" value="small_pickup">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Small Pickup</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="sub_truck_type" value="full_size_pickup">
+                      <input type="radio" name="sub_truck_type_1" value="full_size_pickup">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Full Size Pickup</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="sub_truck_type" value="box_truck">
+                      <input type="radio" name="sub_truck_type_1" value="box_truck">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Box Truck</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="sub_truck_type" value="stakebed_flatbed">
+                      <input type="radio" name="sub_truck_type_1" value="stakebed_flatbed">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Stakebed & Flatbed Truck</span>
                     </label>
@@ -658,7 +661,7 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label">Truck Size</label>
-                  <input type="text" class="form-input" name="truck_size" placeholder="Enter truck size...">
+                  <input type="text" class="form-input" name="truck_size_1" placeholder="Enter truck size...">
                 </div>
                 
                 <div class="form-group">
@@ -733,9 +736,9 @@
                           <div style="flex:1;"><label class="form-label">Email</label></div>
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                          <input type="text" class="form-input" name="driver_name" placeholder="Driver Name" style="flex:1; min-width:0;">
-                          <input type="text" class="form-input" name="driver_mobile" placeholder="Driver Mobile" style="flex:1; min-width:0;">
-                          <input type="email" class="form-input" name="driver_email" placeholder="Driver Email" style="flex:1; min-width:0;">
+                          <input type="text" class="form-input" name="driver_name_1" placeholder="Driver Name" style="flex:1; min-width:0;">
+                          <input type="text" class="form-input" name="driver_mobile_1" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+                          <input type="email" class="form-input" name="driver_email_1" placeholder="Driver Email" style="flex:1; min-width:0;">
                         </div>
                     </div>
                   </div>
@@ -751,17 +754,17 @@
                   <label class="form-label">Truck Payment Status</label>
                   <div class="radio-group">
                     <label class="radio-item">
-                      <input type="radio" name="truck_payment_status" value="paid">
+                      <input type="radio" name="truck_payment_status_1" value="paid">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Paid</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_payment_status" value="partially_paid">
+                      <input type="radio" name="truck_payment_status_1" value="partially_paid">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Partially Paid</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_payment_status" value="unpaid">
+                      <input type="radio" name="truck_payment_status_1" value="unpaid">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Unpaid</span>
                     </label>
@@ -770,7 +773,7 @@
                 
                 <div class="form-group">
                   <label class="form-label">Attach Invoice</label>
-                  <input type="file" class="form-input" name="attach_invoice" accept="image/*">
+                  <input type="file" class="form-input" name="attach_invoice_1" multiple>
                 </div>
               </div>
             </div>
@@ -1175,12 +1178,12 @@
 
             <div class="form-group" id="damageImagesContainer" style="display: none;">
               <label class="form-label">Upload Damage Images</label>
-              <input type="file" class="form-input" name="damage_images" accept="image/*" multiple>
+              <input type="file" class="form-input" name="damage_images" multiple>
             </div>
 
             <div class="form-group">
               <label class="form-label">Event Images</label>
-              <input type="file" class="form-input" name="event_images" accept="image/*" multiple>
+              <input type="file" class="form-input" name="event_images" multiple>
             </div>
             
             <div class="form-group">
@@ -1519,7 +1522,7 @@
 
             <div class="form-group">
               <label class="form-label">Attach Invoices</label>
-              <input type="file" class="form-input" name="travel_invoices" accept="image/*" multiple>
+              <input type="file" class="form-input" name="travel_invoices" multiple>
             </div>
 
             <!-- Section Actions -->
@@ -1576,7 +1579,7 @@
 
             <div class="form-group coi-file-wrapper" style="display: none;">
               <label class="form-label">Upload COI</label>
-              <input type="file" name="coi_file" id="coi_file" accept=".pdf,.jpg,.png,.doc,.docx">
+              <input type="file" name="coi_file" id="coi_file">
               <p class="muted">Attach Certificate of Insurance (PDF preferred)</p>
             </div>
 
@@ -1635,5 +1638,6 @@
   <script src="js/utility.js"></script>
   <script src="js/app.js"></script>
   <script src="js/fetchCustomerOnboardingData.js"></script>
+  <script src="js/fileUpload.js"></script>
 </body>
 </html>
