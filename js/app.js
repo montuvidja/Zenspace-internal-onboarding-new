@@ -1382,6 +1382,16 @@ function createTravelEntry(index) {
       </div>
       <div class="form-row">  
         <div class="form-group">
+          <label class="form-label">Pickup Address</label>
+          <textarea type="text" class="form-input" name="car_pickup_address_${index}"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Drop-off Address</label>
+          <textarea type="text" class="form-input" name="car_dropoff_address_${index}"></textarea>
+        </div>
+      </div>
+      <div class="form-row">  
+        <div class="form-group">
           <label class="form-label">Quote</label>
           <input type="text" class="form-input" name="car_quote_${index}">
         </div>
@@ -1399,27 +1409,37 @@ function createTravelEntry(index) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Truck Company</label>
-          <input type="text" class="form-input" name="truck_company_1" placeholder="e.g., Enterprise">
+          <input type="text" class="form-input" name="truck_company_${index}" placeholder="e.g., Enterprise">
         </div>
         <div class="form-group">
           <label class="form-label">Truck Number</label>
-          <input type="text" class="form-input" name="truck_number_1" placeholder="e.g., Enterprise">
+          <input type="text" class="form-input" name="truck_number_${index}" placeholder="e.g., Enterprise">
         </div>
       </div>
       <div class="form-row">  
         <div class="form-group">
           <label class="form-label">Pickup</label>
-          <input type="datetime-local" class="form-input" name="truck_pickup_1">
+          <input type="datetime-local" class="form-input" name="truck_pickup_${index}">
         </div>
         <div class="form-group">
           <label class="form-label">Drop-off</label>
-          <input type="datetime-local" class="form-input" name="truck_dropoff_1">
+          <input type="datetime-local" class="form-input" name="truck_dropoff_${index}">
+        </div>
+      </div>
+      <div class="form-row">  
+        <div class="form-group">
+          <label class="form-label">Pickup Address</label>
+          <textarea type="text" class="form-input" name="truck_pickup_address_${index}"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Drop-off Address</label>
+          <textarea type="text" class="form-input" name="truck_dropoff_address_${index}"></textarea>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="truck_quote_1">
+          <input type="text" class="form-input" name="truck_quote_${index}">
         </div>
       </div>
     </div>
@@ -1435,7 +1455,7 @@ function createTravelEntry(index) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="personal_quote_1">
+          <input type="text" class="form-input" name="personal_quote_${index}">
         </div>
       </div>
     </div>
