@@ -981,6 +981,46 @@ function initializeCOI() {
   }
 }
 
+// Travel Type handling: show/hide travel subsections based on selection
+function initializeTravelType() {
+  document.querySelectorAll('.travel-entry').forEach(entry => {
+    const index = entry.dataset.index || '1';
+    const radios = entry.querySelectorAll(`input[name="travel_type_${index}"]`);
+    if (!radios || radios.length === 0) return;
+
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        
+        // Hide all travel subsections in this entry
+        const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
+        subsections.forEach(subsection => {
+          subsection.style.display = 'none';
+        });
+        
+        // Show the selected subsection
+        const selectedType = radio.value;
+        const targetSubsection = entry.querySelector(`.travel-subsection[data-travel-type="${selectedType}"]`);
+        if (targetSubsection) {
+          targetSubsection.style.display = 'block';
+        }
+      });
+    });
+
+    // Set initial state - hide all subsections if no selection
+    const selected = entry.querySelector(`input[name="travel_type_${index}"]:checked`);
+    if (!selected) {
+      const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
+      subsections.forEach(subsection => {
+        subsection.style.display = 'none';
+      });
+    } else {
+      // Trigger change event to show the selected subsection
+      selected.dispatchEvent(new Event('change'));
+    }
+  });
+}
+
 function initializeTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1343,7 +1383,33 @@ function createTravelEntry(index) {
       </div>
     </div>
     
-    <div class="travel-subsection">
+    <div class="form-group">
+      <label class="form-label">Travel Type</label>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="travel_type_${index}" value="airline">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Airline</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="travel_type_${index}" value="rental_car">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Rental Car</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="travel_type_${index}" value="rental_truck">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Rental Truck</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="travel_type_${index}" value="personal">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Personal</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="travel-subsection" data-travel-type="airline" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
@@ -1378,7 +1444,7 @@ function createTravelEntry(index) {
                   </div>
     </div>
     
-    <div class="travel-subsection">
+    <div class="travel-subsection" data-travel-type="rental_car" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
@@ -1424,7 +1490,7 @@ function createTravelEntry(index) {
         </div>
       </div>
     </div>
-    <div class="travel-subsection">
+    <div class="travel-subsection" data-travel-type="rental_truck" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
@@ -1470,7 +1536,7 @@ function createTravelEntry(index) {
         </div>
       </div>
     </div>
-    <div class="travel-subsection">
+    <div class="travel-subsection" data-travel-type="personal" style="display: none;">
       <div class="travel-subsection-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
@@ -1665,6 +1731,7 @@ function initializeDynamicSections() {
       const entry = createTravelEntry(travelCount);
       travelContainer.appendChild(entry);
       initializeRadios();
+      initializeTravelType();
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
@@ -1760,6 +1827,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeCheckboxes();
   initializeRadios();
   initializeCOI();
+  initializeTravelType();
   initializeTabs();
   initializeDynamicSections();
   initializeSectionSaveButtons();
