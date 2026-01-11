@@ -771,10 +771,7 @@
                   </div>
                 </div>
                 
-                <div class="form-group">
-                  <label class="form-label">Attach Invoice</label>
-                  <input type="file" class="form-input" name="attach_invoice_1" multiple>
-                </div>
+          
               </div>
             </div>
             
@@ -786,6 +783,10 @@
               <span>Add Another Trucking Route</span>
             </button>
             
+            <div class="form-group">
+              <label class="form-label">Attach Invoice</label>
+              <input type="file" class="form-input" name="trucking_invoices" multiple>
+            </div>
           
             <!-- Section Actions -->
             <div class="section-actions">
@@ -1504,8 +1505,14 @@
                   </div>
                   
                 </div>
+                <div class="form-group">
+                  <label class="form-label">Special Instructions</label>
+                  <textarea class="form-textarea" name="special_instructions_travel" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
+                </div>
               </div>
             </div>
+
+
             
             <button type="button" class="add-more-btn" id="addTravelBtn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1515,10 +1522,7 @@
               <span>Add Another Traveler</span>
             </button>
             
-            <div class="form-group">
-              <label class="form-label">Special Instructions</label>
-              <textarea class="form-textarea" name="special_instructions_travel" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
-            </div>
+           
 
             <div class="form-group">
               <label class="form-label">Attach Invoices</label>

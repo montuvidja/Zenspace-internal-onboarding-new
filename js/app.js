@@ -1,7 +1,7 @@
 /* ============================================
-   ZenSpace Operations - Main JavaScript V2
+   ZenSpace Operations - Main JavaScript V3
    With Supabase Integration for Section Saving
-   Updated for new form structure
+   Updated: Trucking invoices moved to section level
    ============================================ */
 
 // ============================================
@@ -93,6 +93,18 @@ function getInputValue(name, container = document) {
   return input ? input.value : null;
 }
 
+// Helper: Find container for input (with :has() fallback)
+function findContainerForInput(section, inputName) {
+  let container = section.querySelector(`.form-group:has(input[name="${inputName}"])`);
+  if (!container) {
+    const input = section.querySelector(`input[name="${inputName}"]`);
+    if (input) {
+      container = input.closest('.form-group');
+    }
+  }
+  return container;
+}
+
 // ============================================
 // Section Data Collection Functions
 // ============================================
@@ -169,13 +181,14 @@ function getPrintingQuotesData() {
   return quotes;
 }
 
-// Section 4: Trucking (multiple entries)
+// Section 4: Trucking (multiple entries) - NO invoice fields (moved to meta)
 function getTruckingData() {
   const entries = [];
   const truckingEntries = document.querySelectorAll('.trucking-entry');
   
   truckingEntries.forEach((entry, idx) => {
     const index = parseInt(entry.dataset.index) || (idx + 1);
+    
     entries.push({
       event_id: currentEventId,
       entry_index: index,
@@ -200,6 +213,24 @@ function getTruckingData() {
   });
   
   return entries;
+}
+
+// Section 4: Trucking Meta (section-level) - WITH FILE URLs
+function getTruckingMetaData() {
+  const section = document.querySelector('[data-section="trucking"]');
+  
+  // Get uploaded file data
+  const truckingInvoicesData = typeof getUploadedFileData === 'function' 
+    ? getUploadedFileData('trucking_invoices') 
+    : { urls: [], folderUrl: '' };
+  
+  return {
+    event_id: currentEventId,
+    special_instructions: getInputValue('special_instructions_trucking', section),
+    // File URLs
+    trucking_invoices_urls: truckingInvoicesData.urls && truckingInvoicesData.urls.length > 0 ? truckingInvoicesData.urls : null,
+    trucking_invoices_folder_url: truckingInvoicesData.folderUrl || null
+  };
 }
 
 // Section 5: Installation & Dismantle
@@ -255,9 +286,19 @@ function getInstallationDatesData() {
   return dates;
 }
 
-// Section 6: Post-Event
+// Section 6: Post-Event - WITH FILE URLs
 function getPosteventData() {
   const section = document.querySelector('[data-section="postevent"]');
+  
+  // Get uploaded file data
+  const damageData = typeof getUploadedFileData === 'function' 
+    ? getUploadedFileData('damage_images') 
+    : { urls: [], folderUrl: '' };
+  
+  const eventImagesData = typeof getUploadedFileData === 'function' 
+    ? getUploadedFileData('event_images') 
+    : { urls: [], folderUrl: '' };
+  
   return {
     event_id: currentEventId,
     warehouse_receiving: getCheckedValues('warehouse_receiving', section),
@@ -268,7 +309,12 @@ function getPosteventData() {
     return_address_other: getInputValue('return_address_other_1', section),
     items_damage: getRadioValue('items_damage', section),
     debrief_note: getInputValue('debrief_note', section),
-    special_instructions: getInputValue('special_instructions_postevent', section)
+    special_instructions: getInputValue('special_instructions_postevent', section),
+    // File URLs
+    damage_images_urls: damageData.urls && damageData.urls.length > 0 ? damageData.urls : null,
+    damage_images_folder_url: damageData.folderUrl || null,
+    event_images_urls: eventImagesData.urls && eventImagesData.urls.length > 0 ? eventImagesData.urls : null,
+    event_images_folder_url: eventImagesData.folderUrl || null
   };
 }
 
@@ -319,28 +365,47 @@ function getTravelData() {
       hotel_location: getInputValue(`hotel_location_${index}`, entry),
       check_in: toISODateTime(getInputValue(`check_in_${index}`, entry)),
       check_out: toISODateTime(getInputValue(`check_out_${index}`, entry)),
-      hotel_quote: getInputValue(`hotel_quote_${index}`, entry)
+      hotel_quote: getInputValue(`hotel_quote_${index}`, entry),
+      // Special instructions per traveler
+      special_instructions: getInputValue(`special_instructions_travel_${index}`, entry)
     });
   });
   
   return entries;
 }
 
-// Section 7: Travel Meta (section-level)
+// Section 7: Travel Meta (section-level) - WITH FILE URLs (no special_instructions - moved to per entry)
 function getTravelMetaData() {
   const section = document.querySelector('[data-section="travel"]');
+  
+  // Get uploaded file data
+  const travelInvoicesData = typeof getUploadedFileData === 'function' 
+    ? getUploadedFileData('travel_invoices') 
+    : { urls: [], folderUrl: '' };
+  
   return {
     event_id: currentEventId,
-    special_instructions: getInputValue('special_instructions_travel', section)
+    // File URLs only (special_instructions moved to per-traveler entries)
+    travel_invoices_urls: travelInvoicesData.urls && travelInvoicesData.urls.length > 0 ? travelInvoicesData.urls : null,
+    travel_invoices_folder_url: travelInvoicesData.folderUrl || null
   };
 }
 
-// Section 8: COI
+// Section 8: COI - WITH FILE URL
 function getCOIData() {
   const section = document.querySelector('[data-section="coi"]');
+  
+  // Get uploaded file data
+  const coiData = typeof getUploadedFileData === 'function' 
+    ? getUploadedFileData('coi_documents') 
+    : { url: '', folderUrl: '' };
+  
   return {
     event_id: currentEventId,
-    coi_required: getRadioValue('coi_required', section)
+    coi_required: getRadioValue('coi_required', section),
+    // File URLs
+    coi_file_url: coiData.url || null,
+    coi_folder_url: coiData.folderUrl || null
   };
 }
 
@@ -470,17 +535,27 @@ async function saveTrucking() {
     return false;
   }
   
+  // Save trucking entries
   const entries = getTruckingData();
   const result = await saveMultipleEntries('internal_trucking', entries, currentEventId);
   
-  if (result.success) {
+  if (!result.success) {
+    showToast(`Error saving trucking: ${result.error}`, 'error');
+    return false;
+  }
+  
+  // Save trucking meta (including invoices)
+  const metaData = getTruckingMetaData();
+  const metaResult = await upsertSectionData('internal_trucking_meta', metaData);
+  
+  if (metaResult.success) {
     updateSaveStatus('trucking', true);
     showToast('Trucking & Logistics saved successfully!', 'success');
   } else {
-    showToast(`Error saving: ${result.error}`, 'error');
+    showToast(`Error saving trucking meta: ${metaResult.error}`, 'error');
   }
   
-  return result.success;
+  return metaResult.success;
 }
 
 async function saveInstallation() {
@@ -670,6 +745,11 @@ async function loadAllSectionData(eventId) {
   
   currentEventId = eventId;
   
+  // Clear uploaded file data before loading new event
+  if (typeof clearUploadedFileData === 'function') {
+    clearUploadedFileData();
+  }
+  
   try {
     // Load all sections in parallel
     const [
@@ -678,6 +758,7 @@ async function loadAllSectionData(eventId) {
       printing,
       printingQuotes,
       trucking,
+      truckingMeta,
       installation,
       installationDates,
       postevent,
@@ -690,6 +771,7 @@ async function loadAllSectionData(eventId) {
       supabase.from('internal_printing').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_printing_quotes').select('*').eq('event_id', eventId).order('quote_index'),
       supabase.from('internal_trucking').select('*').eq('event_id', eventId).order('entry_index'),
+      supabase.from('internal_trucking_meta').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_installation').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_installation_dates').select('*').eq('event_id', eventId).order('date_index'),
       supabase.from('internal_postevent').select('*').eq('event_id', eventId).single(),
@@ -704,6 +786,7 @@ async function loadAllSectionData(eventId) {
     if (printing.data) populatePrinting(printing.data);
     if (printingQuotes.data?.length) populatePrintingQuotes(printingQuotes.data);
     if (trucking.data?.length) populateTrucking(trucking.data);
+    if (truckingMeta.data) populateTruckingMeta(truckingMeta.data);
     if (installation.data) populateInstallation(installation.data);
     if (installationDates.data?.length) populateInstallationDates(installationDates.data);
     if (postevent.data) populatePostevent(postevent.data);
@@ -731,7 +814,6 @@ function setRadioValue(name, value, container = document) {
     radio.closest('.radio-item')?.classList.add('selected');
     radio.closest('.address-option')?.classList.add('selected');
     
-    // Handle "other" / "third_party" input enabling (enable all other-inputs)
     if (value === 'other' || value === 'third_party') {
       const wrapper = radio.closest('.radio-group, .address-options');
       const otherInputs = wrapper?.querySelectorAll('.other-input');
@@ -741,8 +823,6 @@ function setRadioValue(name, value, container = document) {
           if (i === 0) oi.focus();
         });
       }
-
-      // Address other textarea handling
       const addressOther = wrapper?.querySelector('.address-other-input');
       if (addressOther) addressOther.style.display = 'block';
     }
@@ -838,7 +918,6 @@ function populatePrintingQuotes(quotes) {
   const container = document.getElementById('printingQuotes');
   if (!container) return;
   
-  // Clear existing entries beyond the first
   const existingEntries = container.querySelectorAll('.quote-entry');
   existingEntries.forEach((entry, idx) => {
     if (idx > 0) entry.remove();
@@ -862,11 +941,11 @@ function populatePrintingQuotes(quotes) {
   });
 }
 
+// Populate Trucking entries (NO invoice fields)
 function populateTrucking(entries) {
   const container = document.getElementById('truckingEntries');
   if (!container) return;
   
-  // Clear existing entries beyond the first
   const existingEntries = container.querySelectorAll('.trucking-entry');
   existingEntries.forEach((entry, idx) => {
     if (idx > 0) entry.remove();
@@ -911,6 +990,35 @@ function populateTrucking(entries) {
   updateSaveStatus('trucking', true);
 }
 
+// Populate Trucking Meta - WITH FILE DISPLAY
+function populateTruckingMeta(data) {
+  const section = document.querySelector('[data-section="trucking"]');
+  if (!section) return;
+  
+  setInputValue('special_instructions_trucking', data.special_instructions, section);
+  
+  // Display uploaded trucking invoices
+  if (data.trucking_invoices_urls || data.trucking_invoices_folder_url) {
+    const invoicesInput = section.querySelector('input[name="trucking_invoices"]');
+    const invoicesContainer = invoicesInput?.closest('.form-group');
+    
+    if (invoicesContainer) {
+      // Store in uploadedFileData for saving
+      if (typeof setUploadedFileData === 'function') {
+        setUploadedFileData('trucking_invoices', {
+          urls: data.trucking_invoices_urls || [],
+          folderUrl: data.trucking_invoices_folder_url || ''
+        });
+      }
+      
+      // Display the files
+      if (typeof displayUploadedFiles === 'function') {
+        displayUploadedFiles(invoicesContainer, data.trucking_invoices_urls, data.trucking_invoices_folder_url, 'trucking_invoices');
+      }
+    }
+  }
+}
+
 function populateInstallation(data) {
   const section = document.querySelector('[data-section="installation"]');
   if (!section) return;
@@ -933,10 +1041,8 @@ function populateInstallationDates(datesData) {
   const installDates = datesData.filter(d => d.date_type === 'install');
   const dismantleDates = datesData.filter(d => d.date_type === 'dismantle');
   
-  // Populate installation dates
   const installContainer = document.getElementById('installationDates');
   if (installContainer && installDates.length > 0) {
-    // Clear existing entries beyond the first
     const existingEntries = installContainer.querySelectorAll('.installation-date-entry');
     existingEntries.forEach((entry, idx) => {
       if (idx > 0) entry.remove();
@@ -944,7 +1050,6 @@ function populateInstallationDates(datesData) {
     
     installDates.forEach((data, idx) => {
       if (idx > 0) {
-        // Create new entry
         const entry = document.createElement('div');
         entry.className = 'installation-date-entry';
         entry.dataset.index = data.date_index;
@@ -990,10 +1095,8 @@ function populateInstallationDates(datesData) {
     updateInstallationRemoveButtons();
   }
   
-  // Populate dismantle dates
   const dismantleContainer = document.getElementById('dismantleDates');
   if (dismantleContainer && dismantleDates.length > 0) {
-    // Clear existing entries beyond the first
     const existingEntries = dismantleContainer.querySelectorAll('.dismantle-date-entry');
     existingEntries.forEach((entry, idx) => {
       if (idx > 0) entry.remove();
@@ -1001,7 +1104,6 @@ function populateInstallationDates(datesData) {
     
     dismantleDates.forEach((data, idx) => {
       if (idx > 0) {
-        // Create new entry
         const entry = document.createElement('div');
         entry.className = 'dismantle-date-entry';
         entry.dataset.index = data.date_index;
@@ -1048,6 +1150,7 @@ function populateInstallationDates(datesData) {
   }
 }
 
+// Populate Post-Event - WITH FILE DISPLAY
 function populatePostevent(data) {
   const section = document.querySelector('[data-section="postevent"]');
   if (!section) return;
@@ -1067,10 +1170,45 @@ function populatePostevent(data) {
     if (otherDiv) otherDiv.style.display = 'block';
   }
   
-  // Show damage images container if items_damage is yes
   if (data.items_damage === 'yes') {
     const damageImagesContainer = document.getElementById('damageImagesContainer');
     if (damageImagesContainer) damageImagesContainer.style.display = 'block';
+  }
+  
+  // Display uploaded damage images
+  if (data.damage_images_urls || data.damage_images_folder_url) {
+    const damageInput = section.querySelector('input[name="damage_images"]');
+    const damageContainer = damageInput?.closest('.form-group');
+    
+    if (damageContainer) {
+      if (typeof setUploadedFileData === 'function') {
+        setUploadedFileData('damage_images', {
+          urls: data.damage_images_urls || [],
+          folderUrl: data.damage_images_folder_url || ''
+        });
+      }
+      if (typeof displayUploadedFiles === 'function') {
+        displayUploadedFiles(damageContainer, data.damage_images_urls, data.damage_images_folder_url, 'damage_images');
+      }
+    }
+  }
+  
+  // Display uploaded event images
+  if (data.event_images_urls || data.event_images_folder_url) {
+    const eventInput = section.querySelector('input[name="event_images"]');
+    const eventImagesContainer = eventInput?.closest('.form-group');
+    
+    if (eventImagesContainer) {
+      if (typeof setUploadedFileData === 'function') {
+        setUploadedFileData('event_images', {
+          urls: data.event_images_urls || [],
+          folderUrl: data.event_images_folder_url || ''
+        });
+      }
+      if (typeof displayUploadedFiles === 'function') {
+        displayUploadedFiles(eventImagesContainer, data.event_images_urls, data.event_images_folder_url, 'event_images');
+      }
+    }
   }
   
   updateSaveStatus('postevent', true);
@@ -1080,7 +1218,6 @@ function populateTravel(entries) {
   const container = document.getElementById('travelEntries');
   if (!container) return;
   
-  // Clear existing entries beyond the first
   const existingEntries = container.querySelectorAll('.travel-entry');
   existingEntries.forEach((entry, idx) => {
     if (idx > 0) entry.remove();
@@ -1105,7 +1242,6 @@ function populateTravel(entries) {
       setInputValue(`traveler_to_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_to_datetime), entry);
       setRadioValue(`travel_type_${data.traveler_index}`, data.travel_type, entry);
       
-      // Show the appropriate travel type subsection
       if (data.travel_type) {
         const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
         subsections.forEach(sub => {
@@ -1113,14 +1249,11 @@ function populateTravel(entries) {
         });
       }
       
-      // Flight details
       setInputValue(`flight_name_${data.traveler_index}`, data.flight_name, entry);
       setInputValue(`flight_number_${data.traveler_index}`, data.flight_number, entry);
       setInputValue(`flight_departure_${data.traveler_index}`, fromISODateTime(data.flight_departure), entry);
       setInputValue(`flight_arrival_${data.traveler_index}`, fromISODateTime(data.flight_arrival), entry);
       setInputValue(`flight_quote_${data.traveler_index}`, data.flight_quote, entry);
-      
-      // Car details
       setInputValue(`car_company_${data.traveler_index}`, data.car_company, entry);
       setInputValue(`car_number_${data.traveler_index}`, data.car_number, entry);
       setInputValue(`car_pickup_${data.traveler_index}`, fromISODateTime(data.car_pickup), entry);
@@ -1128,8 +1261,6 @@ function populateTravel(entries) {
       setInputValue(`car_pickup_address_${data.traveler_index}`, data.car_pickup_address, entry);
       setInputValue(`car_dropoff_address_${data.traveler_index}`, data.car_dropoff_address, entry);
       setInputValue(`car_quote_${data.traveler_index}`, data.car_quote, entry);
-      
-      // Truck details
       setInputValue(`truck_company_${data.traveler_index}`, data.truck_company, entry);
       setInputValue(`truck_number_${data.traveler_index}`, data.truck_number, entry);
       setInputValue(`truck_pickup_${data.traveler_index}`, fromISODateTime(data.truck_pickup), entry);
@@ -1137,68 +1268,91 @@ function populateTravel(entries) {
       setInputValue(`truck_pickup_address_${data.traveler_index}`, data.truck_pickup_address, entry);
       setInputValue(`truck_dropoff_address_${data.traveler_index}`, data.truck_dropoff_address, entry);
       setInputValue(`truck_quote_${data.traveler_index}`, data.truck_quote, entry);
-      
-      // Personal
       setInputValue(`personal_quote_${data.traveler_index}`, data.personal_quote, entry);
-      
-      // Hotel details
       setInputValue(`hotel_name_${data.traveler_index}`, data.hotel_name, entry);
       setInputValue(`hotel_location_${data.traveler_index}`, data.hotel_location, entry);
       setInputValue(`check_in_${data.traveler_index}`, fromISODateTime(data.check_in), entry);
       setInputValue(`check_out_${data.traveler_index}`, fromISODateTime(data.check_out), entry);
       setInputValue(`hotel_quote_${data.traveler_index}`, data.hotel_quote, entry);
+      // Special instructions per traveler
+      setInputValue(`special_instructions_travel_${data.traveler_index}`, data.special_instructions, entry);
     }
   });
   
-  // Reinitialize travel type handlers
   initializeTravelType();
-  
   updateSaveStatus('travel', true);
 }
 
+// Populate Travel Meta - WITH FILE DISPLAY (no special_instructions - moved to per entry)
 function populateTravelMeta(data) {
   const section = document.querySelector('[data-section="travel"]');
   if (!section) return;
   
-  setInputValue('special_instructions_travel', data.special_instructions, section);
+  if (data.travel_invoices_urls || data.travel_invoices_folder_url) {
+    const invoicesInput = section.querySelector('input[name="travel_invoices"]');
+    const invoicesContainer = invoicesInput?.closest('.form-group');
+    
+    if (invoicesContainer) {
+      if (typeof setUploadedFileData === 'function') {
+        setUploadedFileData('travel_invoices', {
+          urls: data.travel_invoices_urls || [],
+          folderUrl: data.travel_invoices_folder_url || ''
+        });
+      }
+      if (typeof displayUploadedFiles === 'function') {
+        displayUploadedFiles(invoicesContainer, data.travel_invoices_urls, data.travel_invoices_folder_url, 'travel_invoices');
+      }
+    }
+  }
 }
 
+// Populate COI - WITH FILE DISPLAY
 function populateCOI(data) {
   const section = document.querySelector('[data-section="coi"]');
   if (!section) return;
   
   setRadioValue('coi_required', data.coi_required, section);
   
-  // Show/hide file wrapper
   const wrapper = document.querySelector('.coi-file-wrapper');
   if (wrapper) {
     wrapper.style.display = data.coi_required === 'yes' ? 'block' : 'none';
+  }
+  
+  if (data.coi_file_url || data.coi_folder_url) {
+    const coiInput = section.querySelector('input[name="coi_file"]');
+    const coiContainer = coiInput?.closest('.form-group') || wrapper;
+    
+    if (coiContainer) {
+      if (typeof setUploadedFileData === 'function') {
+        setUploadedFileData('coi_documents', {
+          url: data.coi_file_url || '',
+          folderUrl: data.coi_folder_url || ''
+        });
+      }
+      if (typeof displaySingleUploadedFile === 'function') {
+        displaySingleUploadedFile(coiContainer, data.coi_file_url, data.coi_folder_url);
+      }
+    }
   }
   
   updateSaveStatus('coi', true);
 }
 
 // ============================================
-// Section Accordion
+// UI Initialization Functions
 // ============================================
 
 function initializeAccordions() {
   document.querySelectorAll('.section-header').forEach(header => {
     header.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;
-      
       const section = header.closest('.section-card');
       const isExpanded = section.classList.contains('expanded');
-      
       section.classList.toggle('expanded');
       section.classList.toggle('active', !isExpanded);
     });
   });
 }
-
-// ============================================
-// Checkbox Handling
-// ============================================
 
 function initializeCheckboxes() {
   document.querySelectorAll('.checkbox-item').forEach(item => {
@@ -1207,7 +1361,6 @@ function initializeCheckboxes() {
     
     item.addEventListener('click', (e) => {
       e.preventDefault();
-      
       const checkbox = item.querySelector('input[type="checkbox"]');
       if (checkbox) {
         checkbox.checked = !checkbox.checked;
@@ -1215,13 +1368,12 @@ function initializeCheckboxes() {
         
         const wrapper = item.closest('.other-input-wrapper');
         if (wrapper) {
-            const otherInputs = wrapper.querySelectorAll('.other-input');
-            otherInputs.forEach(oi => {
-              oi.disabled = !checkbox.checked;
-              if (checkbox.checked) oi.focus();
-            });
+          const otherInputs = wrapper.querySelectorAll('.other-input');
+          otherInputs.forEach(oi => {
+            oi.disabled = !checkbox.checked;
+            if (checkbox.checked) oi.focus();
+          });
         }
-        
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
@@ -1233,7 +1385,6 @@ function initializeCheckboxes() {
     
     item.addEventListener('click', (e) => {
       e.preventDefault();
-      
       const checkbox = item.querySelector('input[type="checkbox"]');
       if (checkbox) {
         checkbox.checked = !checkbox.checked;
@@ -1244,10 +1395,6 @@ function initializeCheckboxes() {
   });
 }
 
-// ============================================
-// Radio Button Handling
-// ============================================
-
 function initializeRadios() {
   document.querySelectorAll('.radio-item').forEach(item => {
     if (item.dataset.initialized) return;
@@ -1255,11 +1402,9 @@ function initializeRadios() {
     
     item.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT') return;
-      
       const radio = item.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
-        
         const group = item.closest('.radio-group');
         if (group) {
           group.querySelectorAll('.radio-item').forEach(r => r.classList.remove('selected'));
@@ -1277,46 +1422,35 @@ function initializeRadios() {
             });
           }
         }
-        
         radio.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
   });
   
-  // Address option radios
   document.querySelectorAll('.address-option').forEach(option => {
     if (option.dataset.initialized) return;
     option.dataset.initialized = 'true';
     
     option.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
       const radio = option.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
-        
         const container = option.closest('.address-options');
         if (container) {
           container.querySelectorAll('.address-option').forEach(opt => opt.classList.remove('selected'));
           option.classList.add('selected');
-          
           const otherInput = container.querySelector('.address-other-input');
           if (otherInput) {
             otherInput.style.display = radio.value === 'other' ? 'block' : 'none';
           }
         }
-        
         radio.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
   });
 }
 
-// ============================================
-// Tabs
-// ============================================
-
-// COI handling: show/hide file input when 'Yes' selected
 function initializeCOI() {
   const wrapper = document.querySelector('.coi-file-wrapper');
   const radios = document.querySelectorAll('input[name="coi_required"]');
@@ -1328,7 +1462,6 @@ function initializeCOI() {
       if (radio.checked && radio.value === 'yes') {
         wrapper.style.display = 'block';
       } else if (radio.checked && radio.value === 'no') {
-        // hide and clear file input
         wrapper.style.display = 'none';
         const fileInput = wrapper.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = '';
@@ -1336,14 +1469,12 @@ function initializeCOI() {
     });
   });
 
-  // initial state
   const selected = document.querySelector('input[name="coi_required"]:checked');
   if (selected && wrapper) {
     wrapper.style.display = selected.value === 'yes' ? 'block' : 'none';
   }
 }
 
-// Travel Type handling: show/hide travel subsections based on selection
 function initializeTravelType() {
   document.querySelectorAll('.travel-entry').forEach(entry => {
     const index = entry.dataset.index || '1';
@@ -1353,14 +1484,10 @@ function initializeTravelType() {
     radios.forEach(radio => {
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
-        
-        // Hide all travel subsections in this entry
         const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
         subsections.forEach(subsection => {
           subsection.style.display = 'none';
         });
-        
-        // Show the selected subsection
         const selectedType = radio.value;
         const targetSubsection = entry.querySelector(`.travel-subsection[data-travel-type="${selectedType}"]`);
         if (targetSubsection) {
@@ -1369,7 +1496,6 @@ function initializeTravelType() {
       });
     });
 
-    // Set initial state - hide all subsections if no selection
     const selected = entry.querySelector(`input[name="travel_type_${index}"]:checked`);
     if (!selected) {
       const subsections = entry.querySelectorAll('.travel-subsection[data-travel-type]');
@@ -1377,7 +1503,6 @@ function initializeTravelType() {
         subsection.style.display = 'none';
       });
     } else {
-      // Trigger change event to show the selected subsection
       selected.dispatchEvent(new Event('change'));
     }
   });
@@ -1388,10 +1513,8 @@ function initializeTabs() {
     btn.addEventListener('click', () => {
       const container = btn.closest('.section-content');
       const tabId = btn.dataset.tab;
-      
       container.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
       container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
       btn.classList.add('active');
       container.querySelector(`[data-content="${tabId}"]`)?.classList.add('active');
     });
@@ -1420,7 +1543,6 @@ function createQuoteEntry(index) {
         </svg>
       </button>
     </div>
-    
     <div class="form-group">
       <label class="form-label">Get Quote From</label>
       <div class="radio-group">
@@ -1440,7 +1562,6 @@ function createQuoteEntry(index) {
         </div>
       </div>
     </div>
-    
     <div class="form-group">
       <label class="form-label">Quote Price</label>
       <input type="text" class="form-input" name="quote_price_${index}" placeholder="$0.00">
@@ -1450,6 +1571,7 @@ function createQuoteEntry(index) {
   return entry;
 }
 
+// Trucking Entry - NO "Attach Invoice" field (moved to section level)
 function createTruckingEntry(index) {
   const entry = document.createElement('div');
   entry.className = 'trucking-entry';
@@ -1474,39 +1596,23 @@ function createTruckingEntry(index) {
       <div class="checkbox-group">
         <label class="checkbox-item">
           <input type="checkbox" name="truck_source_${index}" value="zenspace">
-          <span class="checkbox-custom">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
+          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           <span class="checkbox-label">Enterprise</span>
         </label>
         <label class="checkbox-item">
           <input type="checkbox" name="truck_source_${index}" value="alex_logistics">
-          <span class="checkbox-custom">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
+          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           <span class="checkbox-label">Alex Logistics</span>
         </label>
         <label class="checkbox-item">
           <input type="checkbox" name="truck_source_${index}" value="edward">
-          <span class="checkbox-custom">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </span>
+          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           <span class="checkbox-label">Edward</span>
         </label>
         <div class="other-input-wrapper">
           <label class="checkbox-item">
             <input type="checkbox" name="truck_source_${index}" value="other">
-            <span class="checkbox-custom">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </span>
+            <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
             <span class="checkbox-label">Other</span>
           </label>
           <input type="text" class="other-input" name="truck_source_${index}_other" placeholder="Enter name..." disabled>
@@ -1518,47 +1624,19 @@ function createTruckingEntry(index) {
     <div class="form-group">
       <label class="form-label">Truck Type</label>
       <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="truck_type_${index}" value="FTL">
-          <span class="radio-custom"></span>
-          <span class="radio-label">FTL</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="truck_type_${index}" value="PTL">
-          <span class="radio-custom"></span>
-          <span class="radio-label">PTL</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="truck_type_${index}" value="LTL">
-          <span class="radio-custom"></span>
-          <span class="radio-label">LTL</span>
-        </label>
+        <label class="radio-item"><input type="radio" name="truck_type_${index}" value="FTL"><span class="radio-custom"></span><span class="radio-label">FTL</span></label>
+        <label class="radio-item"><input type="radio" name="truck_type_${index}" value="PTL"><span class="radio-custom"></span><span class="radio-label">PTL</span></label>
+        <label class="radio-item"><input type="radio" name="truck_type_${index}" value="LTL"><span class="radio-custom"></span><span class="radio-label">LTL</span></label>
       </div>
     </div>
 
     <div class="form-group">
       <label class="form-label">Sub Truck Type</label>
       <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="sub_truck_type_${index}" value="small_pickup">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Small Pickup</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="sub_truck_type_${index}" value="full_size_pickup">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Full Size Pickup</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="sub_truck_type_${index}" value="box_truck">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Box Truck</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="sub_truck_type_${index}" value="stakebed_flatbed">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Stakebed & Flatbed Truck</span>
-        </label>
+        <label class="radio-item"><input type="radio" name="sub_truck_type_${index}" value="small_pickup"><span class="radio-custom"></span><span class="radio-label">Small Pickup</span></label>
+        <label class="radio-item"><input type="radio" name="sub_truck_type_${index}" value="full_size_pickup"><span class="radio-custom"></span><span class="radio-label">Full Size Pickup</span></label>
+        <label class="radio-item"><input type="radio" name="sub_truck_type_${index}" value="box_truck"><span class="radio-custom"></span><span class="radio-label">Box Truck</span></label>
+        <label class="radio-item"><input type="radio" name="sub_truck_type_${index}" value="stakebed_flatbed"><span class="radio-custom"></span><span class="radio-label">Stakebed & Flatbed Truck</span></label>
       </div>
     </div>
 
@@ -1622,22 +1700,21 @@ function createTruckingEntry(index) {
       <input type="text" class="form-input" name="delivery_address_${index}" placeholder="Enter delivery address">
     </div>
 
-    <div class="form-group" style="flex:0 0 220px; min-width:160px;">
+    <div class="form-group">
       <label class="form-label">Driver Details</label>
-                  
-      <div  style="flex:1; display:flex; flex-direction:column; gap:6px;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
         <div style="display:flex; gap:8px;">
-        <div style="flex:1;"><label class="form-label">Name</label></div>
-        <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
-        <div style="flex:1;"><label class="form-label">Email</label></div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input type="text" class="form-input" name="driver_name_${index}" placeholder="Driver Name" style="flex:1; min-width:0;">
-        <input type="text" class="form-input" name="driver_mobile_${index}" placeholder="Driver Mobile" style="flex:1; min-width:0;">
-        <input type="email" class="form-input" name="driver_email_${index}" placeholder="Driver Email" style="flex:1; min-width:0;">
+          <div style="flex:1;"><label class="form-label">Name</label></div>
+          <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
+          <div style="flex:1;"><label class="form-label">Email</label></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" class="form-input" name="driver_name_${index}" placeholder="Driver Name" style="flex:1; min-width:0;">
+          <input type="text" class="form-input" name="driver_mobile_${index}" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+          <input type="email" class="form-input" name="driver_email_${index}" placeholder="Driver Email" style="flex:1; min-width:0;">
+        </div>
       </div>
     </div>
-              
     
     <div class="form-group">
       <label class="form-label">Special Delivery Instructions</label>
@@ -1647,27 +1724,10 @@ function createTruckingEntry(index) {
     <div class="form-group">
       <label class="form-label">Truck Payment Status</label>
       <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="truck_payment_status_${index}" value="paid">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Paid</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="truck_payment_status_${index}" value="partially_paid">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Partially Paid</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="truck_payment_status_${index}" value="unpaid">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Unpaid</span>
-        </label>
+        <label class="radio-item"><input type="radio" name="truck_payment_status_${index}" value="paid"><span class="radio-custom"></span><span class="radio-label">Paid</span></label>
+        <label class="radio-item"><input type="radio" name="truck_payment_status_${index}" value="partially_paid"><span class="radio-custom"></span><span class="radio-label">Partially Paid</span></label>
+        <label class="radio-item"><input type="radio" name="truck_payment_status_${index}" value="unpaid"><span class="radio-custom"></span><span class="radio-label">Unpaid</span></label>
       </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Attach Invoice</label>
-      <input type="file" class="form-input" name="attach_invoice_${index}" accept="image/*">
     </div>
   `;
   
@@ -1696,27 +1756,11 @@ function createTravelEntry(index) {
     <div class="form-group">
       <label class="form-label">Traveler</label>
       <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="traveler_name_${index}" value="eliseo">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Eliseo</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="traveler_name_${index}" value="clinton">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Clinton</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="traveler_name_${index}" value="edward">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Edward</span>
-        </label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="eliseo"><span class="radio-custom"></span><span class="radio-label">Eliseo</span></label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="clinton"><span class="radio-custom"></span><span class="radio-label">Clinton</span></label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="edward"><span class="radio-custom"></span><span class="radio-label">Edward</span></label>
         <div class="other-input-wrapper">
-          <label class="radio-item">
-            <input type="radio" name="traveler_name_${index}" value="other">
-            <span class="radio-custom"></span>
-            <span class="radio-label">Other</span>
-          </label>
+          <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="other"><span class="radio-custom"></span><span class="radio-label">Other</span></label>
           <input type="text" class="other-input" name="traveler_name_other_${index}" placeholder="Enter traveler name..." disabled>
           <input type="email" class="other-input" name="traveler_name_other_${index}_email" placeholder="Enter email..." disabled>
         </div>
@@ -1724,232 +1768,93 @@ function createTravelEntry(index) {
     </div>
     
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Travel From</label>
-        <textarea class="form-textarea" name="travel_from_${index}" placeholder="Enter departure address..." rows="2"></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Travel To</label>
-        <textarea class="form-textarea" name="travel_to_${index}" placeholder="Enter destination address..." rows="2"></textarea>
-      </div>
+      <div class="form-group"><label class="form-label">Travel From</label><textarea class="form-textarea" name="travel_from_${index}" placeholder="Enter departure address..." rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Travel To</label><textarea class="form-textarea" name="travel_to_${index}" placeholder="Enter destination address..." rows="2"></textarea></div>
     </div>
     
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Travel Date From</label>
-        <input type="datetime-local" class="form-input" name="traveler_from_datetime_${index}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Travel Date To</label>
-        <input type="datetime-local" class="form-input" name="traveler_to_datetime_${index}">
-      </div>
+      <div class="form-group"><label class="form-label">Travel Date From</label><input type="datetime-local" class="form-input" name="traveler_from_datetime_${index}"></div>
+      <div class="form-group"><label class="form-label">Travel Date To</label><input type="datetime-local" class="form-input" name="traveler_to_datetime_${index}"></div>
     </div>
     
     <div class="form-group">
       <label class="form-label">Travel Type</label>
       <div class="radio-group">
-        <label class="radio-item">
-          <input type="radio" name="travel_type_${index}" value="airline">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Airline</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="travel_type_${index}" value="rental_car">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Rental Car</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="travel_type_${index}" value="rental_truck">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Rental Truck</span>
-        </label>
-        <label class="radio-item">
-          <input type="radio" name="travel_type_${index}" value="personal">
-          <span class="radio-custom"></span>
-          <span class="radio-label">Personal</span>
-        </label>
+        <label class="radio-item"><input type="radio" name="travel_type_${index}" value="airline"><span class="radio-custom"></span><span class="radio-label">Airline</span></label>
+        <label class="radio-item"><input type="radio" name="travel_type_${index}" value="rental_car"><span class="radio-custom"></span><span class="radio-label">Rental Car</span></label>
+        <label class="radio-item"><input type="radio" name="travel_type_${index}" value="rental_truck"><span class="radio-custom"></span><span class="radio-label">Rental Truck</span></label>
+        <label class="radio-item"><input type="radio" name="travel_type_${index}" value="personal"><span class="radio-custom"></span><span class="radio-label">Personal</span></label>
       </div>
     </div>
     
     <div class="travel-subsection" data-travel-type="airline" style="display: none;">
-      <div class="travel-subsection-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
-        </svg>
-        <span>Flight Details</span>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg><span>Flight Details</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Flight Name</label><input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name"></div>
+        <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Flight Name</label>
-          <input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Flight Number</label>
-          <input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number">
-        </div>
-      </div> 
-      <div class="form-row"> 
-        <div class="form-group">
-          <label class="form-label">Departure</label>
-          <input type="datetime-local" class="form-input" name="flight_departure_${index}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Arrival</label>
-          <input type="datetime-local" class="form-input" name="flight_arrival_${index}">
-        </div>
+        <div class="form-group"><label class="form-label">Departure</label><input type="datetime-local" class="form-input" name="flight_departure_${index}"></div>
+        <div class="form-group"><label class="form-label">Arrival</label><input type="datetime-local" class="form-input" name="flight_arrival_${index}"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="flight_quote_${index}">
-        </div>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="flight_quote_${index}"></div></div>
     </div>
     
     <div class="travel-subsection" data-travel-type="rental_car" style="display: none;">
-      <div class="travel-subsection-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
-          <circle cx="6.5" cy="16.5" r="2.5"></circle>
-          <circle cx="16.5" cy="16.5" r="2.5"></circle>
-        </svg>
-        <span>Rental Car Details</span>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Rental Car Details</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Car Company</label><input type="text" class="form-input" name="car_company_${index}" placeholder="Car Company"></div>
+        <div class="form-group"><label class="form-label">Car Number</label><input type="text" class="form-input" name="car_number_${index}" placeholder="Car Number"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Car Company</label>
-          <input type="text" class="form-input" name="car_company_${index}" placeholder="Car Company">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Car Number</label>
-          <input type="text" class="form-input" name="car_number_${index}" placeholder="Car Number">
-        </div>
+        <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="car_pickup_${index}"></div>
+        <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="car_dropoff_${index}"></div>
       </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Pickup</label>
-          <input type="datetime-local" class="form-input" name="car_pickup_${index}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Drop-off</label>
-          <input type="datetime-local" class="form-input" name="car_dropoff_${index}">
-        </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="car_pickup_address_${index}"></textarea></div>
+        <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="car_dropoff_address_${index}"></textarea></div>
       </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Pickup Address</label>
-          <textarea type="text" class="form-input" name="car_pickup_address_${index}"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Drop-off Address</label>
-          <textarea type="text" class="form-input" name="car_dropoff_address_${index}"></textarea>
-        </div>
-      </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="car_quote_${index}">
-        </div>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="car_quote_${index}"></div></div>
     </div>
     
     <div class="travel-subsection" data-travel-type="rental_truck" style="display: none;">
-      <div class="travel-subsection-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
-          <circle cx="6.5" cy="16.5" r="2.5"></circle>
-          <circle cx="16.5" cy="16.5" r="2.5"></circle>
-        </svg>
-        <span>Rental Truck</span>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Rental Truck</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Truck Company</label><input type="text" class="form-input" name="truck_company_${index}" placeholder="e.g., Enterprise"></div>
+        <div class="form-group"><label class="form-label">Truck Number</label><input type="text" class="form-input" name="truck_number_${index}" placeholder="Truck Number"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Truck Company</label>
-          <input type="text" class="form-input" name="truck_company_${index}" placeholder="e.g., Enterprise">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Truck Number</label>
-          <input type="text" class="form-input" name="truck_number_${index}" placeholder="Truck Number">
-        </div>
-      </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Pickup</label>
-          <input type="datetime-local" class="form-input" name="truck_pickup_${index}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Drop-off</label>
-          <input type="datetime-local" class="form-input" name="truck_dropoff_${index}">
-        </div>
-      </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Pickup Address</label>
-          <textarea type="text" class="form-input" name="truck_pickup_address_${index}"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Drop-off Address</label>
-          <textarea type="text" class="form-input" name="truck_dropoff_address_${index}"></textarea>
-        </div>
+        <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="truck_pickup_${index}"></div>
+        <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="truck_dropoff_${index}"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="truck_quote_${index}">
-        </div>
+        <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="truck_pickup_address_${index}"></textarea></div>
+        <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="truck_dropoff_address_${index}"></textarea></div>
       </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="truck_quote_${index}"></div></div>
     </div>
     
     <div class="travel-subsection" data-travel-type="personal" style="display: none;">
-      <div class="travel-subsection-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
-          <circle cx="6.5" cy="16.5" r="2.5"></circle>
-          <circle cx="16.5" cy="16.5" r="2.5"></circle>
-        </svg>
-        <span>Personal</span>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="personal_quote_${index}">
-        </div>
-      </div>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Personal</span></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="personal_quote_${index}"></div></div>
     </div>
     
     <div class="travel-subsection">
-      <div class="travel-subsection-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M5 21V10.85M19 21V10.85"></path>
-        </svg>
-        <span>Hotel</span>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M5 21V10.85M19 21V10.85"></path></svg><span>Hotel</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Hotel Name</label><input type="text" class="form-input" name="hotel_name_${index}" placeholder="Hotel Name"></div>
+        <div class="form-group"><label class="form-label">Hotel Location</label><textarea class="form-input" name="hotel_location_${index}" placeholder="Hotel Location"></textarea></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Hotel Name</label>
-          <input type="text" class="form-input" name="hotel_name_${index}" placeholder="Hotel Name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Hotel Location</label>
-          <textarea class="form-input" name="hotel_location_${index}" placeholder="Hotel Location"></textarea>
-        </div>              
+        <div class="form-group"><label class="form-label">Check In</label><input type="datetime-local" class="form-input" name="check_in_${index}"></div>
+        <div class="form-group"><label class="form-label">Check Out</label><input type="datetime-local" class="form-input" name="check_out_${index}"></div>
       </div>
-      <div class="form-row">  
-        <div class="form-group">
-          <label class="form-label">Check In</label>
-          <input type="datetime-local" class="form-input" name="check_in_${index}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Check Out</label>
-          <input type="datetime-local" class="form-input" name="check_out_${index}">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Quote</label>
-          <input type="text" class="form-input" name="hotel_quote_${index}">
-        </div>
-      </div>              
+      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="hotel_quote_${index}"></div></div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Special Instructions</label>
+      <textarea class="form-textarea" name="special_instructions_travel_${index}" placeholder="Enter any special instructions for this traveler..." rows="3"></textarea>
     </div>
   `;
   
@@ -1963,7 +1868,6 @@ function removeEntry(button) {
     entry.style.transform = 'translateY(-20px)';
     setTimeout(() => {
       entry.remove();
-      // Update remove button visibility after deletion
       updateInstallationRemoveButtons();
       updateDismantleRemoveButtons();
     }, 300);
@@ -1973,7 +1877,6 @@ function removeEntry(button) {
 function initializeDynamicSections() {
   const addQuoteBtn = document.getElementById('addQuoteBtn');
   const quoteContainer = document.getElementById('printingQuotes');
-  
   if (addQuoteBtn && quoteContainer) {
     addQuoteBtn.addEventListener('click', () => {
       quoteCount++;
@@ -1986,7 +1889,6 @@ function initializeDynamicSections() {
   
   const addTruckingBtn = document.getElementById('addTruckingBtn');
   const truckingContainer = document.getElementById('truckingEntries');
-  
   if (addTruckingBtn && truckingContainer) {
     addTruckingBtn.addEventListener('click', () => {
       truckingCount++;
@@ -1998,41 +1900,25 @@ function initializeDynamicSections() {
     });
   }
 
-  const addInstallationDateBtn = document.getElementById('addInstallationDateBtn');
+  const addInstallDateBtn = document.getElementById('addInstallDateBtn');
   const installationDatesContainer = document.getElementById('installationDates');
-  
-  if (addInstallationDateBtn && installationDatesContainer) {
-    addInstallationDateBtn.addEventListener('click', () => {
+  if (addInstallDateBtn && installationDatesContainer) {
+    addInstallDateBtn.addEventListener('click', () => {
       const installCount = installationDatesContainer.querySelectorAll('.installation-date-entry').length + 1;
       const entry = document.createElement('div');
       entry.className = 'installation-date-entry';
       entry.dataset.index = installCount;
       entry.innerHTML = `
         <div class="entry-header">
-          <div class="entry-number">
-            <span class="entry-badge">${installCount}</span>
-            <span class="entry-label">Installation Date #${installCount}</span>
-          </div>
+          <div class="entry-number"><span class="entry-badge">${installCount}</span><span class="entry-label">Installation Date #${installCount}</span></div>
           <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove installation date">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Date</label>
-            <input type="date" class="form-input" name="install_date_${installCount}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">From Time</label>
-            <input type="time" class="form-input" name="install_from_time_${installCount}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">To Time</label>
-            <input type="time" class="form-input" name="install_to_time_${installCount}">
-          </div>
+          <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" name="install_date_${installCount}"></div>
+          <div class="form-group"><label class="form-label">From Time</label><input type="time" class="form-input" name="install_from_time_${installCount}"></div>
+          <div class="form-group"><label class="form-label">To Time</label><input type="time" class="form-input" name="install_to_time_${installCount}"></div>
         </div>
       `;
       installationDatesContainer.appendChild(entry);
@@ -2043,7 +1929,6 @@ function initializeDynamicSections() {
 
   const addDismantleDateBtn = document.getElementById('addDismantleDateBtn');
   const dismantleDatesContainer = document.getElementById('dismantleDates');
-  
   if (addDismantleDateBtn && dismantleDatesContainer) {
     addDismantleDateBtn.addEventListener('click', () => {
       const dismantleCount = dismantleDatesContainer.querySelectorAll('.dismantle-date-entry').length + 1;
@@ -2052,30 +1937,15 @@ function initializeDynamicSections() {
       entry.dataset.index = dismantleCount;
       entry.innerHTML = `
         <div class="entry-header">
-          <div class="entry-number">
-            <span class="entry-badge">${dismantleCount}</span>
-            <span class="entry-label">Dismantle Date #${dismantleCount}</span>
-          </div>
+          <div class="entry-number"><span class="entry-badge">${dismantleCount}</span><span class="entry-label">Dismantle Date #${dismantleCount}</span></div>
           <button type="button" class="remove-entry-btn" onclick="removeEntry(this)" aria-label="Remove dismantle date">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Date</label>
-            <input type="date" class="form-input" name="dismantle_date_${dismantleCount}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">From Time</label>
-            <input type="time" class="form-input" name="dismantle_from_time_${dismantleCount}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">To Time</label>
-            <input type="time" class="form-input" name="dismantle_to_time_${dismantleCount}">
-          </div>
+          <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" name="dismantle_date_${dismantleCount}"></div>
+          <div class="form-group"><label class="form-label">From Time</label><input type="time" class="form-input" name="dismantle_from_time_${dismantleCount}"></div>
+          <div class="form-group"><label class="form-label">To Time</label><input type="time" class="form-input" name="dismantle_to_time_${dismantleCount}"></div>
         </div>
       `;
       dismantleDatesContainer.appendChild(entry);
@@ -2086,7 +1956,6 @@ function initializeDynamicSections() {
   
   const addTravelBtn = document.getElementById('addTravelBtn');
   const travelContainer = document.getElementById('travelEntries');
-  
   if (addTravelBtn && travelContainer) {
     addTravelBtn.addEventListener('click', () => {
       travelCount++;
@@ -2098,7 +1967,6 @@ function initializeDynamicSections() {
     });
   }
 
-  // Initialize remove button visibility
   updateInstallationRemoveButtons();
   updateDismantleRemoveButtons();
 }
@@ -2119,10 +1987,6 @@ function updateDismantleRemoveButtons() {
   });
 }
 
-// ============================================
-// Post-Event Damage Items Handler
-// ============================================
-
 function initializeDamageItemsHandler() {
   const damageRadios = document.querySelectorAll('input[name="items_damage"]');
   const damageImagesContainer = document.getElementById('damageImagesContainer');
@@ -2136,10 +2000,6 @@ function initializeDamageItemsHandler() {
   });
 }
 
-// ============================================
-// Section Save Buttons
-// ============================================
-
 function initializeSectionSaveButtons() {
   document.querySelectorAll('.section-save-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2148,10 +2008,6 @@ function initializeSectionSaveButtons() {
     });
   });
 }
-
-// ============================================
-// Copy Buttons
-// ============================================
 
 function initializeCopyButtons() {
   document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -2175,14 +2031,12 @@ function initializeCopyButtons() {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async function() {
-  // Get event_id from URL
   currentEventId = getEventIdFromURL();
   
   if (!currentEventId) {
     console.warn('No event_id provided in URL. Save functionality will be limited.');
   }
   
-  // Initialize all components
   initializeAccordions();
   initializeCheckboxes();
   initializeRadios();
@@ -2194,21 +2048,20 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeCopyButtons();
   initializeDamageItemsHandler();
   
-  // Load existing data if event_id is present
   if (currentEventId) {
     await loadAllSectionData(currentEventId);
   }
   
-  // Expand first section by default
   const firstSection = document.querySelector('.section-card');
   if (firstSection) {
     firstSection.classList.add('expanded', 'active');
   }
   
-  console.log('ZenSpace Onboarding App V2 initialized', { eventId: currentEventId });
+  console.log('ZenSpace Onboarding App V3 initialized', { eventId: currentEventId });
 });
 
 // Make functions globally available
 window.removeEntry = removeEntry;
 window.saveSection = saveSection;
 window.loadAllSectionData = loadAllSectionData;
+window.showToast = showToast;
