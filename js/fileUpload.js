@@ -589,11 +589,12 @@ async function handleDeleteFile(uploadType, fileUrl, buttonElement) {
   
   const row = buttonElement.closest('.uploaded-file-row');
   if (row) {
-    // Show loading state
+    // Show loading state with animated spinner
     buttonElement.disabled = true;
+    buttonElement.classList.add('deleting');
     buttonElement.innerHTML = `
-      <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
+      <svg class="delete-spinner" width="16" height="16" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"></circle>
       </svg>
     `;
   }
@@ -635,6 +636,7 @@ async function handleDeleteFile(uploadType, fileUrl, buttonElement) {
     // Restore button
     if (row) {
       buttonElement.disabled = false;
+      buttonElement.classList.remove('deleting');
       buttonElement.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"></polyline>
@@ -652,7 +654,7 @@ async function handleDeleteFile(uploadType, fileUrl, buttonElement) {
  */
 async function deleteFromGoogleDrive(fileUrl) {
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbzP7f-04yJIeMZPLjg-JwqYl34dyP6VdBZpmktaDZSD-lhNtRpIA9HlbytGoDEW5KqM1g/exec", {
+    const response = await fetch(FILE_UPLOAD_ENDPOINT, {
       method: 'POST',
       body: JSON.stringify({
         action: 'delete',
@@ -898,8 +900,8 @@ function showUploadProgress(container, message) {
   const statusDiv = document.createElement('div');
   statusDiv.className = 'upload-status upload-progress';
   statusDiv.innerHTML = `
-    <svg class="spinner" viewBox="0 0 24 24" width="16" height="16">
-      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
+    <svg class="upload-spinner" viewBox="0 0 24 24" width="16" height="16">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"></circle>
     </svg>
     <span>${message}</span>
   `;
@@ -1017,7 +1019,8 @@ const uploadStyles = `
   color: #1565c0;
 }
 
-.upload-progress .spinner {
+.upload-progress .upload-spinner,
+.delete-spinner {
   animation: spin 1s linear infinite;
 }
 
@@ -1156,6 +1159,12 @@ const uploadStyles = `
 .delete-file-btn:hover {
   background: #fee2e2;
   color: #dc2626;
+}
+
+.delete-file-btn.deleting {
+  background: #e3f2fd;
+  color: #1565c0;
+  cursor: wait;
 }
 
 /* Keep old grid style for backwards compatibility */
