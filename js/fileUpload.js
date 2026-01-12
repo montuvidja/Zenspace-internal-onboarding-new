@@ -1,7 +1,8 @@
 /* ============================================
-   ZenSpace Internal Onboarding - File Upload Functions V3
+   ZenSpace Internal Onboarding - File Upload Functions V4
    Handles file uploads to Google Drive via Apps Script
-   Trucking invoices now at section level (multiple files)
+   - Shows original file names
+   - Delete functionality for uploaded files
    ============================================ */
 
 // ============================================================================
@@ -12,13 +13,13 @@ const FILE_UPLOAD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbze8yd27lK
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOW_ALL_FILE_TYPES = true;
 
-// Store uploaded file data - ALL section-level now
+// Store uploaded file data - includes file names now
 const uploadedFileData = {
-  trucking_invoices: { urls: [], folderUrl: '' },  // Changed from per-entry to section-level
-  damage_images: { urls: [], folderUrl: '' },
-  event_images: { urls: [], folderUrl: '' },
-  travel_invoices: { urls: [], folderUrl: '' },
-  coi: { url: '', folderUrl: '' }
+  trucking_invoices: { files: [], folderUrl: '' },  // files: [{url, name}, ...]
+  damage_images: { files: [], folderUrl: '' },
+  event_images: { files: [], folderUrl: '' },
+  travel_invoices: { files: [], folderUrl: '' },
+  coi: { file: null, folderUrl: '' }  // file: {url, name} or null
 };
 
 // ============================================================================
@@ -50,9 +51,10 @@ async function uploadFiles(files, uploadType, entryIndex = null, replaceExisting
     try {
       const base64Content = await fileToBase64(file);
       fileDataArray.push({
-        fileName: file.name,
+        fileName: file.name,  // Keep original file name
         mimeType: file.type || 'application/octet-stream',
-        content: base64Content
+        content: base64Content,
+        originalName: file.name  // Store original name
       });
     } catch (err) {
       errors.push(`${file.name}: Failed to read file`);
@@ -85,6 +87,12 @@ async function uploadFiles(files, uploadType, entryIndex = null, replaceExisting
     throw new Error(result.error || 'Upload failed');
   }
   
+  // Add original names to result
+  result.uploadedFiles = result.uploadedFiles.map((f, idx) => ({
+    ...f,
+    originalName: fileDataArray[idx]?.originalName || f.fileName || `File ${idx + 1}`
+  }));
+  
   storeUploadedData(uploadType, entryIndex, result, replaceExisting);
   
   return {
@@ -97,52 +105,54 @@ async function uploadFiles(files, uploadType, entryIndex = null, replaceExisting
  * Store uploaded file data for Supabase saving
  */
 function storeUploadedData(uploadType, entryIndex, result, replaceExisting = false) {
-  const urls = result.uploadedFiles
+  const newFiles = result.uploadedFiles
     .filter(f => f.url)
-    .map(f => f.url);
+    .map(f => ({
+      url: f.url,
+      name: f.originalName || f.fileName || extractFileName(f.url) || 'Unknown'
+    }));
   
   const folderUrl = result.folderUrl || '';
   
   switch (uploadType) {
     case 'trucking_invoices':
-      // Section-level: append to existing (unless replace)
       if (replaceExisting) {
-        uploadedFileData.trucking_invoices.urls = urls;
+        uploadedFileData.trucking_invoices.files = newFiles;
       } else {
-        uploadedFileData.trucking_invoices.urls = [
-          ...uploadedFileData.trucking_invoices.urls,
-          ...urls
+        uploadedFileData.trucking_invoices.files = [
+          ...uploadedFileData.trucking_invoices.files,
+          ...newFiles
         ];
       }
       uploadedFileData.trucking_invoices.folderUrl = folderUrl;
       break;
       
     case 'damage_images':
-      uploadedFileData.damage_images.urls = [
-        ...uploadedFileData.damage_images.urls,
-        ...urls
+      uploadedFileData.damage_images.files = [
+        ...uploadedFileData.damage_images.files,
+        ...newFiles
       ];
       uploadedFileData.damage_images.folderUrl = folderUrl;
       break;
       
     case 'event_images':
-      uploadedFileData.event_images.urls = [
-        ...uploadedFileData.event_images.urls,
-        ...urls
+      uploadedFileData.event_images.files = [
+        ...uploadedFileData.event_images.files,
+        ...newFiles
       ];
       uploadedFileData.event_images.folderUrl = folderUrl;
       break;
       
     case 'travel_invoices':
-      uploadedFileData.travel_invoices.urls = [
-        ...uploadedFileData.travel_invoices.urls,
-        ...urls
+      uploadedFileData.travel_invoices.files = [
+        ...uploadedFileData.travel_invoices.files,
+        ...newFiles
       ];
       uploadedFileData.travel_invoices.folderUrl = folderUrl;
       break;
       
     case 'coi_documents':
-      uploadedFileData.coi.url = urls[0] || '';
+      uploadedFileData.coi.file = newFiles[0] || null;
       uploadedFileData.coi.folderUrl = folderUrl;
       break;
   }
@@ -150,43 +160,113 @@ function storeUploadedData(uploadType, entryIndex, result, replaceExisting = fal
 
 /**
  * Get uploaded file data for a specific type
+ * Returns in format compatible with Supabase (urls array)
  */
 function getUploadedFileData(uploadType, entryIndex = null) {
   switch (uploadType) {
     case 'trucking_invoices':
-      return uploadedFileData.trucking_invoices;
+      return {
+        urls: uploadedFileData.trucking_invoices.files.map(f => f.url),
+        files: uploadedFileData.trucking_invoices.files,
+        folderUrl: uploadedFileData.trucking_invoices.folderUrl
+      };
     case 'damage_images':
-      return uploadedFileData.damage_images;
+      return {
+        urls: uploadedFileData.damage_images.files.map(f => f.url),
+        files: uploadedFileData.damage_images.files,
+        folderUrl: uploadedFileData.damage_images.folderUrl
+      };
     case 'event_images':
-      return uploadedFileData.event_images;
+      return {
+        urls: uploadedFileData.event_images.files.map(f => f.url),
+        files: uploadedFileData.event_images.files,
+        folderUrl: uploadedFileData.event_images.folderUrl
+      };
     case 'travel_invoices':
-      return uploadedFileData.travel_invoices;
+      return {
+        urls: uploadedFileData.travel_invoices.files.map(f => f.url),
+        files: uploadedFileData.travel_invoices.files,
+        folderUrl: uploadedFileData.travel_invoices.folderUrl
+      };
     case 'coi_documents':
-      return uploadedFileData.coi;
+      return {
+        url: uploadedFileData.coi.file?.url || '',
+        file: uploadedFileData.coi.file,
+        folderUrl: uploadedFileData.coi.folderUrl
+      };
     default:
-      return { urls: [], folderUrl: '' };
+      return { urls: [], files: [], folderUrl: '' };
   }
 }
 
 /**
  * Set uploaded file data (used when loading from Supabase)
+ * Accepts both old format (urls array) and new format (files array with names)
  */
 function setUploadedFileData(uploadType, data, entryIndex = null) {
+  // Convert old format (urls) to new format (files) if needed
+  const convertToFiles = (urls, existingFiles = []) => {
+    if (!urls || urls.length === 0) return existingFiles;
+    return urls.map((url, idx) => {
+      // Check if we have existing file info
+      const existing = existingFiles.find(f => f.url === url);
+      if (existing) return existing;
+      return {
+        url: url,
+        name: extractFileName(url) || `File ${idx + 1}`
+      };
+    });
+  };
+  
   switch (uploadType) {
     case 'trucking_invoices':
-      uploadedFileData.trucking_invoices = data;
+      uploadedFileData.trucking_invoices.files = data.files || convertToFiles(data.urls);
+      uploadedFileData.trucking_invoices.folderUrl = data.folderUrl || '';
       break;
     case 'damage_images':
-      uploadedFileData.damage_images = data;
+      uploadedFileData.damage_images.files = data.files || convertToFiles(data.urls);
+      uploadedFileData.damage_images.folderUrl = data.folderUrl || '';
       break;
     case 'event_images':
-      uploadedFileData.event_images = data;
+      uploadedFileData.event_images.files = data.files || convertToFiles(data.urls);
+      uploadedFileData.event_images.folderUrl = data.folderUrl || '';
       break;
     case 'travel_invoices':
-      uploadedFileData.travel_invoices = data;
+      uploadedFileData.travel_invoices.files = data.files || convertToFiles(data.urls);
+      uploadedFileData.travel_invoices.folderUrl = data.folderUrl || '';
       break;
     case 'coi_documents':
-      uploadedFileData.coi = data;
+      if (data.file) {
+        uploadedFileData.coi.file = data.file;
+      } else if (data.url) {
+        uploadedFileData.coi.file = { url: data.url, name: extractFileName(data.url) || 'COI Document' };
+      } else {
+        uploadedFileData.coi.file = null;
+      }
+      uploadedFileData.coi.folderUrl = data.folderUrl || '';
+      break;
+  }
+}
+
+/**
+ * Delete a specific file from uploaded data
+ */
+function deleteUploadedFile(uploadType, fileUrl) {
+  switch (uploadType) {
+    case 'trucking_invoices':
+      uploadedFileData.trucking_invoices.files = uploadedFileData.trucking_invoices.files.filter(f => f.url !== fileUrl);
+      break;
+    case 'damage_images':
+      uploadedFileData.damage_images.files = uploadedFileData.damage_images.files.filter(f => f.url !== fileUrl);
+      break;
+    case 'event_images':
+      uploadedFileData.event_images.files = uploadedFileData.event_images.files.filter(f => f.url !== fileUrl);
+      break;
+    case 'travel_invoices':
+      uploadedFileData.travel_invoices.files = uploadedFileData.travel_invoices.files.filter(f => f.url !== fileUrl);
+      break;
+    case 'coi_documents':
+      uploadedFileData.coi.file = null;
       break;
   }
 }
@@ -195,11 +275,11 @@ function setUploadedFileData(uploadType, data, entryIndex = null) {
  * Clear uploaded file data
  */
 function clearUploadedFileData() {
-  uploadedFileData.trucking_invoices = { urls: [], folderUrl: '' };
-  uploadedFileData.damage_images = { urls: [], folderUrl: '' };
-  uploadedFileData.event_images = { urls: [], folderUrl: '' };
-  uploadedFileData.travel_invoices = { urls: [], folderUrl: '' };
-  uploadedFileData.coi = { url: '', folderUrl: '' };
+  uploadedFileData.trucking_invoices = { files: [], folderUrl: '' };
+  uploadedFileData.damage_images = { files: [], folderUrl: '' };
+  uploadedFileData.event_images = { files: [], folderUrl: '' };
+  uploadedFileData.travel_invoices = { files: [], folderUrl: '' };
+  uploadedFileData.coi = { file: null, folderUrl: '' };
 }
 
 // ============================================================================
@@ -220,10 +300,15 @@ async function handleDamageImagesUpload(inputElement) {
     const result = await uploadFiles(files, 'damage_images', null, false);
     showUploadSuccess(container, result, 'damage_images');
     showToast(`${result.totalUploaded} damage image(s) uploaded successfully!`, 'success');
+    // Auto-save file URLs and names to Supabase
+    await saveFileDataToSupabase('damage_images');
   } catch (error) {
     showUploadError(container, error.message);
     showToast(`Upload failed: ${error.message}`, 'error');
   }
+  
+  // Clear input so same file can be uploaded again
+  inputElement.value = '';
 }
 
 /**
@@ -240,10 +325,14 @@ async function handleEventImagesUpload(inputElement) {
     const result = await uploadFiles(files, 'event_images', null, false);
     showUploadSuccess(container, result, 'event_images');
     showToast(`${result.totalUploaded} event image(s) uploaded successfully!`, 'success');
+    // Auto-save file URLs and names to Supabase
+    await saveFileDataToSupabase('event_images');
   } catch (error) {
     showUploadError(container, error.message);
     showToast(`Upload failed: ${error.message}`, 'error');
   }
+  
+  inputElement.value = '';
 }
 
 /**
@@ -260,10 +349,14 @@ async function handleTruckingInvoicesUpload(inputElement) {
     const result = await uploadFiles(files, 'trucking_invoices', null, false);
     showUploadSuccess(container, result, 'trucking_invoices');
     showToast(`${result.totalUploaded} trucking invoice(s) uploaded successfully!`, 'success');
+    // Auto-save file URLs and names to Supabase
+    await saveFileDataToSupabase('trucking_invoices');
   } catch (error) {
     showUploadError(container, error.message);
     showToast(`Upload failed: ${error.message}`, 'error');
   }
+  
+  inputElement.value = '';
 }
 
 /**
@@ -280,10 +373,14 @@ async function handleTravelInvoicesUpload(inputElement) {
     const result = await uploadFiles(files, 'travel_invoices', null, false);
     showUploadSuccess(container, result, 'travel_invoices');
     showToast(`${result.totalUploaded} travel invoice(s) uploaded successfully!`, 'success');
+    // Auto-save file URLs and names to Supabase
+    await saveFileDataToSupabase('travel_invoices');
   } catch (error) {
     showUploadError(container, error.message);
     showToast(`Upload failed: ${error.message}`, 'error');
   }
+  
+  inputElement.value = '';
 }
 
 /**
@@ -300,9 +397,91 @@ async function handleCOIUpload(inputElement) {
     const result = await uploadFiles(files, 'coi_documents', null, true);
     showUploadSuccess(container, result, 'coi_documents');
     showToast('COI document uploaded successfully!', 'success');
+    // Auto-save file URL and name to Supabase
+    await saveFileDataToSupabase('coi_documents');
   } catch (error) {
     showUploadError(container, error.message);
     showToast(`Upload failed: ${error.message}`, 'error');
+  }
+  
+  inputElement.value = '';
+}
+
+/**
+ * Save file URLs and names to Supabase (auto-save for uploads)
+ */
+async function saveFileDataToSupabase(uploadType) {
+  if (typeof supabase === 'undefined' || typeof currentEventId === 'undefined' || !currentEventId) {
+    console.warn('Supabase not available or no event ID - file data will be saved with section save');
+    return false;
+  }
+  
+  try {
+    const tableInfo = getTableInfoForUploadType(uploadType);
+    if (!tableInfo) {
+      console.warn('Unknown upload type:', uploadType);
+      return false;
+    }
+    
+    const fileData = getUploadedFileData(uploadType);
+    
+    let updateData = {};
+    
+    if (tableInfo.isSingle) {
+      // COI - single file
+      updateData = {
+        [tableInfo.urlColumn]: fileData.url || null,
+        [tableInfo.nameColumn]: fileData.file?.name || null,
+        [tableInfo.folderColumn]: fileData.folderUrl || null
+      };
+    } else {
+      // Multiple files
+      const urls = fileData.urls || [];
+      const names = fileData.files ? fileData.files.map(f => f.name) : [];
+      
+      updateData = {
+        [tableInfo.urlColumn]: urls.length > 0 ? urls : null,
+        [tableInfo.nameColumn]: names.length > 0 ? names : null,
+        [tableInfo.folderColumn]: fileData.folderUrl || null
+      };
+    }
+    
+    // Check if record exists
+    const { data: existing, error: checkError } = await supabase
+      .from(tableInfo.table)
+      .select('event_id')
+      .eq('event_id', currentEventId)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      // Error other than "no rows"
+      throw checkError;
+    }
+    
+    if (existing) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from(tableInfo.table)
+        .update(updateData)
+        .eq('event_id', currentEventId);
+      
+      if (updateError) throw updateError;
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from(tableInfo.table)
+        .insert({ event_id: currentEventId, ...updateData });
+      
+      if (insertError) throw insertError;
+    }
+    
+    console.log(`File data saved to ${tableInfo.table}:`, updateData);
+    return true;
+    
+  } catch (error) {
+    console.error('Error saving file data to Supabase:', error);
+    showToast('File uploaded but failed to save to database. Please save the section manually.', 'warning');
+    return false;
   }
 }
 
@@ -316,10 +495,28 @@ function displayUploadedFiles(container, urls, folderUrl, uploadType) {
   const existingDisplay = container.querySelector('.uploaded-files-display');
   if (existingDisplay) existingDisplay.remove();
   
-  if ((!urls || urls.length === 0) && !folderUrl) return;
+  // Get files with names
+  const fileData = getUploadedFileData(uploadType);
+  
+  // Handle both array (files) and single file (file) formats
+  let files = fileData.files || [];
+  
+  // For COI, convert single file to array
+  if (files.length === 0 && fileData.file) {
+    files = [fileData.file];
+  }
+  
+  // If no files array, convert urls to files
+  const displayFiles = files.length > 0 ? files : (urls || []).map((url, idx) => ({
+    url: url,
+    name: extractFileName(url) || `File ${idx + 1}`
+  }));
+  
+  if (displayFiles.length === 0 && !folderUrl) return;
   
   const displayDiv = document.createElement('div');
   displayDiv.className = 'uploaded-files-display';
+  displayDiv.dataset.uploadType = uploadType;
   
   let html = '<div class="uploaded-files-header">';
   html += '<span class="uploaded-label">Uploaded files:</span>';
@@ -333,34 +530,39 @@ function displayUploadedFiles(container, urls, folderUrl, uploadType) {
   }
   html += '</div>';
   
-  if (urls && urls.length > 0) {
-    html += '<div class="uploaded-files-grid">';
-    urls.forEach((url, idx) => {
-      const fileName = extractFileName(url) || `File ${idx + 1}`;
-      const isImage = isImageUrl(url);
+  if (displayFiles.length > 0) {
+    html += '<div class="uploaded-files-list">';
+    displayFiles.forEach((file) => {
+      const isImage = isImageUrl(file.url);
+      const fileIcon = isImage ? `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      ` : `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+      `;
       
-      html += `<div class="uploaded-file-item">`;
-      if (isImage) {
-        html += `<a href="${url}" target="_blank" class="file-thumbnail">
-          <img src="${url}" alt="${fileName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="file-icon" style="display:none;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
+      html += `
+        <div class="uploaded-file-row" data-url="${file.url}">
+          <div class="file-info">
+            <span class="file-type-icon">${fileIcon}</span>
+            <a href="${file.url}" target="_blank" class="file-link" title="${file.name}">${file.name}</a>
           </div>
-        </a>`;
-      } else {
-        html += `<a href="${url}" target="_blank" class="file-icon-link">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-          </svg>
-        </a>`;
-      }
-      html += `<span class="file-name" title="${fileName}">${truncateFileName(fileName, 15)}</span>`;
-      html += '</div>';
+          <button type="button" class="delete-file-btn" onclick="handleDeleteFile('${uploadType}', '${file.url}', this)" title="Remove file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+      `;
     });
     html += '</div>';
   }
@@ -375,8 +577,226 @@ function displayUploadedFiles(container, urls, folderUrl, uploadType) {
   }
 }
 
-function displaySingleUploadedFile(container, url, folderUrl) {
-  displayUploadedFiles(container, url ? [url] : [], folderUrl);
+function displaySingleUploadedFile(container, url, folderUrl, uploadType = 'coi_documents') {
+  displayUploadedFiles(container, url ? [url] : [], folderUrl, uploadType);
+}
+
+/**
+ * Handle file deletion - deletes from Google Drive and Supabase
+ */
+async function handleDeleteFile(uploadType, fileUrl, buttonElement) {
+  if (!confirm('Are you sure you want to delete this file? This cannot be undone.')) return;
+  
+  const row = buttonElement.closest('.uploaded-file-row');
+  if (row) {
+    // Show loading state
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `
+      <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
+      </svg>
+    `;
+  }
+  
+  try {
+    // 1. Delete from Google Drive
+    const driveDeleted = await deleteFromGoogleDrive(fileUrl);
+    
+    // 2. Delete from Supabase
+    const dbDeleted = await deleteFromSupabase(uploadType, fileUrl);
+    
+    // 3. Remove from local data
+    deleteUploadedFile(uploadType, fileUrl);
+    
+    // 4. Remove from UI with animation
+    if (row) {
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(10px)';
+      setTimeout(() => {
+        row.remove();
+        
+        // Check if no more files, remove the display container
+        const display = document.querySelector(`.uploaded-files-display[data-upload-type="${uploadType}"]`);
+        if (display) {
+          const remainingFiles = display.querySelectorAll('.uploaded-file-row');
+          if (remainingFiles.length === 0) {
+            display.remove();
+          }
+        }
+      }, 200);
+    }
+    
+    showToast('File deleted successfully!', 'success');
+    
+  } catch (error) {
+    console.error('Delete error:', error);
+    showToast(`Delete failed: ${error.message}`, 'error');
+    
+    // Restore button
+    if (row) {
+      buttonElement.disabled = false;
+      buttonElement.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      `;
+    }
+  }
+}
+
+/**
+ * Delete file from Google Drive via Apps Script
+ */
+async function deleteFromGoogleDrive(fileUrl) {
+  try {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzP7f-04yJIeMZPLjg-JwqYl34dyP6VdBZpmktaDZSD-lhNtRpIA9HlbytGoDEW5KqM1g/exec", {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'delete',
+        fileUrl: fileUrl
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      console.warn('Google Drive delete warning:', result.error);
+      // Don't throw - file might already be deleted or we don't have permission
+    }
+    
+    return result.success;
+  } catch (error) {
+    console.warn('Google Drive delete error:', error);
+    // Continue anyway - we still want to remove from database
+    return false;
+  }
+}
+
+/**
+ * Delete file URL from Supabase database
+ */
+async function deleteFromSupabase(uploadType, fileUrl) {
+  if (typeof supabase === 'undefined' || !currentEventId) {
+    console.warn('Supabase not available or no event ID');
+    return false;
+  }
+  
+  try {
+    // Get table and column info based on upload type
+    const tableInfo = getTableInfoForUploadType(uploadType);
+    if (!tableInfo) {
+      console.warn('Unknown upload type:', uploadType);
+      return false;
+    }
+    
+    // Fetch current data
+    const { data: currentData, error: fetchError } = await supabase
+      .from(tableInfo.table)
+      .select(tableInfo.urlColumn + ', ' + tableInfo.nameColumn)
+      .eq('event_id', currentEventId)
+      .single();
+    
+    if (fetchError) {
+      console.warn('Fetch error:', fetchError);
+      return false;
+    }
+    
+    // Remove the URL and corresponding name from arrays
+    let urls = currentData[tableInfo.urlColumn] || [];
+    let names = currentData[tableInfo.nameColumn] || [];
+    
+    // Handle single file (COI) vs array
+    if (tableInfo.isSingle) {
+      // Single file - set to null
+      const updateData = {
+        [tableInfo.urlColumn]: null,
+        [tableInfo.nameColumn]: null
+      };
+      
+      const { error: updateError } = await supabase
+        .from(tableInfo.table)
+        .update(updateData)
+        .eq('event_id', currentEventId);
+      
+      if (updateError) throw updateError;
+      
+    } else {
+      // Array - remove specific URL
+      const urlIndex = urls.indexOf(fileUrl);
+      if (urlIndex > -1) {
+        urls.splice(urlIndex, 1);
+        if (names.length > urlIndex) {
+          names.splice(urlIndex, 1);
+        }
+      }
+      
+      const updateData = {
+        [tableInfo.urlColumn]: urls.length > 0 ? urls : null,
+        [tableInfo.nameColumn]: names.length > 0 ? names : null
+      };
+      
+      const { error: updateError } = await supabase
+        .from(tableInfo.table)
+        .update(updateData)
+        .eq('event_id', currentEventId);
+      
+      if (updateError) throw updateError;
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Supabase delete error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get table and column information for upload type
+ */
+function getTableInfoForUploadType(uploadType) {
+  const mapping = {
+    'trucking_invoices': {
+      table: 'internal_trucking_meta',
+      urlColumn: 'trucking_invoices_urls',
+      nameColumn: 'trucking_invoices_names',
+      folderColumn: 'trucking_invoices_folder_url',
+      isSingle: false
+    },
+    'travel_invoices': {
+      table: 'internal_travel_meta',
+      urlColumn: 'travel_invoices_urls',
+      nameColumn: 'travel_invoices_names',
+      folderColumn: 'travel_invoices_folder_url',
+      isSingle: false
+    },
+    'damage_images': {
+      table: 'internal_postevent',
+      urlColumn: 'damage_images_urls',
+      nameColumn: 'damage_images_names',
+      folderColumn: 'damage_images_folder_url',
+      isSingle: false
+    },
+    'event_images': {
+      table: 'internal_postevent',
+      urlColumn: 'event_images_urls',
+      nameColumn: 'event_images_names',
+      folderColumn: 'event_images_folder_url',
+      isSingle: false
+    },
+    'coi_documents': {
+      table: 'internal_coi',
+      urlColumn: 'coi_file_url',
+      nameColumn: 'coi_file_name',
+      folderColumn: 'coi_folder_url',
+      isSingle: true
+    }
+  };
+  
+  return mapping[uploadType] || null;
 }
 
 // ============================================================================
@@ -507,8 +927,13 @@ function showUploadSuccess(container, result, uploadType) {
   statusDiv.innerHTML = html;
   container.appendChild(statusDiv);
   
-  const urls = result.uploadedFiles.filter(f => f.url).map(f => f.url);
-  displayUploadedFiles(container, urls, result.folderUrl, uploadType);
+  // Display files with names from uploadedFileData
+  const fileData = getUploadedFileData(uploadType);
+  const folderUrl = fileData.folderUrl || result.folderUrl;
+  
+  // Handle both array (urls) and single (url) formats
+  const urls = fileData.urls || (fileData.url ? [fileData.url] : []);
+  displayUploadedFiles(container, urls, folderUrl, uploadType);
   
   setTimeout(() => {
     statusDiv.style.opacity = '0.6';
@@ -662,6 +1087,78 @@ const uploadStyles = `
   background: #cfe2ff;
 }
 
+/* New list-style display */
+.uploaded-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uploaded-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.uploaded-file-row:hover {
+  border-color: #dee2e6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-type-icon {
+  flex-shrink: 0;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+}
+
+.file-link {
+  color: #0d6efd;
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
+.delete-file-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #adb5bd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-file-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Keep old grid style for backwards compatibility */
 .uploaded-files-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -754,5 +1251,8 @@ window.setUploadedFileData = setUploadedFileData;
 window.clearUploadedFileData = clearUploadedFileData;
 window.displayUploadedFiles = displayUploadedFiles;
 window.displaySingleUploadedFile = displaySingleUploadedFile;
+window.deleteUploadedFile = deleteUploadedFile;
+window.handleDeleteFile = handleDeleteFile;
+window.saveFileDataToSupabase = saveFileDataToSupabase;
 window.uploadedFileData = uploadedFileData;
 window.getUploadedUrls = getUploadedUrls;

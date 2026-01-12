@@ -222,13 +222,17 @@ function getTruckingMetaData() {
   // Get uploaded file data
   const truckingInvoicesData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('trucking_invoices') 
-    : { urls: [], folderUrl: '' };
+    : { urls: [], files: [], folderUrl: '' };
+  
+  // Extract names from files array
+  const fileNames = truckingInvoicesData.files ? truckingInvoicesData.files.map(f => f.name) : [];
   
   return {
     event_id: currentEventId,
     special_instructions: getInputValue('special_instructions_trucking', section),
-    // File URLs
+    // File URLs and Names
     trucking_invoices_urls: truckingInvoicesData.urls && truckingInvoicesData.urls.length > 0 ? truckingInvoicesData.urls : null,
+    trucking_invoices_names: fileNames.length > 0 ? fileNames : null,
     trucking_invoices_folder_url: truckingInvoicesData.folderUrl || null
   };
 }
@@ -286,18 +290,22 @@ function getInstallationDatesData() {
   return dates;
 }
 
-// Section 6: Post-Event - WITH FILE URLs
+// Section 6: Post-Event - WITH FILE URLs and Names
 function getPosteventData() {
   const section = document.querySelector('[data-section="postevent"]');
   
   // Get uploaded file data
   const damageData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('damage_images') 
-    : { urls: [], folderUrl: '' };
+    : { urls: [], files: [], folderUrl: '' };
   
   const eventImagesData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('event_images') 
-    : { urls: [], folderUrl: '' };
+    : { urls: [], files: [], folderUrl: '' };
+  
+  // Extract names from files arrays
+  const damageNames = damageData.files ? damageData.files.map(f => f.name) : [];
+  const eventNames = eventImagesData.files ? eventImagesData.files.map(f => f.name) : [];
   
   return {
     event_id: currentEventId,
@@ -310,10 +318,12 @@ function getPosteventData() {
     items_damage: getRadioValue('items_damage', section),
     debrief_note: getInputValue('debrief_note', section),
     special_instructions: getInputValue('special_instructions_postevent', section),
-    // File URLs
+    // File URLs and Names
     damage_images_urls: damageData.urls && damageData.urls.length > 0 ? damageData.urls : null,
+    damage_images_names: damageNames.length > 0 ? damageNames : null,
     damage_images_folder_url: damageData.folderUrl || null,
     event_images_urls: eventImagesData.urls && eventImagesData.urls.length > 0 ? eventImagesData.urls : null,
+    event_images_names: eventNames.length > 0 ? eventNames : null,
     event_images_folder_url: eventImagesData.folderUrl || null
   };
 }
@@ -374,37 +384,42 @@ function getTravelData() {
   return entries;
 }
 
-// Section 7: Travel Meta (section-level) - WITH FILE URLs (no special_instructions - moved to per entry)
+// Section 7: Travel Meta (section-level) - WITH FILE URLs and Names (no special_instructions - moved to per entry)
 function getTravelMetaData() {
   const section = document.querySelector('[data-section="travel"]');
   
   // Get uploaded file data
   const travelInvoicesData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('travel_invoices') 
-    : { urls: [], folderUrl: '' };
+    : { urls: [], files: [], folderUrl: '' };
+  
+  // Extract names from files array
+  const fileNames = travelInvoicesData.files ? travelInvoicesData.files.map(f => f.name) : [];
   
   return {
     event_id: currentEventId,
-    // File URLs only (special_instructions moved to per-traveler entries)
+    // File URLs and Names (special_instructions moved to per-traveler entries)
     travel_invoices_urls: travelInvoicesData.urls && travelInvoicesData.urls.length > 0 ? travelInvoicesData.urls : null,
+    travel_invoices_names: fileNames.length > 0 ? fileNames : null,
     travel_invoices_folder_url: travelInvoicesData.folderUrl || null
   };
 }
 
-// Section 8: COI - WITH FILE URL
+// Section 8: COI - WITH FILE URL and Name
 function getCOIData() {
   const section = document.querySelector('[data-section="coi"]');
   
   // Get uploaded file data
   const coiData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('coi_documents') 
-    : { url: '', folderUrl: '' };
+    : { url: '', file: null, folderUrl: '' };
   
   return {
     event_id: currentEventId,
     coi_required: getRadioValue('coi_required', section),
-    // File URLs
+    // File URL and Name
     coi_file_url: coiData.url || null,
+    coi_file_name: coiData.file?.name || null,
     coi_folder_url: coiData.folderUrl || null
   };
 }
@@ -1003,17 +1018,26 @@ function populateTruckingMeta(data) {
     const invoicesContainer = invoicesInput?.closest('.form-group');
     
     if (invoicesContainer) {
+      // Build files array with names
+      const urls = data.trucking_invoices_urls || [];
+      const names = data.trucking_invoices_names || [];
+      const files = urls.map((url, idx) => ({
+        url: url,
+        name: names[idx] || `File ${idx + 1}`
+      }));
+      
       // Store in uploadedFileData for saving
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('trucking_invoices', {
-          urls: data.trucking_invoices_urls || [],
+          urls: urls,
+          files: files,
           folderUrl: data.trucking_invoices_folder_url || ''
         });
       }
       
       // Display the files
       if (typeof displayUploadedFiles === 'function') {
-        displayUploadedFiles(invoicesContainer, data.trucking_invoices_urls, data.trucking_invoices_folder_url, 'trucking_invoices');
+        displayUploadedFiles(invoicesContainer, urls, data.trucking_invoices_folder_url, 'trucking_invoices');
       }
     }
   }
@@ -1150,7 +1174,7 @@ function populateInstallationDates(datesData) {
   }
 }
 
-// Populate Post-Event - WITH FILE DISPLAY
+// Populate Post-Event - WITH FILE DISPLAY and Names
 function populatePostevent(data) {
   const section = document.querySelector('[data-section="postevent"]');
   if (!section) return;
@@ -1181,14 +1205,23 @@ function populatePostevent(data) {
     const damageContainer = damageInput?.closest('.form-group');
     
     if (damageContainer) {
+      // Build files array with names
+      const urls = data.damage_images_urls || [];
+      const names = data.damage_images_names || [];
+      const files = urls.map((url, idx) => ({
+        url: url,
+        name: names[idx] || `File ${idx + 1}`
+      }));
+      
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('damage_images', {
-          urls: data.damage_images_urls || [],
+          urls: urls,
+          files: files,
           folderUrl: data.damage_images_folder_url || ''
         });
       }
       if (typeof displayUploadedFiles === 'function') {
-        displayUploadedFiles(damageContainer, data.damage_images_urls, data.damage_images_folder_url, 'damage_images');
+        displayUploadedFiles(damageContainer, urls, data.damage_images_folder_url, 'damage_images');
       }
     }
   }
@@ -1199,14 +1232,23 @@ function populatePostevent(data) {
     const eventImagesContainer = eventInput?.closest('.form-group');
     
     if (eventImagesContainer) {
+      // Build files array with names
+      const urls = data.event_images_urls || [];
+      const names = data.event_images_names || [];
+      const files = urls.map((url, idx) => ({
+        url: url,
+        name: names[idx] || `File ${idx + 1}`
+      }));
+      
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('event_images', {
-          urls: data.event_images_urls || [],
+          urls: urls,
+          files: files,
           folderUrl: data.event_images_folder_url || ''
         });
       }
       if (typeof displayUploadedFiles === 'function') {
-        displayUploadedFiles(eventImagesContainer, data.event_images_urls, data.event_images_folder_url, 'event_images');
+        displayUploadedFiles(eventImagesContainer, urls, data.event_images_folder_url, 'event_images');
       }
     }
   }
@@ -1283,7 +1325,7 @@ function populateTravel(entries) {
   updateSaveStatus('travel', true);
 }
 
-// Populate Travel Meta - WITH FILE DISPLAY (no special_instructions - moved to per entry)
+// Populate Travel Meta - WITH FILE DISPLAY and Names (no special_instructions - moved to per entry)
 function populateTravelMeta(data) {
   const section = document.querySelector('[data-section="travel"]');
   if (!section) return;
@@ -1293,20 +1335,29 @@ function populateTravelMeta(data) {
     const invoicesContainer = invoicesInput?.closest('.form-group');
     
     if (invoicesContainer) {
+      // Build files array with names
+      const urls = data.travel_invoices_urls || [];
+      const names = data.travel_invoices_names || [];
+      const files = urls.map((url, idx) => ({
+        url: url,
+        name: names[idx] || `File ${idx + 1}`
+      }));
+      
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('travel_invoices', {
-          urls: data.travel_invoices_urls || [],
+          urls: urls,
+          files: files,
           folderUrl: data.travel_invoices_folder_url || ''
         });
       }
       if (typeof displayUploadedFiles === 'function') {
-        displayUploadedFiles(invoicesContainer, data.travel_invoices_urls, data.travel_invoices_folder_url, 'travel_invoices');
+        displayUploadedFiles(invoicesContainer, urls, data.travel_invoices_folder_url, 'travel_invoices');
       }
     }
   }
 }
 
-// Populate COI - WITH FILE DISPLAY
+// Populate COI - WITH FILE DISPLAY and Name
 function populateCOI(data) {
   const section = document.querySelector('[data-section="coi"]');
   if (!section) return;
@@ -1323,14 +1374,21 @@ function populateCOI(data) {
     const coiContainer = coiInput?.closest('.form-group') || wrapper;
     
     if (coiContainer) {
+      // Build file object with name
+      const file = data.coi_file_url ? {
+        url: data.coi_file_url,
+        name: data.coi_file_name || 'COI Document'
+      } : null;
+      
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('coi_documents', {
           url: data.coi_file_url || '',
+          file: file,
           folderUrl: data.coi_folder_url || ''
         });
       }
       if (typeof displaySingleUploadedFile === 'function') {
-        displaySingleUploadedFile(coiContainer, data.coi_file_url, data.coi_folder_url);
+        displaySingleUploadedFile(coiContainer, data.coi_file_url, data.coi_folder_url, 'coi_documents');
       }
     }
   }
@@ -2057,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     firstSection.classList.add('expanded', 'active');
   }
   
-  console.log('ZenSpace Onboarding App V3 initialized', { eventId: currentEventId });
+  console.log('ZenSpace Onboarding App V4 initialized', { eventId: currentEventId });
 });
 
 // Make functions globally available
