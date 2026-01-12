@@ -343,12 +343,12 @@ async function handleTruckingInvoicesUpload(inputElement) {
   if (!files || files.length === 0) return;
   
   const container = inputElement.closest('.form-group');
-  showUploadProgress(container, 'Uploading trucking invoices...');
+  showUploadProgress(container, 'Uploading trucking documents...');
   
   try {
     const result = await uploadFiles(files, 'trucking_invoices', null, false);
     showUploadSuccess(container, result, 'trucking_invoices');
-    showToast(`${result.totalUploaded} trucking invoice(s) uploaded successfully!`, 'success');
+    showToast(`${result.totalUploaded} trucking document(s) uploaded successfully!`, 'success');
     // Auto-save file URLs and names to Supabase
     await saveFileDataToSupabase('trucking_invoices');
   } catch (error) {
@@ -367,12 +367,12 @@ async function handleTravelInvoicesUpload(inputElement) {
   if (!files || files.length === 0) return;
   
   const container = inputElement.closest('.form-group');
-  showUploadProgress(container, 'Uploading travel invoices...');
+  showUploadProgress(container, 'Uploading travel documents...');
   
   try {
     const result = await uploadFiles(files, 'travel_invoices', null, false);
     showUploadSuccess(container, result, 'travel_invoices');
-    showToast(`${result.totalUploaded} travel invoice(s) uploaded successfully!`, 'success');
+    showToast(`${result.totalUploaded} travel document(s) uploaded successfully!`, 'success');
     // Auto-save file URLs and names to Supabase
     await saveFileDataToSupabase('travel_invoices');
   } catch (error) {
