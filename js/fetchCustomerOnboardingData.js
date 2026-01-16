@@ -99,6 +99,11 @@ async function loadEventData() {
       data.BookingApp = (bookables || []).map(r => ({ Product_Type: r.product_type, Product: r.product, Bookable: !!r.bookable }));
       console.log("Booking app data:", data.BookingApp);
 
+      // Auto-set booking software section if BookingApp has data
+      if (typeof autoSetBookingSoftwareFromBookingApp === 'function') {
+        autoSetBookingSoftwareFromBookingApp(data.BookingApp);
+      }
+
 
       // 4) Monitor usage (old simple per product usage)
       const { data: mon, error: mErr } = await supabase
@@ -225,6 +230,9 @@ function populateFolderLinks(folderLinks) {
   if (noMessage) noMessage.style.display = "none";
   if (container) container.style.display = "grid";
   
+  // Auto-populate folder links in Booking Software and Artwork sections
+  autoPopulateFolderLinksToSections(folderLinks.subfoldersList);
+  
   // Create folder items from subfoldersList
   folderLinks.subfoldersList.forEach(folder => {
     const folderItem = document.createElement("div");
@@ -279,6 +287,50 @@ function populateFolderLinks(folderLinks) {
       });
     }
   });
+}
+
+/**
+ * Auto-populate folder links to Booking Software and Artwork sections
+ * based on folder name matching
+ */
+function autoPopulateFolderLinksToSections(subfoldersList) {
+  if (!subfoldersList || !Array.isArray(subfoldersList)) return;
+  
+  // Define folder name patterns and their target input fields
+  // Each pattern has: keywords to match (lowercase), input field name, and section selector
+
+
+  subfoldersList.forEach(folder => {
+    
+    if (!folder.name || !folder.url) return;
+
+    if(folder.name.toLowerCase().includes("booking software client documents")) {
+       const input = document.querySelector(`input[name="client_graphics_folder_link"]`);
+       if (!input) return;
+       if (input.value && input.value.trim() !== '') return;
+       input.value = folder.url;
+    }
+    if(folder.name.toLowerCase().includes("booking software generated proofs")) {
+        const input = document.querySelector(`input[name="generated_graphics_folder_link"]`);
+        if (!input) return;
+        if (input.value && input.value.trim() !== '') return;
+        if (input) input.value = folder.url;
+    }
+    if(folder.name.toLowerCase().includes("client provided files")) {
+        const input = document.querySelector(`input[name="graphics_upload_link"]`);
+        if (!input) return;
+        if (input.value && input.value.trim() !== '') return;
+        if (input) input.value = folder.url;
+    }
+    if(folder.name.toLowerCase().includes("generated proofs")) {
+        const input = document.querySelector(`input[name="proofs_folder_link"]`);
+        if (!input) return;
+        if (input.value && input.value.trim() !== '') return;
+        if (input) input.value = folder.url;
+    }
+  });
+
+  
 }
 
   function setText(id, value) {

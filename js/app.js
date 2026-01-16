@@ -424,6 +424,18 @@ function getCOIData() {
   };
 }
 
+// Section 9: Booking Software
+function getBookingSoftwareData() {
+  const section = document.querySelector('[data-section="booking-software"]');
+  return {
+    event_id: currentEventId,
+    is_booking_software: getRadioValue('is_booking_software', section) === 'yes',
+    client_graphics_folder_link: getInputValue('client_graphics_folder_link', section),
+    generated_graphics_folder_link: getInputValue('generated_graphics_folder_link', section),
+    notes: getInputValue('booking_software_notes', section)
+  };
+}
+
 // ============================================
 // Supabase Save Functions
 // ============================================
@@ -669,6 +681,26 @@ async function saveCOI() {
   return result.success;
 }
 
+// Save Booking Software
+async function saveBookingSoftware() {
+  if (!currentEventId) {
+    showToast('No event selected. Please select an event first.', 'error');
+    return false;
+  }
+  
+  const data = getBookingSoftwareData();
+  const result = await upsertSectionData('internal_booking_software', data);
+  
+  if (result.success) {
+    updateSaveStatus('booking-software', true);
+    showToast('Booking Software saved successfully!', 'success');
+  } else {
+    showToast(`Error saving: ${result.error}`, 'error');
+  }
+  
+  return result.success;
+}
+
 // Main save section dispatcher
 async function saveSection(sectionId) {
   const saveButton = document.querySelector(`.section-save-btn[data-section="${sectionId}"]`);
@@ -709,6 +741,9 @@ async function saveSection(sectionId) {
     case 'coi':
       success = await saveCOI();
       break;
+    case 'booking-software':
+      success = await saveBookingSoftware();
+      break;  
     default:
       showToast('Unknown section', 'error');
   }
@@ -779,7 +814,8 @@ async function loadAllSectionData(eventId) {
       postevent,
       travel,
       travelMeta,
-      coi
+      coi,
+      bookingSoftware
     ] = await Promise.all([
       supabase.from('internal_preplanning').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_artwork').select('*').eq('event_id', eventId).single(),
@@ -792,7 +828,8 @@ async function loadAllSectionData(eventId) {
       supabase.from('internal_postevent').select('*').eq('event_id', eventId).single(),
       supabase.from('internal_travel').select('*').eq('event_id', eventId).order('traveler_index'),
       supabase.from('internal_travel_meta').select('*').eq('event_id', eventId).single(),
-      supabase.from('internal_coi').select('*').eq('event_id', eventId).single()
+      supabase.from('internal_coi').select('*').eq('event_id', eventId).single(),
+      supabase.from('internal_booking_software').select('*').eq('event_id', eventId).single()  // ADD THIS LINE
     ]);
     
     // Populate forms with loaded data
@@ -808,6 +845,7 @@ async function loadAllSectionData(eventId) {
     if (travel.data?.length) populateTravel(travel.data);
     if (travelMeta.data) populateTravelMeta(travelMeta.data);
     if (coi.data) populateCOI(coi.data);
+    if (bookingSoftware.data) populateBookingSoftware(bookingSoftware.data);  // ADD THIS LINE
     
     console.log('All section data loaded successfully');
   } catch (error) {
@@ -1394,6 +1432,29 @@ function populateCOI(data) {
   }
   
   updateSaveStatus('coi', true);
+}
+
+// Populate Booking Software
+function populateBookingSoftware(data) {
+  const section = document.querySelector('[data-section="booking-software"]');
+  if (!section) return;
+  
+  // Set the radio button value
+  const isBookingSoftware = data.is_booking_software ? 'yes' : 'no';
+  setRadioValue('is_booking_software', isBookingSoftware, section);
+  
+  // Show/hide conditional fields
+  const fieldsWrapper = section.querySelector('.booking-software-fields');
+  if (fieldsWrapper) {
+    fieldsWrapper.style.display = data.is_booking_software ? 'block' : 'none';
+  }
+  
+  // Set input values
+  setInputValue('client_graphics_folder_link', data.client_graphics_folder_link, section);
+  setInputValue('generated_graphics_folder_link', data.generated_graphics_folder_link, section);
+  setInputValue('booking_software_notes', data.notes, section);
+  
+  updateSaveStatus('booking-software', true);
 }
 
 // ============================================
@@ -2084,6 +2145,51 @@ function initializeCopyButtons() {
   });
 }
 
+function initializeFormInteractions() {
+  // Booking Software - Toggle conditional fields
+  const bookingSoftwareRadios = document.querySelectorAll('input[name="is_booking_software"]');
+  bookingSoftwareRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      const fieldsWrapper = document.querySelector('.booking-software-fields');
+      if (fieldsWrapper) {
+        fieldsWrapper.style.display = this.value === 'yes' ? 'block' : 'none';
+      }
+    });
+  });
+}
+
+// Auto-set Booking Software based on BookingApp data
+function autoSetBookingSoftwareFromBookingApp(bookingAppData) {
+  if (!bookingAppData || !Array.isArray(bookingAppData)) return;
+  
+  const section = document.querySelector('[data-section="booking-software"]');
+  if (!section) return;
+  
+  // Check if BookingApp has any data
+  const hasBookingAppData = bookingAppData.length > 0;
+  
+  if (hasBookingAppData) {
+    // Auto-select "Yes" 
+    const yesRadio = section.querySelector('input[name="is_booking_software"][value="yes"]');
+    if (yesRadio && !yesRadio.checked) {
+      yesRadio.checked = true;
+      yesRadio.closest('.radio-item')?.classList.add('selected');
+      
+      // Show the conditional fields
+      const fieldsWrapper = section.querySelector('.booking-software-fields');
+      if (fieldsWrapper) {
+        fieldsWrapper.style.display = 'block';
+      }
+      
+      // Remove selected class from "No" option
+      const noRadio = section.querySelector('input[name="is_booking_software"][value="no"]');
+      if (noRadio) {
+        noRadio.closest('.radio-item')?.classList.remove('selected');
+      }
+    }
+  }
+}
+
 // ============================================
 // Initialize Application
 // ============================================
@@ -2105,6 +2211,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeSectionSaveButtons();
   initializeCopyButtons();
   initializeDamageItemsHandler();
+  initializeFormInteractions();
   
   if (currentEventId) {
     await loadAllSectionData(currentEventId);

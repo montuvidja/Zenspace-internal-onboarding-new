@@ -16,6 +16,8 @@
   <script src="js/supabaseClient.js"></script>
   <script>
      let currentEventName = "";
+     const NycWarehouseAddress = "7235 Cockrill Bend Blvd, Nashville, TN, 37209, United States";
+     const HaywardWarehouseAddress = " 31259 Wiegman Rd #104, Hayward, CA, 94544, United States";
   </script>
 
 </head>
@@ -216,7 +218,7 @@
                       NYC Warehouse
                       <!-- <span class="tag">East Coast</span> -->
                     </div>
-                    <div class="address-details">123 Industrial Blvd, Brooklyn, NY 11201</div>
+                    <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
                   </div>
                 </label>
                 <label class="address-option">
@@ -227,7 +229,7 @@
                       Hayward Warehouse
                       <!-- <span class="tag">West Coast</span> -->
                     </div>
-                    <div class="address-details">456 Commerce Way, Hayward, CA 94545</div>
+                    <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
                   </div>
                 </label>
                 <label class="address-option">
@@ -692,7 +694,7 @@
                           NYC Warehouse
                           <span class="tag">East Coast</span>
                         </div>
-                        <div class="address-details">123 Industrial Blvd, Brooklyn, NY 11201</div>
+                        <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
                       </div>
                     </label>
                     <label class="address-option">
@@ -703,7 +705,7 @@
                           Hayward Warehouse
                           <span class="tag">West Coast</span>
                         </div>
-                        <div class="address-details">456 Commerce Way, Hayward, CA 94545</div>
+                        <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
                       </div>
                     </label>
                     <label class="address-option">
@@ -1133,7 +1135,7 @@
                       NYC Warehouse
                       <span class="tag">East Coast</span>
                     </div>
-                    <div class="address-details">123 Industrial Blvd, Brooklyn, NY 11201</div>
+                    <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
                   </div>
                 </label>
                 <label class="address-option">
@@ -1144,7 +1146,7 @@
                       Hayward Warehouse
                       <span class="tag">West Coast</span>
                     </div>
-                    <div class="address-details">456 Commerce Way, Hayward, CA 94545</div>
+                    <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
                   </div>
                 </label>
                 <label class="address-option">
@@ -1549,7 +1551,9 @@
           </div>
         </section>
 
-        <!-- Section: COI -->
+        
+
+        <!-- Section 8: COI -->
         <section class="section-card section-coi" data-section="coi">
           <div class="section-header">
             <div class="section-header-left">
@@ -1595,6 +1599,101 @@
                   <span>Not saved</span>
                 </span>
                 <button type="button" class="btn btn-success section-save-btn" data-section="coi">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Save Section</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 9: Booking Software -->
+        <section class="section-card section-booking-software" data-section="booking-software">
+          <div class="section-header">
+            <div class="section-header-left">
+              <span class="section-number">9</span>
+              <h2 class="section-title">Booking Software</h2>
+            </div>
+            <div class="section-toggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div class="section-content">
+            <div class="section-divider"></div>
+
+            <!-- Is Booking Software Required? -->
+            <div class="form-group">
+              <label class="form-label">Is Booking Software?</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" name="is_booking_software" value="yes">
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">Yes</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="is_booking_software" value="no" checked>
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">No</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Conditional Fields (shown when Yes is selected) -->
+            <div class="booking-software-fields" style="display: none;">
+              
+              <div class="form-row">
+                <!-- Client Graphics Folder Link -->
+                <div class="form-group">
+                  <label class="form-label">Share the folder links where the client uploaded the graphics</label>
+                  <div class="link-display">
+                    <input type="text" name="client_graphics_folder_link" placeholder="Paste folder link...">
+                    <button type="button" class="copy-btn" aria-label="Copy link">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Generated Graphics Folder Link -->
+                <div class="form-group">
+                  <label class="form-label">Share the folder links to upload the generated graphics</label>
+                  <div class="link-display">
+                    <input type="text" name="generated_graphics_folder_link" placeholder="Paste folder link...">
+                    <button type="button" class="copy-btn" aria-label="Copy link">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-textarea" name="booking_software_notes" 
+                          placeholder="Enter any notes or special instructions..." rows="4"></textarea>
+              </div>
+
+            </div>
+
+            <!-- Section Actions -->
+            <div class="section-actions">
+              <div class="section-actions-left"></div>
+              <div class="section-actions-right">
+                <span class="save-status">
+                  <span>Not saved</span>
+                </span>
+                <button type="button" class="btn btn-success section-save-btn" data-section="booking-software">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
