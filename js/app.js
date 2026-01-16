@@ -200,6 +200,8 @@ function getTruckingData() {
       truck_size: getInputValue(`truck_size_${index}`, entry),
       truck_quote_enterprise: getInputValue(`truck_quote_enterprise_${index}`, entry),
       truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
+      truck_quote_edward: getInputValue(`truck_quote_edward_${index}`, entry),
+      truck_quote_other: getInputValue(`truck_quote_other_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
       pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
       pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
@@ -1023,6 +1025,8 @@ function populateTrucking(entries) {
       setInputValue(`truck_size_${data.entry_index}`, data.truck_size, entry);
       setInputValue(`truck_quote_enterprise_${data.entry_index}`, data.truck_quote_enterprise, entry);
       setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
+      setInputValue(`truck_quote_edward_${data.entry_index}`, data.truck_quote_edward, entry);
+      setInputValue(`truck_quote_other_${data.entry_index}`, data.truck_quote_other, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
       setRadioValue(`pickup_warehouse_${data.entry_index}`, data.pickup_warehouse, entry);
       setInputValue(`pickup_warehouse_other_${data.entry_index}`, data.pickup_warehouse_other, entry);
@@ -1763,16 +1767,31 @@ function createTruckingEntry(index) {
       <label class="form-label">Truck Size</label>
       <input type="text" class="form-input" name="truck_size_${index}" placeholder="Enter truck size...">
     </div>
-    
-    <div class="form-group">
-      <label class="form-label">Quote Price from Enterprise (if rented)</label>
-      <input type="text" class="form-input" name="truck_quote_enterprise_${index}" placeholder="$0.00">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quote Price from Enterprise (if rented)</label>
+        <input type="text" class="form-input" name="truck_quote_enterprise_${index}" placeholder="$0.00">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Quote Price from Axle Logistics (if Axle is providing)</label>
+        <input type="text" class="form-input" name="truck_quote_axle_${index}" placeholder="$0.00">
+      </div>
     </div>
     
-    <div class="form-group">
-      <label class="form-label">Quote Price from Axle Logistics (if Axle is providing)</label>
-      <input type="text" class="form-input" name="truck_quote_axle_${index}" placeholder="$0.00">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quote Price from Edward</label>
+        <input type="text" class="form-input" name="truck_quote_edward_${index}" placeholder="$0.00">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Quote Price from Others</label>
+        <input type="text" class="form-input" name="truck_quote_other_${index}" placeholder="$0.00">
+      </div>
     </div>
+    
     
     <div class="form-row">
       <div class="form-group">
