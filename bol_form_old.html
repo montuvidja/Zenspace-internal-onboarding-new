@@ -365,29 +365,25 @@
                 <div class="section-title">📋 Basic Information</div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="bolName">BOL Name <span class="required">*</span></label>
-                        <input type="text" id="bolName" name="bolName" required placeholder="Enter BOL name for PDF filename">
-                    </div>
-                    <div class="form-group">
                         <label for="bolNumber">BOL Number <span class="required">*</span></label>
                         <input type="text" id="bolNumber" name="bolNumber" required>
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
                         <label for="bolDate">Date <span class="required">*</span></label>
                         <input type="date" id="bolDate" name="bolDate" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="eventName">Event Name <span class="required">*</span></label>
                         <input type="text" id="eventName" name="eventName" required>
                     </div>
-                </div>
-                <div class="form-row">
+
                     <div class="form-group">
                         <label for="eventStartDate">Event Start Date <span class="required">*</span></label>
                         <input type="text" id="eventStartDate" name="eventStartDate">
                     </div>
+                    
                 </div>
             </div>
 
@@ -524,31 +520,14 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('bolDate').value = today;
 
-            // Prepopulate only Event Name and Event Start Date from prefill payload
-            initEventInfoFromPrefill();
+            // Try to load prefill payload (if opened from main app)
+            initFromPrefill();
 
-            // Always create default empty stops
-            createDefaultStops();
+            // If nothing loaded, default to two stops (Pickup + Drop-off)
+            if (document.querySelectorAll('.stop-container').length === 0) {
+                createDefaultStops();
+            }
         };
-
-        // Prepopulate only Event Name and Event Start Date
-        function initEventInfoFromPrefill() {
-            const key = getQueryParam('bolKey');
-            if (!key) return;
-
-            const raw = localStorage.getItem(key);
-            if (!raw) return;
-
-            let payload;
-            try { payload = JSON.parse(raw); } catch (e) { console.warn("Invalid BOL payload JSON", e); return; }
-            
-            // Store payload for other helpers
-            window.prefillPayload = payload;
-            
-            // Only populate Event Name and Event Start Date
-            if (payload.eventName) document.getElementById('eventName').value = payload.eventName;
-            if (payload.eventStartDate) document.getElementById('eventStartDate').value = payload.eventStartDate;
-        }
 
         function getQueryParam(name) {
             const url = new URL(window.location.href);
@@ -710,97 +689,56 @@
                             <option value="Pickup">Pickup</option>
                             <option value="Drop-off">Drop-off</option>
                             <option value="Both">Both (Pickup & Drop-off)</option>
-                            <option value="Marshalling yard">Marshalling yard</option>
                         </select>
                     </div>
-                    <div class="form-group" id="locationNameGroup_${stopCounter}">
+                    <div class="form-group">
                         <label>Location Name <span class="required">*</span></label>
                         <input type="text" name="locationName_${stopCounter}" required>
                     </div>
                 </div>
                 
-                <!-- Standard Fields (hidden for Marshalling yard) -->
-                <div id="standardFields_${stopCounter}">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Address <span class="required">*</span></label>
-                            <input type="text" name="address_${stopCounter}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Date & Time <span class="required">*</span></label>
-                            <input type="datetime-local" name="dateTime_${stopCounter}" required>
-                        </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Address <span class="required">*</span></label>
+                        <input type="text" name="address_${stopCounter}" required>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Contact Name</label>
-                            <input type="text" name="contactName_${stopCounter}">
-                        </div>
-                        <div class="form-group">
-                            <label>Contact Number</label>
-                            <input type="tel" name="contactNumber_${stopCounter}">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Truck Access Map (URL)</label>
-                            <input type="url" name="mapLink_${stopCounter}" placeholder="https://maps.google.com/...">
-                        </div>
-                        <div class="form-group">
-                            <label>Truck Access Map (Upload Image)</label>
-                            <input type="file" name="mapImage_${stopCounter}" accept="image/*" onchange="handleImageUpload(${stopCounter}, event)">
-                            <small style="color: #666; font-size: 0.85em;">Upload PNG, JPG, or other image formats</small>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Special Instructions</label>
-                            <textarea name="instructions_${stopCounter}" rows="3"></textarea>
-                        </div>
-                        <div class="form-group" id="mapPreview_${stopCounter}" style="display: none;">
-                            <label>Map Preview</label>
-                            <img id="mapPreviewImg_${stopCounter}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 2px solid #e0e0e0;">
-                        </div>
+                    <div class="form-group">
+                        <label>Date & Time <span class="required">*</span></label>
+                        <input type="datetime-local" name="dateTime_${stopCounter}" required>
                     </div>
                 </div>
                 
-                <!-- Marshalling Yard Fields (shown only for Marshalling yard) -->
-                <div id="marshallingFields_${stopCounter}" style="display: none;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Marshalling Yard Address <span class="required">*</span></label>
-                            <input type="text" name="marshallingAddress_${stopCounter}" placeholder="Enter marshalling yard address">
-                        </div>
-                        <div class="form-group">
-                            <label>Waiting Date & Time <span class="required">*</span></label>
-                            <input type="datetime-local" name="marshallingDateTime_${stopCounter}">
-                        </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Contact Name</label>
+                        <input type="text" name="contactName_${stopCounter}">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Marshalling Yard Map URL</label>
-                            <input type="url" name="marshallingMapLink_${stopCounter}" placeholder="https://maps.google.com/...">
-                        </div>
-                        <div class="form-group">
-                            <label>Marshalling Yard Map Image</label>
-                            <input type="file" name="marshallingMapImage_${stopCounter}" accept="image/*" onchange="handleMarshallingImageUpload(${stopCounter}, event)">
-                            <small style="color: #666; font-size: 0.85em;">Upload PNG, JPG, or other image formats</small>
-                        </div>
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input type="tel" name="contactNumber_${stopCounter}">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Special Instructions</label>
-                            <textarea name="marshallingInstructions_${stopCounter}" rows="3"></textarea>
-                        </div>
-                        <div class="form-group" id="marshallingMapPreview_${stopCounter}" style="display: none;">
-                            <label>Map Preview</label>
-                            <img id="marshallingMapPreviewImg_${stopCounter}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 2px solid #e0e0e0;">
-                        </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Truck Access Map (URL)</label>
+                        <input type="url" name="mapLink_${stopCounter}" placeholder="https://maps.google.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Truck Access Map (Upload Image)</label>
+                        <input type="file" name="mapImage_${stopCounter}" accept="image/*" onchange="handleImageUpload(${stopCounter}, event)">
+                        <small style="color: #666; font-size: 0.85em;">Upload PNG, JPG, or other image formats</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Special Instructions</label>
+                        <textarea name="instructions_${stopCounter}" rows="3"></textarea>
+                    </div>
+                    <div class="form-group" id="mapPreview_${stopCounter}" style="display: none;">
+                        <label>Map Preview</label>
+                        <img id="mapPreviewImg_${stopCounter}" style="max-width: 100%; max-height: 150px; border-radius: 6px; border: 2px solid #e0e0e0;">
                     </div>
                 </div>
                 
@@ -852,115 +790,26 @@
             const stopType = document.querySelector(`select[name="stopType_${stopId}"]`).value;
             const pickupSection = document.getElementById(`pickupSection_${stopId}`);
             const dropoffSection = document.getElementById(`dropoffSection_${stopId}`);
-            const standardFields = document.getElementById(`standardFields_${stopId}`);
-            const marshallingFields = document.getElementById(`marshallingFields_${stopId}`);
-            const locationNameGroup = document.getElementById(`locationNameGroup_${stopId}`);
-            const locationNameInput = document.querySelector(`input[name="locationName_${stopId}"]`);
             
-            // Hide all sections first
             pickupSection.style.display = 'none';
             dropoffSection.style.display = 'none';
             
-            // Handle Marshalling yard type
-            if (stopType === 'Marshalling yard') {
-                standardFields.style.display = 'none';
-                marshallingFields.style.display = 'block';
-                locationNameGroup.style.display = 'none';
-                
-                // Remove required from locationName
-                if (locationNameInput) {
-                    locationNameInput.removeAttribute('required');
-                    locationNameInput.dataset.wasRequired = 'true';
-                }
-                
-                // Remove required from standard fields
-                const standardRequiredInputs = standardFields.querySelectorAll('[required]');
-                standardRequiredInputs.forEach(input => {
-                    input.removeAttribute('required');
-                    input.dataset.wasRequired = 'true';
-                });
-                
-                // Add required to marshalling fields
-                const marshallingAddress = document.querySelector(`input[name="marshallingAddress_${stopId}"]`);
-                const marshallingDateTime = document.querySelector(`input[name="marshallingDateTime_${stopId}"]`);
-                if (marshallingAddress) marshallingAddress.setAttribute('required', 'required');
-                if (marshallingDateTime) marshallingDateTime.setAttribute('required', 'required');
-            } else {
-                standardFields.style.display = 'block';
-                marshallingFields.style.display = 'none';
-                locationNameGroup.style.display = 'flex';
-                
-                // Restore required to locationName
-                if (locationNameInput && locationNameInput.dataset.wasRequired === 'true') {
-                    locationNameInput.setAttribute('required', 'required');
-                    delete locationNameInput.dataset.wasRequired;
-                } else if (locationNameInput && !locationNameInput.hasAttribute('required')) {
-                    // Ensure it's required for non-marshalling types
-                    locationNameInput.setAttribute('required', 'required');
-                }
-                
-                // Restore required to standard fields
-                const standardInputs = standardFields.querySelectorAll('[data-was-required="true"]');
-                standardInputs.forEach(input => {
-                    input.setAttribute('required', 'required');
-                    delete input.dataset.wasRequired;
-                });
-                
-                // Also ensure standard required fields have required attribute
-                const addressInput = document.querySelector(`input[name="address_${stopId}"]`);
-                const dateTimeInput = document.querySelector(`input[name="dateTime_${stopId}"]`);
-                if (addressInput) addressInput.setAttribute('required', 'required');
-                if (dateTimeInput) dateTimeInput.setAttribute('required', 'required');
-                
-                // Remove required from marshalling fields
-                const marshallingAddress = document.querySelector(`input[name="marshallingAddress_${stopId}"]`);
-                const marshallingDateTime = document.querySelector(`input[name="marshallingDateTime_${stopId}"]`);
-                if (marshallingAddress) marshallingAddress.removeAttribute('required');
-                if (marshallingDateTime) marshallingDateTime.removeAttribute('required');
-                
-                // Show pickup/dropoff sections based on type
-                if (stopType === 'Pickup' || stopType === 'Both') {
-                    pickupSection.style.display = 'block';
-                    // Add default item if none exist
-                    const pickupItems = document.getElementById(`pickupItems_${stopId}`);
-                    if (pickupItems.children.length === 0) {
-                        addItem(stopId, 'pickup');
-                    }
-                }
-                
-                if (stopType === 'Drop-off' || stopType === 'Both') {
-                    dropoffSection.style.display = 'block';
-                    // Add default item if none exist
-                    const dropoffItems = document.getElementById(`dropoffItems_${stopId}`);
-                    if (dropoffItems.children.length === 0) {
-                        addItem(stopId, 'dropoff');
-                    }
+            if (stopType === 'Pickup' || stopType === 'Both') {
+                pickupSection.style.display = 'block';
+                // Add default item if none exist
+                const pickupItems = document.getElementById(`pickupItems_${stopId}`);
+                if (pickupItems.children.length === 0) {
+                    addItem(stopId, 'pickup');
                 }
             }
-        }
-        
-        // Handle marshalling yard image upload
-        function handleMarshallingImageUpload(stopId, event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Store base64 image data with marshalling prefix
-                    stopMapImages[`marshalling_${stopId}`] = {
-                        data: e.target.result,
-                        name: file.name
-                    };
-                    
-                    // Show preview
-                    const previewContainer = document.getElementById(`marshallingMapPreview_${stopId}`);
-                    const previewImg = document.getElementById(`marshallingMapPreviewImg_${stopId}`);
-                    
-                    if (previewContainer && previewImg) {
-                        previewImg.src = e.target.result;
-                        previewContainer.style.display = 'block';
-                    }
-                };
-                reader.readAsDataURL(file);
+            
+            if (stopType === 'Drop-off' || stopType === 'Both') {
+                dropoffSection.style.display = 'block';
+                // Add default item if none exist
+                const dropoffItems = document.getElementById(`dropoffItems_${stopId}`);
+                if (dropoffItems.children.length === 0) {
+                    addItem(stopId, 'dropoff');
+                }
             }
         }
 
@@ -1002,7 +851,7 @@
             generatePDF();
         });
 
-        function formatDateTime(dateTimeString) {
+        async function formatDateTime(dateTimeString) {
             if (!dateTimeString) return 'Not specified';
             
             const date = new Date(dateTimeString);
@@ -1471,10 +1320,7 @@
                 
                 // Save PDF
              //   const fileName = `BOL_${eventName}_${(eventStartDate || bolDate)}.pdf`;
-                const bolName = document.getElementById('bolName').value.trim() || 'BOL';
-                // Sanitize filename - remove special characters
-                const sanitizedBolName = bolName.replace(/[^a-zA-Z0-9\s\-_]/g, '').replace(/\s+/g, '_');
-                const fileName = `${sanitizedBolName}.pdf`;
+                const fileName = `BOL_${eventName}.pdf`;
                 doc.save(fileName);
                 
                 showMessage('PDF generated successfully!', 'success');
@@ -1596,80 +1442,59 @@
             
             stopContainers.forEach((container, index) => {
                 const stopId = container.dataset.stopId;
-                const stopType = document.querySelector(`select[name="stopType_${stopId}"]`).value;
                 
-                let stopData;
+                const stopData = {
+                    type: document.querySelector(`select[name="stopType_${stopId}"]`).value,
+                    locationName: document.querySelector(`input[name="locationName_${stopId}"]`).value,
+                    address: document.querySelector(`input[name="address_${stopId}"]`).value,
+                    dateTime: document.querySelector(`input[name="dateTime_${stopId}"]`).value,
+                    contactName: document.querySelector(`input[name="contactName_${stopId}"]`).value,
+                    contactNumber: document.querySelector(`input[name="contactNumber_${stopId}"]`).value,
+                    mapLink: document.querySelector(`input[name="mapLink_${stopId}"]`).value,
+                    mapImage: stopMapImages[stopId] || null, // Include uploaded image
+                    instructions: document.querySelector(`textarea[name="instructions_${stopId}"]`).value,
+                    pickupItems: [],
+                    dropoffItems: []
+                };
                 
-                if (stopType === 'Marshalling yard') {
-                    // Collect marshalling yard specific data
-                    stopData = {
-                        type: stopType,
-                        locationName: 'Marshalling Yard',
-                        address: document.querySelector(`input[name="marshallingAddress_${stopId}"]`).value,
-                        dateTime: document.querySelector(`input[name="marshallingDateTime_${stopId}"]`).value,
-                        contactName: '',
-                        contactNumber: '',
-                        mapLink: document.querySelector(`input[name="marshallingMapLink_${stopId}"]`).value,
-                        mapImage: stopMapImages[`marshalling_${stopId}`] || null,
-                        instructions: document.querySelector(`textarea[name="marshallingInstructions_${stopId}"]`).value,
-                        pickupItems: [],
-                        dropoffItems: []
-                    };
-                } else {
-                    // Collect standard stop data
-                    stopData = {
-                        type: stopType,
-                        locationName: document.querySelector(`input[name="locationName_${stopId}"]`).value,
-                        address: document.querySelector(`input[name="address_${stopId}"]`).value,
-                        dateTime: document.querySelector(`input[name="dateTime_${stopId}"]`).value,
-                        contactName: document.querySelector(`input[name="contactName_${stopId}"]`).value,
-                        contactNumber: document.querySelector(`input[name="contactNumber_${stopId}"]`).value,
-                        mapLink: document.querySelector(`input[name="mapLink_${stopId}"]`).value,
-                        mapImage: stopMapImages[stopId] || null,
-                        instructions: document.querySelector(`textarea[name="instructions_${stopId}"]`).value,
-                        pickupItems: [],
-                        dropoffItems: []
-                    };
-                    
-                    // Collect pickup items
-                    const pickupContainer = document.getElementById(`pickupItems_${stopId}`);
-                    if (pickupContainer) {
-                        const pickupRows = pickupContainer.querySelectorAll('.item-row');
-                        pickupRows.forEach(row => {
-                            const inputs = row.querySelectorAll('input');
-                            if (inputs.length >= 5) {
-                                const qty = inputs[0].value;
-                                const itemName = inputs[1].value;
-                                const type = inputs[2].value;
-                                const weight = inputs[3].value;
-                                const hm = inputs[4].value;
-                                
-                                if (qty || itemName) {
-                                    stopData.pickupItems.push({ qty, itemName, type, weight, hm });
-                                }
+                // Collect pickup items
+                const pickupContainer = document.getElementById(`pickupItems_${stopId}`);
+                if (pickupContainer) {
+                    const pickupRows = pickupContainer.querySelectorAll('.item-row');
+                    pickupRows.forEach(row => {
+                        const inputs = row.querySelectorAll('input');
+                        if (inputs.length >= 5) {
+                            const qty = inputs[0].value;
+                            const itemName = inputs[1].value;
+                            const type = inputs[2].value;
+                            const weight = inputs[3].value;
+                            const hm = inputs[4].value;
+                            
+                            if (qty || itemName) {  // Only add if there's data
+                                stopData.pickupItems.push({ qty, itemName, type, weight, hm });
                             }
-                        });
-                    }
-                    
-                    // Collect drop-off items
-                    const dropoffContainer = document.getElementById(`dropoffItems_${stopId}`);
-                    if (dropoffContainer) {
-                        const dropoffRows = dropoffContainer.querySelectorAll('.item-row');
-                        dropoffRows.forEach(row => {
-                            const inputs = row.querySelectorAll('input');
-                            if (inputs.length >= 5) {
-                                const qty = inputs[0].value;
-                                const itemName = inputs[1].value;
-                                const type = inputs[2].value;
-                                const weight = inputs[3].value;
-                                const hm = inputs[4].value;
-                                
-                                if (qty || itemName) {
-                                    stopData.dropoffItems.push({ qty, itemName, type, weight, hm });
-                                }
+                        }
+                    });
+                }
+                
+                // Collect drop-off items
+                const dropoffContainer = document.getElementById(`dropoffItems_${stopId}`);
+                if (dropoffContainer) {
+                    const dropoffRows = dropoffContainer.querySelectorAll('.item-row');
+                    dropoffRows.forEach(row => {
+                        const inputs = row.querySelectorAll('input');
+                        if (inputs.length >= 5) {
+                            const qty = inputs[0].value;
+                            const itemName = inputs[1].value;
+                            const type = inputs[2].value;
+                            const weight = inputs[3].value;
+                            const hm = inputs[4].value;
+                            
+                            if (qty || itemName) {  // Only add if there's data
+                                stopData.dropoffItems.push({ qty, itemName, type, weight, hm });
                             }
-                        });
-                    }
+                        }
+                    });
                 }
                 
                 stops.push(stopData);

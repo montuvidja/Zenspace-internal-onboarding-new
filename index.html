@@ -15,9 +15,12 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabaseClient.js"></script>
   <script>
+     const apiversion = "1.0.1";
      let currentEventName = "";
-     const NycWarehouseAddress = "7235 Cockrill Bend Blvd, Nashville, TN, 37209, United States";
-     const HaywardWarehouseAddress = " 31259 Wiegman Rd #104, Hayward, CA, 94544, United States";
+     const NycWarehouseAddress = "17 Madison Ave., Paterson, NJ";
+     const HaywardWarehouseAddress = "31259 Wiegman Rd #104, Hayward, CA, 94544, United States";
+     const NycWarehouse = "NYC Warehouse";
+     const HaywardWarehouse = "Hayward Warehouse";
   </script>
 
 </head>
@@ -70,7 +73,7 @@
         <section class="section-card section-folders" data-section="folders">
           <div class="section-header">
             <div class="section-header-left">
-              <span class="section-number">0</span>
+              <span class="section-number">F</span>
               <h2 class="section-title">Document Folders</h2>
             </div>
             <div class="section-toggle">
@@ -215,7 +218,7 @@
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
-                      NYC Warehouse
+                     <script>document.write(NycWarehouse);</script>
                       <!-- <span class="tag">East Coast</span> -->
                     </div>
                     <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
@@ -226,7 +229,7 @@
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
-                      Hayward Warehouse
+                      <script>document.write(HaywardWarehouse);</script>
                       <!-- <span class="tag">West Coast</span> -->
                     </div>
                     <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
@@ -705,8 +708,8 @@
                       <span class="radio-custom"></span>
                       <div class="address-content">
                         <div class="address-title">
-                          NYC Warehouse
-                          <span class="tag">East Coast</span>
+                          <script>document.write(NycWarehouse);</script>
+                          <!-- <span class="tag">East Coast</span> -->
                         </div>
                         <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
                       </div>
@@ -716,8 +719,8 @@
                       <span class="radio-custom"></span>
                       <div class="address-content">
                         <div class="address-title">
-                          Hayward Warehouse
-                          <span class="tag">West Coast</span>
+                          <script>document.write(HaywardWarehouse);</script>
+                          <!-- <span class="tag">West Coast</span> -->
                         </div>
                         <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
                       </div>
@@ -1146,8 +1149,8 @@
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
-                      NYC Warehouse
-                      <span class="tag">East Coast</span>
+                      <script>document.write(NycWarehouse);</script>
+                      <!-- <span class="tag">East Coast</span> -->
                     </div>
                     <div class="address-details"><script>document.write(NycWarehouseAddress);</script></div>
                   </div>
@@ -1157,8 +1160,8 @@
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
-                      Hayward Warehouse
-                      <span class="tag">West Coast</span>
+                      <script>document.write(HaywardWarehouse);</script>
+                      <!-- <span class="tag">West Coast</span> -->
                     </div>
                     <div class="address-details"><script>document.write(HaywardWarehouseAddress);</script></div>
                   </div>
@@ -1752,9 +1755,13 @@
   <!-- JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- <script src="js/supabaseClient.js"></script> -->
-  <script src="js/utility.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/fetchCustomerOnboardingData.js"></script>
-  <script src="js/fileUpload.js"></script>
+  
+  <script>  
+     document.write('<script src="js/utility.js?v=' + apiversion + '"><\/script>');
+     document.write('<script src="js/app.js?v=' + apiversion + '"><\/script>');
+     document.write('<script src="js/fetchCustomerOnboardingData.js?v=' + apiversion + '"><\/script>');
+     document.write('<script src="js/fileUpload.js?v=' + apiversion + '"><\/script>');
+  </script>
+  
 </body>
 </html>
