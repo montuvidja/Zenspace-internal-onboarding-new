@@ -213,6 +213,7 @@ function populateFolderLinks(folderLinks) {
   const container = document.getElementById("foldersListContainer");
   const noMessage = document.getElementById("noFoldersMessage");
   const loader = document.getElementById("foldersLoader");
+  const rootFolderLink = document.getElementById("root-folder-link");
   
   if (!container) return;
   
@@ -221,6 +222,17 @@ function populateFolderLinks(folderLinks) {
   
   // Clear existing content
   container.innerHTML = "";
+  
+  // Update Root Folder link - use eventFolder.url from the response
+  if (rootFolderLink) {
+    const rootFolderUrl = folderLinks?.eventFolder?.url;
+    if (rootFolderUrl) {
+      rootFolderLink.href = rootFolderUrl;
+      rootFolderLink.style.display = "inline-flex";
+    } else {
+      rootFolderLink.style.display = "none";
+    }
+  }
   
   if (!folderLinks || !folderLinks.subfoldersList || folderLinks.subfoldersList.length === 0) {
     if (noMessage) noMessage.style.display = "flex";

@@ -93,6 +93,12 @@ function getInputValue(name, container = document) {
   return input ? input.value : null;
 }
 
+// Get single checkbox value (boolean)
+function getCheckboxValue(name, container = document) {
+  const checkbox = container.querySelector(`input[type="checkbox"][name="${name}"]`);
+  return checkbox ? checkbox.checked : false;
+}
+
 // Helper: Find container for input (with :has() fallback)
 function findContainerForInput(section, inputName) {
   let container = section.querySelector(`.form-group:has(input[name="${inputName}"])`);
@@ -138,6 +144,7 @@ function getArtworkData() {
     graphics_upload_link: getInputValue('graphics_upload_link', section),
     proofs_folder_link: getInputValue('proofs_folder_link', section),
     proofs_due_date: getInputValue('proofs_due_date', section) || null,
+    proofs_approved: getCheckboxValue('proofs_approved', section),
     special_instructions: getInputValue('special_instructions_artwork', section)
   };
 }
@@ -174,7 +181,8 @@ function getPrintingQuotesData() {
       quote_source: getRadioValue(`quote_source_${index}`, entry),
       quote_source_other: getInputValue(`quote_source_other_${index}`, entry),
       quote_source_other_email: getInputValue(`quote_source_other_${index}_email`, entry),
-      quote_price: getInputValue(`quote_price_${index}`, entry)
+      quote_price: getInputValue(`quote_price_${index}`, entry),
+      is_quote_approved: getCheckboxValue(`is_quote_approved_${index}`, entry)
     });
   });
   
@@ -189,6 +197,22 @@ function getTruckingData() {
   truckingEntries.forEach((entry, idx) => {
     const index = parseInt(entry.dataset.index) || (idx + 1);
     
+    // Collect driver entries for this trucking route
+    const drivers = [];
+    const driverContainer = entry.querySelector(`#driverEntries_${index}`);
+    if (driverContainer) {
+      const driverEntries = driverContainer.querySelectorAll('.driver-entry');
+      driverEntries.forEach((driverEntry, driverIdx) => {
+        const driverIndex = parseInt(driverEntry.dataset.driverIndex) || (driverIdx + 1);
+        drivers.push({
+          driver_index: driverIndex,
+          driver_name: getInputValue(`driver_name_${index}_${driverIndex}`, driverEntry),
+          driver_mobile: getInputValue(`driver_mobile_${index}_${driverIndex}`, driverEntry),
+          driver_email: getInputValue(`driver_email_${index}_${driverIndex}`, driverEntry)
+        });
+      });
+    }
+    
     entries.push({
       event_id: currentEventId,
       entry_index: index,
@@ -202,14 +226,13 @@ function getTruckingData() {
       truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
       truck_quote_edward: getInputValue(`truck_quote_edward_${index}`, entry),
       truck_quote_other: getInputValue(`truck_quote_other_${index}`, entry),
+      is_trucking_quote_approved: getCheckboxValue(`is_trucking_quote_approved_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
       pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
       pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
       delivery_address: getInputValue(`delivery_address_${index}`, entry),
       delivery_instructions: getInputValue(`delivery_instructions_${index}`, entry),
-      driver_name: getInputValue(`driver_name_${index}`, entry),
-      driver_mobile: getInputValue(`driver_mobile_${index}`, entry),
-      driver_email: getInputValue(`driver_email_${index}`, entry),
+      drivers: drivers,
       truck_payment_status: getRadioValue(`truck_payment_status_${index}`, entry)
     });
   });
@@ -434,6 +457,7 @@ function getBookingSoftwareData() {
     is_booking_software: getRadioValue('is_booking_software', section) === 'yes',
     client_graphics_folder_link: getInputValue('client_graphics_folder_link', section),
     generated_graphics_folder_link: getInputValue('generated_graphics_folder_link', section),
+    booking_web_url: getInputValue('booking_web_url', section),
     notes: getInputValue('booking_software_notes', section)
   };
 }
@@ -906,6 +930,19 @@ function setCheckboxValues(name, values, container = document) {
   });
 }
 
+// Set single checkbox value (boolean)
+function setCheckboxValue(name, value, container = document) {
+  const checkbox = container.querySelector(`input[type="checkbox"][name="${name}"]`);
+  if (checkbox) {
+    checkbox.checked = !!value;
+    if (value) {
+      checkbox.closest('.checkbox-item')?.classList.add('checked');
+    } else {
+      checkbox.closest('.checkbox-item')?.classList.remove('checked');
+    }
+  }
+}
+
 // Section population functions
 function populatePreplanning(data) {
   const section = document.querySelector('[data-section="preplanning"]');
@@ -945,6 +982,7 @@ function populateArtwork(data) {
   setInputValue('graphics_upload_link', data.graphics_upload_link, section);
   setInputValue('proofs_folder_link', data.proofs_folder_link, section);
   setInputValue('proofs_due_date', data.proofs_due_date, section);
+  setCheckboxValue('proofs_approved', data.proofs_approved, section);
   setInputValue('special_instructions_artwork', data.special_instructions, section);
   
   updateSaveStatus('artwork', true);
@@ -992,6 +1030,7 @@ function populatePrintingQuotes(quotes) {
       setInputValue(`quote_source_other_${quote.quote_index}`, quote.quote_source_other, entry);
       setInputValue(`quote_source_other_${quote.quote_index}_email`, quote.quote_source_other_email, entry);
       setInputValue(`quote_price_${quote.quote_index}`, quote.quote_price, entry);
+      setCheckboxValue(`is_quote_approved_${quote.quote_index}`, quote.is_quote_approved, entry);
     }
   });
 }
@@ -1027,14 +1066,47 @@ function populateTrucking(entries) {
       setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
       setInputValue(`truck_quote_edward_${data.entry_index}`, data.truck_quote_edward, entry);
       setInputValue(`truck_quote_other_${data.entry_index}`, data.truck_quote_other, entry);
+      setCheckboxValue(`is_trucking_quote_approved_${data.entry_index}`, data.is_trucking_quote_approved, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
       setRadioValue(`pickup_warehouse_${data.entry_index}`, data.pickup_warehouse, entry);
       setInputValue(`pickup_warehouse_other_${data.entry_index}`, data.pickup_warehouse_other, entry);
       setInputValue(`delivery_address_${data.entry_index}`, data.delivery_address, entry);
       setInputValue(`delivery_instructions_${data.entry_index}`, data.delivery_instructions, entry);
-      setInputValue(`driver_name_${data.entry_index}`, data.driver_name, entry);
-      setInputValue(`driver_mobile_${data.entry_index}`, data.driver_mobile, entry);
-      setInputValue(`driver_email_${data.entry_index}`, data.driver_email, entry);
+      
+      // Populate drivers
+      if (data.drivers && data.drivers.length > 0) {
+        const driverContainer = entry.querySelector(`#driverEntries_${data.entry_index}`);
+        if (driverContainer) {
+          // Clear existing driver entries except the first one
+          const existingDrivers = driverContainer.querySelectorAll('.driver-entry');
+          existingDrivers.forEach((driverEntry, driverIdx) => {
+            if (driverIdx > 0) driverEntry.remove();
+          });
+          
+          // Populate each driver
+          data.drivers.forEach((driver, driverIdx) => {
+            if (driverIdx > 0) {
+              // Add new driver entry
+              const newDriverEntry = createDriverEntry(data.entry_index, driver.driver_index);
+              driverContainer.appendChild(newDriverEntry);
+            }
+            
+            const driverEntry = driverContainer.querySelector(`.driver-entry[data-driver-index="${driver.driver_index}"]`);
+            if (driverEntry) {
+              setInputValue(`driver_name_${data.entry_index}_${driver.driver_index}`, driver.driver_name, driverEntry);
+              setInputValue(`driver_mobile_${data.entry_index}_${driver.driver_index}`, driver.driver_mobile, driverEntry);
+              setInputValue(`driver_email_${data.entry_index}_${driver.driver_index}`, driver.driver_email, driverEntry);
+              
+              // Show remove button for additional drivers
+              if (driverIdx > 0) {
+                const removeBtn = driverEntry.querySelector('.remove-driver-btn');
+                if (removeBtn) removeBtn.style.display = 'flex';
+              }
+            }
+          });
+        }
+      }
+      
       setRadioValue(`truck_payment_status_${data.entry_index}`, data.truck_payment_status, entry);
       
       if (data.pickup_warehouse === 'other') {
@@ -1456,7 +1528,15 @@ function populateBookingSoftware(data) {
   // Set input values
   setInputValue('client_graphics_folder_link', data.client_graphics_folder_link, section);
   setInputValue('generated_graphics_folder_link', data.generated_graphics_folder_link, section);
+  setInputValue('booking_web_url', data.booking_web_url, section);
   setInputValue('booking_software_notes', data.notes, section);
+  
+  // Show/hide booking web URL open link
+  const bookingWebUrlLink = document.getElementById('booking-web-url-link');
+  if (bookingWebUrlLink && data.booking_web_url) {
+    bookingWebUrlLink.href = data.booking_web_url;
+    bookingWebUrlLink.style.display = 'flex';
+  }
   
   updateSaveStatus('booking-software', true);
 }
@@ -1478,11 +1558,27 @@ function initializeAccordions() {
 }
 
 function initializeCheckboxes() {
-  document.querySelectorAll('.checkbox-item').forEach(item => {
+  // Initialize regular checkbox groups (multiple selection, with other-input support)
+  document.querySelectorAll('.checkbox-item:not(.single-checkbox)').forEach(item => {
     if (item.dataset.initialized) return;
     item.dataset.initialized = 'true';
     
     item.addEventListener('click', (e) => {
+      // If clicking directly on the input, let browser handle it
+      if (e.target.tagName === 'INPUT') {
+        const checkbox = e.target;
+        item.classList.toggle('checked', checkbox.checked);
+        const wrapper = item.closest('.other-input-wrapper');
+        if (wrapper) {
+          const otherInputs = wrapper.querySelectorAll('.other-input');
+          otherInputs.forEach(oi => {
+            oi.disabled = !checkbox.checked;
+            if (checkbox.checked) oi.focus();
+          });
+        }
+        return;
+      }
+      
       e.preventDefault();
       const checkbox = item.querySelector('input[type="checkbox"]');
       if (checkbox) {
@@ -1502,12 +1598,20 @@ function initializeCheckboxes() {
     });
   });
   
+  // Initialize single checkboxes (standalone yes/no type)
   document.querySelectorAll('.single-checkbox').forEach(item => {
     if (item.dataset.initialized) return;
     item.dataset.initialized = 'true';
     
     item.addEventListener('click', (e) => {
+      // If clicking directly on the input, let browser handle it
+      if (e.target.tagName === 'INPUT') {
+        item.classList.toggle('checked', e.target.checked);
+        return;
+      }
+      
       e.preventDefault();
+      e.stopPropagation();
       const checkbox = item.querySelector('input[type="checkbox"]');
       if (checkbox) {
         checkbox.checked = !checkbox.checked;
@@ -1689,6 +1793,17 @@ function createQuoteEntry(index) {
       <label class="form-label">Quote Price</label>
       <input type="text" class="form-input" name="quote_price_${index}" placeholder="$0.00">
     </div>
+    <div class="form-group">
+      <label class="single-checkbox checkbox-item">
+        <input type="checkbox" name="is_quote_approved_${index}">
+        <span class="checkbox-custom">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
   `;
   
   return entry;
@@ -1792,7 +1907,6 @@ function createTruckingEntry(index) {
       </div>
     </div>
     
-    
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Pickup Date & Time</label>
@@ -1807,16 +1921,16 @@ function createTruckingEntry(index) {
           <input type="radio" name="pickup_warehouse_${index}" value="nyc">
           <span class="radio-custom"></span>
           <div class="address-content">
-            <div class="address-title">NYC Warehouse <span class="tag">East Coast</span></div>
-            <div class="address-details">123 Industrial Blvd, Brooklyn, NY 11201</div>
+            <div class="address-title">${NycWarehouse} </div>
+            <div class="address-details">${NycWarehouseAddress}</div>
           </div>
         </label>
         <label class="address-option">
           <input type="radio" name="pickup_warehouse_${index}" value="hayward">
           <span class="radio-custom"></span>
           <div class="address-content">
-            <div class="address-title">Hayward Warehouse <span class="tag">West Coast</span></div>
-            <div class="address-details">456 Commerce Way, Hayward, CA 94545</div>
+            <div class="address-title">${HaywardWarehouse}</div>
+            <div class="address-details">${HaywardWarehouseAddress}</div>
           </div>
         </label>
         <label class="address-option">
@@ -1838,20 +1952,37 @@ function createTruckingEntry(index) {
       <input type="text" class="form-input" name="delivery_address_${index}" placeholder="Enter delivery address">
     </div>
 
+    <!-- Driver Details - Dynamic Entries -->
     <div class="form-group">
       <label class="form-label">Driver Details</label>
-      <div style="display:flex; flex-direction:column; gap:6px;">
-        <div style="display:flex; gap:8px;">
-          <div style="flex:1;"><label class="form-label">Name</label></div>
-          <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
-          <div style="flex:1;"><label class="form-label">Email</label></div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="text" class="form-input" name="driver_name_${index}" placeholder="Driver Name" style="flex:1; min-width:0;">
-          <input type="text" class="form-input" name="driver_mobile_${index}" placeholder="Driver Mobile" style="flex:1; min-width:0;">
-          <input type="email" class="form-input" name="driver_email_${index}" placeholder="Driver Email" style="flex:1; min-width:0;">
+      <div id="driverEntries_${index}">
+        <div class="driver-entry" data-driver-index="1">
+          <div class="entry-header" style="margin-bottom: 8px;">
+            <div class="entry-number">
+              <span class="entry-badge" style="width: 20px; height: 20px; font-size: 10px;">1</span>
+              <span class="entry-label" style="font-size: 13px;">Driver #1</span>
+            </div>
+            <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" class="form-input" name="driver_name_${index}_1" placeholder="Driver Name" style="flex:1; min-width:0;">
+            <input type="text" class="form-input" name="driver_mobile_${index}_1" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+            <input type="email" class="form-input" name="driver_email_${index}_1" placeholder="Driver Email" style="flex:1; min-width:0;">
+          </div>
         </div>
       </div>
+      <button type="button" class="add-more-btn add-driver-btn" data-trucking-index="${index}" onclick="addDriverEntry(this)" style="margin-top: 10px; padding: 8px 12px; font-size: 13px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add Another Driver</span>
+      </button>
     </div>
     
     <div class="form-group">
@@ -1867,9 +1998,111 @@ function createTruckingEntry(index) {
         <label class="radio-item"><input type="radio" name="truck_payment_status_${index}" value="unpaid"><span class="radio-custom"></span><span class="radio-label">Unpaid</span></label>
       </div>
     </div>
+
+    <div class="form-group">
+      <label class="single-checkbox checkbox-item">
+        <input type="checkbox" name="is_trucking_quote_approved_${index}">
+        <span class="checkbox-custom">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
   `;
   
   return entry;
+}
+
+// Create a driver entry for a trucking route
+function createDriverEntry(truckingIndex, driverIndex) {
+  const entry = document.createElement('div');
+  entry.className = 'driver-entry';
+  entry.dataset.driverIndex = driverIndex;
+  
+  entry.innerHTML = `
+    <div class="entry-header" style="margin-bottom: 8px;">
+      <div class="entry-number">
+        <span class="entry-badge" style="width: 20px; height: 20px; font-size: 10px;">${driverIndex}</span>
+        <span class="entry-label" style="font-size: 13px;">Driver #${driverIndex}</span>
+      </div>
+      <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver" style="display:flex;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input type="text" class="form-input" name="driver_name_${truckingIndex}_${driverIndex}" placeholder="Driver Name" style="flex:1; min-width:0;">
+      <input type="text" class="form-input" name="driver_mobile_${truckingIndex}_${driverIndex}" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+      <input type="email" class="form-input" name="driver_email_${truckingIndex}_${driverIndex}" placeholder="Driver Email" style="flex:1; min-width:0;">
+    </div>
+  `;
+  
+  return entry;
+}
+
+// Add a new driver entry to a trucking route
+function addDriverEntry(button) {
+  const truckingIndex = button.dataset.truckingIndex;
+  const container = document.getElementById(`driverEntries_${truckingIndex}`);
+  
+  if (!container) return;
+  
+  const existingEntries = container.querySelectorAll('.driver-entry');
+  const newIndex = existingEntries.length + 1;
+  
+  const newEntry = createDriverEntry(truckingIndex, newIndex);
+  container.appendChild(newEntry);
+  
+  // Show remove buttons on all entries except the first one
+  existingEntries.forEach((entry, idx) => {
+    if (idx > 0) {
+      const removeBtn = entry.querySelector('.remove-driver-btn');
+      if (removeBtn) removeBtn.style.display = 'flex';
+    }
+  });
+}
+
+// Remove a driver entry
+function removeDriverEntry(button) {
+  const driverEntry = button.closest('.driver-entry');
+  const container = driverEntry?.parentElement;
+  
+  if (!driverEntry || !container) return;
+  
+  driverEntry.remove();
+  
+  // Re-index remaining entries
+  const remainingEntries = container.querySelectorAll('.driver-entry');
+  remainingEntries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.driverIndex = newIndex;
+    
+    // Update badge and label
+    const badge = entry.querySelector('.entry-badge');
+    const label = entry.querySelector('.entry-label');
+    if (badge) badge.textContent = newIndex;
+    if (label) label.textContent = `Driver #${newIndex}`;
+    
+    // Update input names
+    const truckingIndex = container.id.replace('driverEntries_', '');
+    const inputs = entry.querySelectorAll('input');
+    inputs.forEach(input => {
+      const nameMatch = input.name.match(/^(driver_\w+)_\d+_\d+$/);
+      if (nameMatch) {
+        input.name = `${nameMatch[1]}_${truckingIndex}_${newIndex}`;
+      }
+    });
+    
+    // Show/hide remove button
+    const removeBtn = entry.querySelector('.remove-driver-btn');
+    if (removeBtn) {
+      removeBtn.style.display = idx === 0 ? 'none' : 'flex';
+    }
+  });
 }
 
 function createTravelEntry(index) {
@@ -2020,6 +2253,7 @@ function initializeDynamicSections() {
       quoteCount++;
       const entry = createQuoteEntry(quoteCount);
       quoteContainer.appendChild(entry);
+      initializeCheckboxes();
       initializeRadios();
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
@@ -2175,6 +2409,21 @@ function initializeFormInteractions() {
       }
     });
   });
+  
+  // Booking Web URL input change - show/hide open link
+  const bookingWebUrlInput = document.querySelector('input[name="booking_web_url"]');
+  const bookingWebUrlLink = document.getElementById('booking-web-url-link');
+  if (bookingWebUrlInput && bookingWebUrlLink) {
+    bookingWebUrlInput.addEventListener('input', function() {
+      const url = this.value.trim();
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+        bookingWebUrlLink.href = url;
+        bookingWebUrlLink.style.display = 'flex';
+      } else {
+        bookingWebUrlLink.style.display = 'none';
+      }
+    });
+  }
 }
 
 // Auto-set Booking Software based on BookingApp data
@@ -2207,6 +2456,114 @@ function autoSetBookingSoftwareFromBookingApp(bookingAppData) {
       }
     }
   }
+}
+
+const createProjectBtn = document.getElementById('createProjectBtn');
+if (createProjectBtn) {
+    createProjectBtn.addEventListener('click', () => {
+      createAsanaProjectFromForm();
+    });
+  }
+
+  /**
+ * Create Asana project via Make.com webhook
+ */
+async function createAsanaProjectFromForm() {
+    // Replace with your Make.com webhook URL
+    const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/65ekfm999df11s29ypulbd3rf28lhh3n';
+    
+    try {
+       // showMessage('Creating Asana project...', 'info');
+        
+        // Collect form data
+        const payload = {
+            // Basic Info
+            event_name: document.getElementById('event-name-detail')?.value || '',
+            event_date: document.getElementById('event_date')?.value || '',
+            client_name: document.getElementById('client_name')?.value || '',
+            
+            // Trucking Section
+            trucking: collectTruckingDataForAsana(),
+            
+            // Artwork Section
+            artwork: {
+                graphics_upload_link: document.getElementById('graphics_upload_link')?.value || '',
+                proofs_folder_link: document.getElementById('proofs_folder_link')?.value || '',
+                deadline: document.getElementById('artwork_deadline')?.value || ''
+            },
+            
+            // Booking Software Section
+            booking: {
+                client_graphics_folder: document.getElementById('client_graphics_folder_link')?.value || '',
+                generated_graphics_folder: document.getElementById('generated_graphics_folder_link')?.value || ''
+            },
+            
+            // Catering Section (add your fields)
+            catering: {
+                vendor: document.getElementById('catering_vendor')?.value || '',
+                headcount: document.getElementById('catering_headcount')?.value || '',
+                dietary_notes: document.getElementById('dietary_notes')?.value || ''
+            },
+            
+            // Metadata
+            created_at: new Date().toISOString(),
+            created_by: 'Internal Onboarding Form'
+        };
+        
+        console.log('Sending to Make.com:', payload);
+        
+        const response = await fetch(MAKE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Webhook failed: ${response.status}`);
+        }
+        
+        console.log('Asana project creation triggered successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('Error creating Asana project:', error);
+        return false;
+    }
+}
+
+/**
+ * Collect trucking data for Asana
+ */
+function collectTruckingDataForAsana() {
+    const truckingEntries = document.querySelectorAll('.trucking-entry');
+    const routes = [];
+    
+    truckingEntries.forEach((entry, index) => {
+        routes.push({
+            route_number: index + 1,
+            pickup_address: entry.querySelector(`[name="truck_pickup_address_${index + 1}"]`)?.value || '',
+            pickup_date: entry.querySelector(`[name="truck_pickup_date_${index + 1}"]`)?.value || '',
+            dropoff_address: entry.querySelector(`[name="truck_dropoff_address_${index + 1}"]`)?.value || '',
+            dropoff_date: entry.querySelector(`[name="truck_dropoff_date_${index + 1}"]`)?.value || '',
+            quote_axle: entry.querySelector(`[name="truck_quote_axle_${index + 1}"]`)?.value || '',
+            quote_edward: entry.querySelector(`[name="truck_quote_edward_${index + 1}"]`)?.value || '',
+            quote_other: entry.querySelector(`[name="truck_quote_other_${index + 1}"]`)?.value || ''
+        });
+    });
+    
+    // Return first route for simple case, or all routes
+    return {
+        pickup_address: routes[0]?.pickup_address || '',
+        pickup_date: routes[0]?.pickup_date || '',
+        dropoff_address: routes[0]?.dropoff_address || '',
+        dropoff_date: routes[0]?.dropoff_date || '',
+        quote_axle: routes[0]?.quote_axle || '',
+        quote_edward: routes[0]?.quote_edward || '',
+        quote_other: routes[0]?.quote_other || '',
+        all_routes: routes
+    };
 }
 
 // ============================================

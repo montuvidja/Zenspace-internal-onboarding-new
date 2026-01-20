@@ -15,11 +15,11 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabaseClient.js"></script>
   <script>
-     const apiversion = "1.0.1";
+     const apiversion = "1.0.2";
      let currentEventName = "";
      const NycWarehouseAddress = "17 Madison Ave., Paterson, NJ";
      const HaywardWarehouseAddress = "31259 Wiegman Rd #104, Hayward, CA, 94544, United States";
-     const NycWarehouse = "NYC Warehouse";
+     const NycWarehouse = "NJ Warehouse";
      const HaywardWarehouse = "Hayward Warehouse";
   </script>
 
@@ -75,6 +75,17 @@
             <div class="section-header-left">
               <span class="section-number">F</span>
               <h2 class="section-title">Document Folders</h2>
+              <a id="root-folder-link" class="root-folder-btn" href="#" target="_blank" rel="noopener noreferrer" title="Open Root Folder" style="display:none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Event Folder</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </a>
             </div>
             <div class="section-toggle">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -357,6 +368,18 @@
             </div>
             
             <div class="form-group">
+              <label class="single-checkbox checkbox-item">
+                <input type="checkbox" name="proofs_approved">
+                <span class="checkbox-custom">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="checkbox-label">Is the generated proofs approved by client?</span>
+              </label>
+            </div>
+            
+            <div class="form-group">
               <label class="form-label">Special Instructions</label>
               <textarea class="form-textarea" name="special_instructions_artwork" placeholder="Enter any special instructions for this section..." rows="3"></textarea>
             </div>
@@ -430,6 +453,17 @@
                   <div class="form-group">
                     <label class="form-label">Quote Price</label>
                     <input type="text" class="form-input" name="quote_price_1" placeholder="$0.00">
+                  </div>
+                  <div class="form-group">
+                    <label class="single-checkbox checkbox-item">
+                      <input type="checkbox" name="is_quote_approved_1">
+                      <span class="checkbox-custom">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </span>
+                      <span class="checkbox-label">Is this quote approved?</span>
+                    </label>
                   </div>
                   </div>
                 </div>
@@ -691,7 +725,7 @@
                   </div>
                 </div>
                 
-              
+                
                 
                 <div class="form-row">
                   <div class="form-group">
@@ -744,24 +778,38 @@
                   <input type="text" class="form-input" name="delivery_address_1" placeholder="Enter delivery address">
                 </div>
 
-                
-                  <div class="form-group" style="flex:0 0 220px; min-width:160px;">
-                    <label class="form-label">Driver Details</label>
-                  
-                    <div  style="flex:1; display:flex; flex-direction:column; gap:6px;">
-                        <div style="display:flex; gap:8px;">
-                          <div style="flex:1;"><label class="form-label">Name</label></div>
-                          <div style="flex:1;"><label class="form-label">Mobile Number</label></div>
-                          <div style="flex:1;"><label class="form-label">Email</label></div>
+                <!-- Driver Details - Dynamic Entries -->
+                <div class="form-group">
+                  <label class="form-label">Driver Details</label>
+                  <div id="driverEntries_1">
+                    <div class="driver-entry" data-driver-index="1">
+                      <div class="entry-header" style="margin-bottom: 8px;">
+                        <div class="entry-number">
+                          <span class="entry-badge" style="width: 20px; height: 20px; font-size: 10px;">1</span>
+                          <span class="entry-label" style="font-size: 13px;">Driver #1</span>
                         </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                          <input type="text" class="form-input" name="driver_name_1" placeholder="Driver Name" style="flex:1; min-width:0;">
-                          <input type="text" class="form-input" name="driver_mobile_1" placeholder="Driver Mobile" style="flex:1; min-width:0;">
-                          <input type="email" class="form-input" name="driver_email_1" placeholder="Driver Email" style="flex:1; min-width:0;">
-                        </div>
+                        <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver" style="display:none;">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
+                      <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" class="form-input" name="driver_name_1_1" placeholder="Driver Name" style="flex:1; min-width:0;">
+                        <input type="text" class="form-input" name="driver_mobile_1_1" placeholder="Driver Mobile" style="flex:1; min-width:0;">
+                        <input type="email" class="form-input" name="driver_email_1_1" placeholder="Driver Email" style="flex:1; min-width:0;">
+                      </div>
                     </div>
                   </div>
-                
+                  <button type="button" class="add-more-btn add-driver-btn" data-trucking-index="1" onclick="addDriverEntry(this)" style="margin-top: 10px; padding: 8px 12px; font-size: 13px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Add Another Driver</span>
+                  </button>
+                </div>
                 
                 <div class="form-group">
                   <label class="form-label">Special Delivery Instructions</label>
@@ -790,6 +838,17 @@
                   </div>
                 </div>
                 
+                <div class="form-group">
+                  <label class="single-checkbox checkbox-item">
+                    <input type="checkbox" name="is_trucking_quote_approved_1">
+                    <span class="checkbox-custom">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                    <span class="checkbox-label">Is this quote approved?</span>
+                  </label>
+                </div>
           
               </div>
             </div>
@@ -1690,6 +1749,27 @@
                 </div>
               </div>
 
+              <!-- Booking Web URL -->
+              <div class="form-group">
+                <label class="form-label">Booking Web URL</label>
+                <div class="link-display">
+                  <input type="url" name="booking_web_url" placeholder="Enter booking web URL...">
+                  <button type="button" class="copy-btn" aria-label="Copy link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                  <a id="booking-web-url-link" class="open-link-btn" href="#" target="_blank" rel="noopener noreferrer" title="Open URL" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+
               <!-- Notes -->
               <div class="form-group">
                 <label class="form-label">Notes</label>
@@ -1723,8 +1803,8 @@
   </main>
 
   <!-- Footer Actions -->
-  <!-- <footer class="footer-actions">
-    <button type="button" class="btn btn-secondary" id="saveDraftBtn">
+  <footer class="footer-actions">
+    <!-- <button type="button" class="btn btn-secondary" id="saveDraftBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
         <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -1739,14 +1819,14 @@
         <line x1="12" y1="15" x2="12" y2="3"></line>
       </svg>
       <span>Export Data</span>
-    </button>
-    <button type="button" class="btn btn-primary" id="submitBtn">
+    </button> -->
+    <button type="button" class="btn btn-primary" id="createProjectBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      <span>Submit Form</span>
+      <span>Create Project</span>
     </button>
-  </footer> -->
+  </footer>
 
   <!-- JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
