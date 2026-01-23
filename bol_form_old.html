@@ -564,7 +564,6 @@
             
             // Expose payload for other helpers (used to obtain event start date)
             window.prefillPayload = payload;
-            console.log("Prefilling BOL form with payload:", payload);
             // Basic info
             if (payload.bolNumber) document.getElementById('bolNumber').value = payload.bolNumber;
             if (payload.bolDate) document.getElementById('bolDate').value = payload.bolDate;

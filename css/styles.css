@@ -991,12 +991,6 @@ a:hover {
   margin-bottom: var(--space-3);
 }
 
-.driver-entry .remove-driver-btn {
-  width: 28px;
-  height: 28px;
-  padding: 6px;
-}
-
 .trucking-entry::before {
   content: '';
   position: absolute;
@@ -1058,7 +1052,13 @@ a:hover {
   color: var(--color-text-primary);
 }
 
-.remove-entry-btn {
+.remove-entry-btn,
+.remove-flight-btn,
+.remove-layover-btn,
+.remove-car-btn,
+.remove-truck-btn,
+.remove-hotel-btn,
+.remove-driver-btn {
   width: 32px;
   height: 32px;
   display: flex;
@@ -1072,9 +1072,35 @@ a:hover {
   transition: all var(--transition-fast);
 }
 
-.remove-entry-btn:hover {
+.remove-entry-btn:hover,
+.remove-flight-btn:hover,
+.remove-layover-btn:hover,
+.remove-car-btn:hover,
+.remove-truck-btn:hover,
+.remove-hotel-btn:hover,
+.remove-driver-btn:hover {
   background: var(--color-error);
   color: white;
+}
+
+.remove-entry-btn.is-hidden,
+.remove-flight-btn.is-hidden,
+.remove-layover-btn.is-hidden,
+.remove-car-btn.is-hidden,
+.remove-truck-btn.is-hidden,
+.remove-hotel-btn.is-hidden,
+.remove-driver-btn.is-hidden {
+  display: none;
+}
+
+.entry-header .remove-entry-btn,
+.entry-header .remove-flight-btn,
+.entry-header .remove-layover-btn,
+.entry-header .remove-car-btn,
+.entry-header .remove-truck-btn,
+.entry-header .remove-hotel-btn,
+.entry-header .remove-driver-btn {
+  margin-left: auto;
 }
 
 /* ============================================
@@ -1133,6 +1159,528 @@ a:hover {
   width: 18px;
   height: 18px;
   color: var(--color-accent-tertiary);
+}
+
+/* ============================================
+   Flight Sections
+   ============================================ */
+.flight-section {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.flight-section.return-flight-section {
+  margin-top: var(--space-5);
+  border-left: 3px solid var(--color-accent-secondary);
+}
+
+.flight-section-header {
+  margin-bottom: var(--space-4);
+}
+
+.flight-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-accent-primary);
+  margin: 0;
+}
+
+.flight-section-title svg {
+  color: var(--color-accent-primary);
+}
+
+.flight-entries-container,
+.layover-entries-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.flight-entry {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  animation: slideUp var(--transition-base) ease;
+}
+
+.flight-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent-primary), var(--color-accent-secondary));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.flight-entry .entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.flight-entry .entry-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 4px rgba(244, 63, 94, 0.3);
+}
+
+.flight-entry .entry-badge.return-badge {
+  background: linear-gradient(135deg, var(--color-accent-secondary), var(--color-accent-tertiary));
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.flight-entry .entry-label {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.add-flight-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  background: rgba(244, 63, 94, 0.05);
+  border: 2px dashed rgba(244, 63, 94, 0.3);
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-flight-btn:hover {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: var(--color-accent-primary);
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
+}
+
+/* Layover Styles */
+.layover-toggle {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px dashed var(--color-border);
+}
+
+.layover-section {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-lg);
+}
+
+.layover-section-header {
+  margin-bottom: var(--space-3);
+}
+
+.layover-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #d97706;
+  margin: 0;
+}
+
+.layover-entry {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-bg-primary);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.layover-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.layover-entry .entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.layover-entry .entry-badge.layover-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.layover-entry .entry-label {
+  flex: 1;
+}
+
+.add-layover-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  background: rgba(245, 158, 11, 0.05);
+  border: 2px dashed rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-lg);
+  color: #f59e0b;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-layover-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   Hotel Entries
+   ============================================ */
+.hotel-entries-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.hotel-entry {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  animation: slideUp var(--transition-base) ease;
+}
+
+.hotel-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.hotel-entry .entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hotel-entry .entry-badge.hotel-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.hotel-entry .entry-label {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.add-hotel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  background: rgba(139, 92, 246, 0.05);
+  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  color: #8b5cf6;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-hotel-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+/* ============================================
+   Car Entry Styles
+   ============================================ */
+.car-entries-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.car-entry {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  animation: slideUp var(--transition-base) ease;
+}
+
+.car-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.car-entry .entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.car-entry .entry-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.car-entry .entry-label {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+/* Add Car Button */
+.travel-subsection[data-travel-type="rental_car"] .add-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  background: rgba(16, 185, 129, 0.05);
+  border: 2px dashed rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-lg);
+  color: #10b981;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.travel-subsection[data-travel-type="rental_car"] .add-entry-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+/* ============================================
+   Truck Entry Styles
+   ============================================ */
+.truck-entries-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.truck-entry {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  animation: slideUp var(--transition-base) ease;
+}
+
+.truck-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.truck-entry .entry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.truck-entry .entry-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.truck-entry .entry-label {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+/* Add Truck Button */
+.travel-subsection[data-travel-type="rental_truck"] .add-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  background: rgba(245, 158, 11, 0.05);
+  border: 2px dashed rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-lg);
+  color: #f59e0b;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.travel-subsection[data-travel-type="rental_truck"] .add-entry-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+
+/* ============================================
+   Approval Checkbox Group
+   ============================================ */
+.approval-checkbox-group {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+}
+
+.approval-checkbox-group .single-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.approval-checkbox-group .checkbox-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.approval-checkbox-group .checkbox-custom svg {
+  width: 12px;
+  height: 12px;
+  stroke: white;
+  stroke-width: 3;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.approval-checkbox-group .single-checkbox.checked .checkbox-custom svg {
+  opacity: 1;
 }
 
 /* ============================================

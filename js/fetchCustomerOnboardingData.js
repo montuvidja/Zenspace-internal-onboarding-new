@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // base data from DB loader (jsonData) or freshly loaded
         const base = jsonData || await loadEventData();
         if (!base) return;
-        // Merge current form values so user inputs (packing_deadline, etc.) are included
-        const formValues = (typeof getAllFormData === 'function') ? getAllFormData() : {};
-        const data = Object.assign({}, base, formValues);
+        // Merge current form values needed for the Work Order (packing deadline, installer, preplanning special instructions)
+        const overrides = getWorkOrderFormOverridesFromDOM();
+        const data = Object.assign({}, base, overrides);
         const wo = buildWarehouseWorkOrderPayload(data);
         const key = "wo_" + Date.now();
         localStorage.setItem(key, JSON.stringify(wo));
@@ -36,9 +36,32 @@ let jsonData;
   
   let isBookingInfoAvailable = false;
 
+function getWorkOrderFormOverridesFromDOM() {
+  // These values live only in the current form UI, not in the base DB payload.
+  const packingDeadline = document.querySelector('input[name="packing_deadline"]')?.value || "";
+  const specialInstructionsPreplanning =
+    document.querySelector('textarea[name="special_instructions_preplanning"]')?.value || "";
+
+  // Assign Installer (checkboxes)
+  const checked = Array.from(
+    document.querySelectorAll('input[name="preplanning_installer"]:checked')
+  ).map(cb => cb.value);
+
+  const otherInstaller =
+    document.querySelector('input[name="preplanning_installer_other"]')?.value || "";
+
+  return {
+    packing_deadline: packingDeadline,
+    special_instructions_preplanning: specialInstructionsPreplanning,
+    preplanning_installer: checked,
+    preplanning_installer_other: otherInstaller
+  };
+}
+
 async function loadEventData() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      console.log("Ensuring Supabase client...");
       await ensureSupabaseClient();
     //  showLoader("Loading event data...");
       const eventId = urlParams.get('event_id');// '4718866000034408037';
@@ -97,7 +120,7 @@ async function loadEventData() {
         .order("id", { ascending: true });
       if (bkErr) throw bkErr;
       data.BookingApp = (bookables || []).map(r => ({ Product_Type: r.product_type, Product: r.product, Bookable: !!r.bookable }));
-      console.log("Booking app data:", data.BookingApp);
+    
 
       // Auto-set booking software section if BookingApp has data
       if (typeof autoSetBookingSoftwareFromBookingApp === 'function') {
@@ -113,7 +136,7 @@ async function loadEventData() {
         .order("id", { ascending: true });
       if (mErr) throw mErr;
       data.MonitorUse = (mon || []).map(r => ({ Product_Type: r.product_type, Product: r.product, MonitorUse: r.usage_type }));
-      console.log("Monitor usage data:", data.MonitorUse);
+    
 
 
       // 5) pods_booked
@@ -129,7 +152,7 @@ async function loadEventData() {
         warehouse: (r.warehouse || "").split(",").map(s => s.trim()).filter(Boolean),
         quantity: r.quantity || 0
       }));
-      console.log("Pods booked data:", data.podsBooked);
+     
 
 
       // 6) invoice_details
@@ -144,7 +167,7 @@ async function loadEventData() {
         percentage: String(r.percent ?? ""),
         dueDate: r.due_date || ""
       }));
-      console.log("Invoice details data:", data.invoiceDetail);
+     
 
 
       // 7) additional_items
@@ -157,7 +180,7 @@ async function loadEventData() {
       data.additionalItemList = (adds || []).map(r => ({
         additionalItemDescription: r.description, additionalItemQuantity: r.quantity, additionalItemPrice: "", additionalItemTotalPrice: ""
       }));
-      console.log("Additional items data:", data.additionalItemList);   
+
       // Render
       jsonData = data;
     //  renderOrderSummary(data);
@@ -170,6 +193,8 @@ async function loadEventData() {
         const folderLinks = await fetchEventFolderLinks(ev.event_name, ev.event_start_at);
         if (folderLinks) {
           populateFolderLinks(folderLinks);
+        } else {
+          console.error("Failed to fetch folder links");
         }
       }
   
@@ -190,7 +215,7 @@ async function loadEventData() {
 
 
   function populateHeaderData(data) {
-    console.log("Populating header data:", data);
+    
     setText("event-name-detail", data["event-name-detail"]);
     setText("display-address", data["display-address"]);
     setText("start-date", data["start-date"]);
@@ -311,7 +336,7 @@ function autoPopulateFolderLinksToSections(subfoldersList) {
   // Define folder name patterns and their target input fields
   // Each pattern has: keywords to match (lowercase), input field name, and section selector
 
-
+  console.log("Auto-populating folder links to sections...");
   subfoldersList.forEach(folder => {
     
     if (!folder.name || !folder.url) return;
@@ -347,7 +372,7 @@ function autoPopulateFolderLinksToSections(subfoldersList) {
 
   function setText(id, value) {
     const el = document.getElementById(id);
-    console.log("Setting text for:", id, value);
+  
   if (!el) return;
   const text = value == null ? "" : String(value);
   if ("value" in el) {
@@ -399,6 +424,23 @@ function buildWarehouseWorkOrderPayload(data) {
 
   const warehouseAddress = getSelectedWarehouseAddress();
   const packingDeadline = data["packing_deadline"] || "";
+  const preplanningSpecial = data["special_instructions_preplanning"] || "";
+
+  // Build installer display string from Assign Installer (preplanning section)
+  let installer = "";
+  const rawInstaller = data["preplanning_installer"];
+  if (Array.isArray(rawInstaller)) {
+    installer = rawInstaller.join(", ");
+  } else if (rawInstaller != null) {
+    installer = String(rawInstaller);
+  }
+
+  const otherInstaller = (data["preplanning_installer_other"] || "").trim();
+  if (otherInstaller) {
+    installer = installer
+      ? `${installer}, Other: ${otherInstaller}`
+      : otherInstaller;
+  }
 
   return {
     dealName: data["event-name-detail"] || "",
@@ -407,6 +449,9 @@ function buildWarehouseWorkOrderPayload(data) {
     eventEndDate: data["end-date"] || "",
     warehouseAddress,
     packingDeadline,
+    // Preplanning special instructions and installer info
+    specialInstructionsPreplanning: preplanningSpecial,
+    installer,
     podsBooked: (data.podsBooked || []).map(r => ({
       podType: r.name || "",
       quantity: r.quantity ?? "",

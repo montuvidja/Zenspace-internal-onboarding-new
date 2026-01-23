@@ -360,6 +360,152 @@ function getTravelData() {
   
   travelEntries.forEach((entry, idx) => {
     const index = parseInt(entry.dataset.index) || (idx + 1);
+    
+    // Collect one-way flights with their layovers
+    const onewayFlights = [];
+    const onewayContainer = entry.querySelector(`#onewayFlights_${index}`);
+    if (onewayContainer) {
+      onewayContainer.querySelectorAll('.flight-entry').forEach((flightEntry, fIdx) => {
+        const flightIndex = fIdx + 1;
+        
+        // Collect layovers for this flight
+        const layovers = [];
+        const layoverContainer = flightEntry.querySelector(`[data-layover-container="oneway_${index}_${flightIndex}"]`);
+        if (layoverContainer) {
+          layoverContainer.querySelectorAll('.layover-entry').forEach((layoverEntry, lIdx) => {
+            const layoverIndex = lIdx + 1;
+            layovers.push({
+              layover_index: layoverIndex,
+              airport: getInputValue(`oneway_layover_airport_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              duration: getInputValue(`oneway_layover_duration_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              flight_name: getInputValue(`oneway_layover_flight_name_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              connecting_flight: getInputValue(`oneway_layover_flight_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              departure: toISODateTime(getInputValue(`oneway_layover_departure_${index}_${flightIndex}_${layoverIndex}`, layoverEntry)),
+              arrival: toISODateTime(getInputValue(`oneway_layover_arrival_${index}_${flightIndex}_${layoverIndex}`, layoverEntry))
+            });
+          });
+        }
+        
+        onewayFlights.push({
+          flight_index: flightIndex,
+          airline: getInputValue(`oneway_airline_${index}_${flightIndex}`, flightEntry),
+          flight_number: getInputValue(`oneway_flight_number_${index}_${flightIndex}`, flightEntry),
+          from: getInputValue(`oneway_from_${index}_${flightIndex}`, flightEntry),
+          to: getInputValue(`oneway_to_${index}_${flightIndex}`, flightEntry),
+          departure: toISODateTime(getInputValue(`oneway_departure_${index}_${flightIndex}`, flightEntry)),
+          arrival: toISODateTime(getInputValue(`oneway_arrival_${index}_${flightIndex}`, flightEntry)),
+          quote: getInputValue(`oneway_quote_${index}_${flightIndex}`, flightEntry),
+          confirmation: getInputValue(`oneway_confirmation_${index}_${flightIndex}`, flightEntry),
+          quote_approved: getCheckboxValue(`oneway_quote_approved_${index}_${flightIndex}`, flightEntry),
+          has_layover: getRadioValue(`oneway_has_layover_${index}_${flightIndex}`, flightEntry) === 'yes',
+          layovers: layovers
+        });
+      });
+    }
+    
+    // Collect return flights with their layovers
+    const returnFlights = [];
+    const returnContainer = entry.querySelector(`#returnFlights_${index}`);
+    if (returnContainer) {
+      returnContainer.querySelectorAll('.flight-entry').forEach((flightEntry, fIdx) => {
+        const flightIndex = fIdx + 1;
+        
+        // Collect layovers for this flight
+        const layovers = [];
+        const layoverContainer = flightEntry.querySelector(`[data-layover-container="return_${index}_${flightIndex}"]`);
+        if (layoverContainer) {
+          layoverContainer.querySelectorAll('.layover-entry').forEach((layoverEntry, lIdx) => {
+            const layoverIndex = lIdx + 1;
+            layovers.push({
+              layover_index: layoverIndex,
+              airport: getInputValue(`return_layover_airport_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              duration: getInputValue(`return_layover_duration_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              flight_name: getInputValue(`return_layover_flight_name_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              connecting_flight: getInputValue(`return_layover_flight_${index}_${flightIndex}_${layoverIndex}`, layoverEntry),
+              departure: toISODateTime(getInputValue(`return_layover_departure_${index}_${flightIndex}_${layoverIndex}`, layoverEntry)),
+              arrival: toISODateTime(getInputValue(`return_layover_arrival_${index}_${flightIndex}_${layoverIndex}`, layoverEntry))
+            });
+          });
+        }
+        
+        returnFlights.push({
+          flight_index: flightIndex,
+          airline: getInputValue(`return_airline_${index}_${flightIndex}`, flightEntry),
+          flight_number: getInputValue(`return_flight_number_${index}_${flightIndex}`, flightEntry),
+          from: getInputValue(`return_from_${index}_${flightIndex}`, flightEntry),
+          to: getInputValue(`return_to_${index}_${flightIndex}`, flightEntry),
+          departure: toISODateTime(getInputValue(`return_departure_${index}_${flightIndex}`, flightEntry)),
+          arrival: toISODateTime(getInputValue(`return_arrival_${index}_${flightIndex}`, flightEntry)),
+          quote: getInputValue(`return_quote_${index}_${flightIndex}`, flightEntry),
+          confirmation: getInputValue(`return_confirmation_${index}_${flightIndex}`, flightEntry),
+          quote_approved: getCheckboxValue(`return_quote_approved_${index}_${flightIndex}`, flightEntry),
+          has_layover: getRadioValue(`return_has_layover_${index}_${flightIndex}`, flightEntry) === 'yes',
+          layovers: layovers
+        });
+      });
+    }
+    
+    // Collect hotels
+    const hotels = [];
+    const hotelContainer = entry.querySelector(`#hotelEntries_${index}`);
+    if (hotelContainer) {
+      hotelContainer.querySelectorAll('.hotel-entry').forEach((hotelEntry, hIdx) => {
+        const hotelIndex = hIdx + 1;
+        hotels.push({
+          hotel_index: hotelIndex,
+          name: getInputValue(`hotel_name_${index}_${hotelIndex}`, hotelEntry),
+          location: getInputValue(`hotel_location_${index}_${hotelIndex}`, hotelEntry),
+          check_in: toISODateTime(getInputValue(`check_in_${index}_${hotelIndex}`, hotelEntry)),
+          check_out: toISODateTime(getInputValue(`check_out_${index}_${hotelIndex}`, hotelEntry)),
+          quote: getInputValue(`hotel_quote_${index}_${hotelIndex}`, hotelEntry),
+          confirmation: getInputValue(`hotel_confirmation_${index}_${hotelIndex}`, hotelEntry),
+          quote_approved: getCheckboxValue(`hotel_quote_approved_${index}_${hotelIndex}`, hotelEntry)
+        });
+      });
+    }
+    
+    // Collect rental cars
+    const cars = [];
+    const carContainer = entry.querySelector(`#carEntries_${index}`);
+    if (carContainer) {
+      carContainer.querySelectorAll('.car-entry').forEach((carEntry, cIdx) => {
+        const carIndex = cIdx + 1;
+        cars.push({
+          car_index: carIndex,
+          company: getInputValue(`car_company_${index}_${carIndex}`, carEntry),
+          number: getInputValue(`car_number_${index}_${carIndex}`, carEntry),
+          pickup: toISODateTime(getInputValue(`car_pickup_${index}_${carIndex}`, carEntry)),
+          dropoff: toISODateTime(getInputValue(`car_dropoff_${index}_${carIndex}`, carEntry)),
+          pickup_address: getInputValue(`car_pickup_address_${index}_${carIndex}`, carEntry),
+          dropoff_address: getInputValue(`car_dropoff_address_${index}_${carIndex}`, carEntry),
+          quote: getInputValue(`car_quote_${index}_${carIndex}`, carEntry),
+          confirmation: getInputValue(`car_confirmation_${index}_${carIndex}`, carEntry),
+          quote_approved: getCheckboxValue(`car_quote_approved_${index}_${carIndex}`, carEntry)
+        });
+      });
+    }
+    
+    // Collect rental trucks
+    const trucks = [];
+    const truckContainer = entry.querySelector(`#truckEntries_${index}`);
+    if (truckContainer) {
+      truckContainer.querySelectorAll('.truck-entry').forEach((truckEntry, tIdx) => {
+        const truckIndex = tIdx + 1;
+        trucks.push({
+          truck_index: truckIndex,
+          company: getInputValue(`truck_company_${index}_${truckIndex}`, truckEntry),
+          number: getInputValue(`truck_number_${index}_${truckIndex}`, truckEntry),
+          pickup: toISODateTime(getInputValue(`truck_pickup_${index}_${truckIndex}`, truckEntry)),
+          dropoff: toISODateTime(getInputValue(`truck_dropoff_${index}_${truckIndex}`, truckEntry)),
+          pickup_address: getInputValue(`truck_pickup_address_${index}_${truckIndex}`, truckEntry),
+          dropoff_address: getInputValue(`truck_dropoff_address_${index}_${truckIndex}`, truckEntry),
+          quote: getInputValue(`truck_quote_${index}_${truckIndex}`, truckEntry),
+          confirmation: getInputValue(`truck_confirmation_${index}_${truckIndex}`, truckEntry),
+          quote_approved: getCheckboxValue(`truck_quote_approved_${index}_${truckIndex}`, truckEntry)
+        });
+      });
+    }
+    
     entries.push({
       event_id: currentEventId,
       traveler_index: index,
@@ -371,36 +517,17 @@ function getTravelData() {
       traveler_from_datetime: toISODateTime(getInputValue(`traveler_from_datetime_${index}`, entry)),
       traveler_to_datetime: toISODateTime(getInputValue(`traveler_to_datetime_${index}`, entry)),
       travel_type: getRadioValue(`travel_type_${index}`, entry),
-      // Flight details
-      flight_name: getInputValue(`flight_name_${index}`, entry),
-      flight_number: getInputValue(`flight_number_${index}`, entry),
-      flight_departure: toISODateTime(getInputValue(`flight_departure_${index}`, entry)),
-      flight_arrival: toISODateTime(getInputValue(`flight_arrival_${index}`, entry)),
-      flight_quote: getInputValue(`flight_quote_${index}`, entry),
-      // Car details
-      car_company: getInputValue(`car_company_${index}`, entry),
-      car_number: getInputValue(`car_number_${index}`, entry),
-      car_pickup: toISODateTime(getInputValue(`car_pickup_${index}`, entry)),
-      car_dropoff: toISODateTime(getInputValue(`car_dropoff_${index}`, entry)),
-      car_pickup_address: getInputValue(`car_pickup_address_${index}`, entry),
-      car_dropoff_address: getInputValue(`car_dropoff_address_${index}`, entry),
-      car_quote: getInputValue(`car_quote_${index}`, entry),
-      // Truck details
-      truck_company: getInputValue(`truck_company_${index}`, entry),
-      truck_number: getInputValue(`truck_number_${index}`, entry),
-      truck_pickup: toISODateTime(getInputValue(`truck_pickup_${index}`, entry)),
-      truck_dropoff: toISODateTime(getInputValue(`truck_dropoff_${index}`, entry)),
-      truck_pickup_address: getInputValue(`truck_pickup_address_${index}`, entry),
-      truck_dropoff_address: getInputValue(`truck_dropoff_address_${index}`, entry),
-      truck_quote: getInputValue(`truck_quote_${index}`, entry),
+      // Flight details - new structure with layovers per flight
+      oneway_flights: onewayFlights,
+      return_flights: returnFlights,
+      // Rental car details - new array structure
+      cars: cars,
+      // Rental truck details - new array structure
+      trucks: trucks,
       // Personal
       personal_quote: getInputValue(`personal_quote_${index}`, entry),
-      // Hotel details
-      hotel_name: getInputValue(`hotel_name_${index}`, entry),
-      hotel_location: getInputValue(`hotel_location_${index}`, entry),
-      check_in: toISODateTime(getInputValue(`check_in_${index}`, entry)),
-      check_out: toISODateTime(getInputValue(`check_out_${index}`, entry)),
-      hotel_quote: getInputValue(`hotel_quote_${index}`, entry),
+      // Hotel details - new array structure
+      hotels: hotels,
       // Special instructions per traveler
       special_instructions: getInputValue(`special_instructions_travel_${index}`, entry)
     });
@@ -521,7 +648,6 @@ async function savePreplanning() {
   const data = getPreplanningData();
   const result = await upsertSectionData('internal_preplanning', data);
 
-  console.log('Preplanning save result:', result);
   
   if (result.success) {
     updateSaveStatus('preplanning', true);
@@ -541,7 +667,6 @@ async function saveArtwork() {
   
   const data = getArtworkData();
   const result = await upsertSectionData('internal_artwork', data);
-  console.log('Artwork save result:', result);
   
   if (result.success) {
     updateSaveStatus('artwork', true);
@@ -881,13 +1006,22 @@ async function loadAllSectionData(eventId) {
 
 // Populate form helpers
 function setInputValue(name, value, container = document) {
-  const input = container.querySelector(`[name="${name}"]`);
+  let input = container.querySelector(`[name="${name}"]`);
+  if (!input && container !== document) {
+    input = document.querySelector(`[name="${name}"]`);
+  }
   if (input) input.value = value || '';
 }
 
 function setRadioValue(name, value, container = document) {
   if (!value) return;
-  const radio = container.querySelector(`input[name="${name}"][value="${value}"]`);
+  
+  // First try to find in container, then fall back to document
+  let radio = container.querySelector(`input[name="${name}"][value="${value}"]`);
+  if (!radio && container !== document) {
+    radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+  }
+  
   if (radio) {
     radio.checked = true;
     radio.closest('.radio-item')?.classList.add('selected');
@@ -905,6 +1039,8 @@ function setRadioValue(name, value, container = document) {
       const addressOther = wrapper?.querySelector('.address-other-input');
       if (addressOther) addressOther.style.display = 'block';
     }
+  } else {
+    console.warn(`[setRadioValue] Radio not found: ${name}=${value}`);
   }
 }
 
@@ -932,14 +1068,25 @@ function setCheckboxValues(name, values, container = document) {
 
 // Set single checkbox value (boolean)
 function setCheckboxValue(name, value, container = document) {
-  const checkbox = container.querySelector(`input[type="checkbox"][name="${name}"]`);
+  // First try to find in container, then fall back to document
+  let checkbox = container.querySelector(`input[type="checkbox"][name="${name}"]`);
+  if (!checkbox && container !== document) {
+    checkbox = document.querySelector(`input[type="checkbox"][name="${name}"]`);
+  }
+  
+  
   if (checkbox) {
     checkbox.checked = !!value;
-    if (value) {
-      checkbox.closest('.checkbox-item')?.classList.add('checked');
-    } else {
-      checkbox.closest('.checkbox-item')?.classList.remove('checked');
+    // Handle both checkbox-item and single-checkbox styles
+    const checkboxItem = checkbox.closest('.checkbox-item') || checkbox.closest('.single-checkbox');
+    if (checkboxItem) {
+      if (value) {
+        checkboxItem.classList.add('checked');
+      } else {
+        checkboxItem.classList.remove('checked');
+      }
     }
+  } else {
   }
 }
 
@@ -1100,7 +1247,7 @@ function populateTrucking(entries) {
               // Show remove button for additional drivers
               if (driverIdx > 0) {
                 const removeBtn = driverEntry.querySelector('.remove-driver-btn');
-                if (removeBtn) removeBtn.style.display = 'flex';
+                setRemoveButtonVisibility(removeBtn, true);
               }
             }
           });
@@ -1173,6 +1320,11 @@ function populateInstallation(data) {
   setInputValue('dismantle_special_instructions', data.dismantle_special_instructions, section);
   
   updateSaveStatus('installation', true);
+}
+
+function setRemoveButtonVisibility(button, shouldShow) {
+  if (!button) return;
+  button.classList.toggle('is-hidden', !shouldShow);
 }
 
 function populateInstallationDates(datesData) {
@@ -1371,6 +1523,7 @@ function populatePostevent(data) {
 }
 
 function populateTravel(entries) {
+  
   const container = document.getElementById('travelEntries');
   if (!container) return;
   
@@ -1405,38 +1558,256 @@ function populateTravel(entries) {
         });
       }
       
-      setInputValue(`flight_name_${data.traveler_index}`, data.flight_name, entry);
-      setInputValue(`flight_number_${data.traveler_index}`, data.flight_number, entry);
-      setInputValue(`flight_departure_${data.traveler_index}`, fromISODateTime(data.flight_departure), entry);
-      setInputValue(`flight_arrival_${data.traveler_index}`, fromISODateTime(data.flight_arrival), entry);
-      setInputValue(`flight_quote_${data.traveler_index}`, data.flight_quote, entry);
-      setInputValue(`car_company_${data.traveler_index}`, data.car_company, entry);
-      setInputValue(`car_number_${data.traveler_index}`, data.car_number, entry);
-      setInputValue(`car_pickup_${data.traveler_index}`, fromISODateTime(data.car_pickup), entry);
-      setInputValue(`car_dropoff_${data.traveler_index}`, fromISODateTime(data.car_dropoff), entry);
-      setInputValue(`car_pickup_address_${data.traveler_index}`, data.car_pickup_address, entry);
-      setInputValue(`car_dropoff_address_${data.traveler_index}`, data.car_dropoff_address, entry);
-      setInputValue(`car_quote_${data.traveler_index}`, data.car_quote, entry);
-      setInputValue(`truck_company_${data.traveler_index}`, data.truck_company, entry);
-      setInputValue(`truck_number_${data.traveler_index}`, data.truck_number, entry);
-      setInputValue(`truck_pickup_${data.traveler_index}`, fromISODateTime(data.truck_pickup), entry);
-      setInputValue(`truck_dropoff_${data.traveler_index}`, fromISODateTime(data.truck_dropoff), entry);
-      setInputValue(`truck_pickup_address_${data.traveler_index}`, data.truck_pickup_address, entry);
-      setInputValue(`truck_dropoff_address_${data.traveler_index}`, data.truck_dropoff_address, entry);
-      setInputValue(`truck_quote_${data.traveler_index}`, data.truck_quote, entry);
+      // Populate one-way flights (with has_layover, quote_approved, and layovers inside each flight)
+      const onewayFlights = data.oneway_flights || [];
+      const onewayContainer = entry.querySelector(`#onewayFlights_${data.traveler_index}`);
+      if (onewayContainer && onewayFlights.length > 0) {
+        // First flight already exists, populate it
+        const firstOnewayFlight = onewayContainer.querySelector('.flight-entry');
+        if (firstOnewayFlight && onewayFlights[0]) {
+          populateFlightEntry(firstOnewayFlight, 'oneway', data.traveler_index, 1, onewayFlights[0]);
+        }
+        // Add additional flights
+        for (let i = 1; i < onewayFlights.length; i++) {
+          const newFlight = createFlightEntryElement('oneway', data.traveler_index, i + 1);
+          onewayContainer.appendChild(newFlight);
+          populateFlightEntry(newFlight, 'oneway', data.traveler_index, i + 1, onewayFlights[i]);
+        }
+        updateFlightRemoveButtons(onewayContainer);
+      }
+      
+      // Populate return flights (with has_layover, quote_approved, and layovers inside each flight)
+      const returnFlights = data.return_flights || [];
+      const returnContainer = entry.querySelector(`#returnFlights_${data.traveler_index}`);
+      if (returnContainer && returnFlights.length > 0) {
+        const firstReturnFlight = returnContainer.querySelector('.flight-entry');
+        if (firstReturnFlight && returnFlights[0]) {
+          populateFlightEntry(firstReturnFlight, 'return', data.traveler_index, 1, returnFlights[0]);
+        }
+        for (let i = 1; i < returnFlights.length; i++) {
+          const newFlight = createFlightEntryElement('return', data.traveler_index, i + 1);
+          returnContainer.appendChild(newFlight);
+          populateFlightEntry(newFlight, 'return', data.traveler_index, i + 1, returnFlights[i]);
+        }
+        updateFlightRemoveButtons(returnContainer);
+      }
+      
+      // Populate rental cars (from cars JSONB array)
+      const cars = data.cars || [];
+      const carContainer = entry.querySelector(`#carEntries_${data.traveler_index}`);
+      if (carContainer && cars.length > 0) {
+        // First car already exists
+        const firstCar = carContainer.querySelector('.car-entry');
+        if (firstCar && cars[0]) {
+          populateCarEntry(firstCar, data.traveler_index, 1, cars[0]);
+        }
+        // Add additional cars
+        for (let i = 1; i < cars.length; i++) {
+          const newCar = createCarEntryElement(data.traveler_index, i + 1);
+          carContainer.appendChild(newCar);
+          populateCarEntry(newCar, data.traveler_index, i + 1, cars[i]);
+        }
+        updateCarRemoveButtons(carContainer);
+      } else {
+        // Backward compatibility: use old single car fields if cars array is empty
+        setInputValue(`car_company_${data.traveler_index}_1`, data.car_company, entry);
+        setInputValue(`car_number_${data.traveler_index}_1`, data.car_number, entry);
+        setInputValue(`car_pickup_${data.traveler_index}_1`, fromISODateTime(data.car_pickup), entry);
+        setInputValue(`car_dropoff_${data.traveler_index}_1`, fromISODateTime(data.car_dropoff), entry);
+        setInputValue(`car_pickup_address_${data.traveler_index}_1`, data.car_pickup_address, entry);
+        setInputValue(`car_dropoff_address_${data.traveler_index}_1`, data.car_dropoff_address, entry);
+        setInputValue(`car_quote_${data.traveler_index}_1`, data.car_quote, entry);
+      }
+      
+      // Populate rental trucks (from trucks JSONB array)
+      const trucks = data.trucks || [];
+      const truckContainer = entry.querySelector(`#truckEntries_${data.traveler_index}`);
+      if (truckContainer && trucks.length > 0) {
+        // First truck already exists
+        const firstTruck = truckContainer.querySelector('.truck-entry');
+        if (firstTruck && trucks[0]) {
+          populateTruckEntry(firstTruck, data.traveler_index, 1, trucks[0]);
+        }
+        // Add additional trucks
+        for (let i = 1; i < trucks.length; i++) {
+          const newTruck = createTruckEntryElement(data.traveler_index, i + 1);
+          truckContainer.appendChild(newTruck);
+          populateTruckEntry(newTruck, data.traveler_index, i + 1, trucks[i]);
+        }
+        updateTruckRemoveButtons(truckContainer);
+      } else {
+        // Backward compatibility: use old single truck fields if trucks array is empty
+        setInputValue(`truck_company_${data.traveler_index}_1`, data.truck_company, entry);
+        setInputValue(`truck_number_${data.traveler_index}_1`, data.truck_number, entry);
+        setInputValue(`truck_pickup_${data.traveler_index}_1`, fromISODateTime(data.truck_pickup), entry);
+        setInputValue(`truck_dropoff_${data.traveler_index}_1`, fromISODateTime(data.truck_dropoff), entry);
+        setInputValue(`truck_pickup_address_${data.traveler_index}_1`, data.truck_pickup_address, entry);
+        setInputValue(`truck_dropoff_address_${data.traveler_index}_1`, data.truck_dropoff_address, entry);
+        setInputValue(`truck_quote_${data.traveler_index}_1`, data.truck_quote, entry);
+      }
+      
+      // Personal
       setInputValue(`personal_quote_${data.traveler_index}`, data.personal_quote, entry);
-      setInputValue(`hotel_name_${data.traveler_index}`, data.hotel_name, entry);
-      setInputValue(`hotel_location_${data.traveler_index}`, data.hotel_location, entry);
-      setInputValue(`check_in_${data.traveler_index}`, fromISODateTime(data.check_in), entry);
-      setInputValue(`check_out_${data.traveler_index}`, fromISODateTime(data.check_out), entry);
-      setInputValue(`hotel_quote_${data.traveler_index}`, data.hotel_quote, entry);
+      
+      // Populate hotels (from hotels JSONB array)
+      const hotels = data.hotels || [];
+      const hotelContainer = entry.querySelector(`#hotelEntries_${data.traveler_index}`);
+      if (hotelContainer && hotels.length > 0) {
+        // First hotel already exists
+        const firstHotel = hotelContainer.querySelector('.hotel-entry');
+        if (firstHotel && hotels[0]) {
+          populateHotelEntry(firstHotel, data.traveler_index, 1, hotels[0]);
+        }
+        // Add additional hotels
+        for (let i = 1; i < hotels.length; i++) {
+          const newHotel = createHotelEntryElement(data.traveler_index, i + 1);
+          hotelContainer.appendChild(newHotel);
+          populateHotelEntry(newHotel, data.traveler_index, i + 1, hotels[i]);
+        }
+        updateHotelRemoveButtons(hotelContainer);
+      } else {
+        // Backward compatibility: use old single hotel fields if hotels array is empty
+        setInputValue(`hotel_name_${data.traveler_index}_1`, data.hotel_name, entry);
+        setInputValue(`hotel_location_${data.traveler_index}_1`, data.hotel_location, entry);
+        setInputValue(`check_in_${data.traveler_index}_1`, fromISODateTime(data.check_in), entry);
+        setInputValue(`check_out_${data.traveler_index}_1`, fromISODateTime(data.check_out), entry);
+        setInputValue(`hotel_quote_${data.traveler_index}_1`, data.hotel_quote, entry);
+      }
+      
       // Special instructions per traveler
       setInputValue(`special_instructions_travel_${data.traveler_index}`, data.special_instructions, entry);
     }
   });
   
   initializeTravelType();
+  initializeLayoverToggles();
+  initializeCheckboxes();
   updateSaveStatus('travel', true);
+}
+
+// Helper function to populate flight entry (with quote_approved, has_layover, and layovers)
+function populateFlightEntry(element, type, travelerIndex, flightIndex, data) {
+  
+  // Basic flight fields
+  setInputValue(`${type}_airline_${travelerIndex}_${flightIndex}`, data.airline, element);
+  setInputValue(`${type}_flight_number_${travelerIndex}_${flightIndex}`, data.flight_number, element);
+  setInputValue(`${type}_from_${travelerIndex}_${flightIndex}`, data.from, element);
+  setInputValue(`${type}_to_${travelerIndex}_${flightIndex}`, data.to, element);
+  setInputValue(`${type}_departure_${travelerIndex}_${flightIndex}`, fromISODateTime(data.departure), element);
+  setInputValue(`${type}_arrival_${travelerIndex}_${flightIndex}`, fromISODateTime(data.arrival), element);
+  setInputValue(`${type}_quote_${travelerIndex}_${flightIndex}`, data.quote, element);
+  setInputValue(`${type}_confirmation_${travelerIndex}_${flightIndex}`, data.confirmation, element);
+  
+  // Quote approved checkbox
+  setCheckboxValue(`${type}_quote_approved_${travelerIndex}_${flightIndex}`, data.quote_approved, element);
+  
+  // Has layover radio
+  const hasLayover = data.has_layover === true || data.has_layover === 'yes';
+  setRadioValue(`${type}_has_layover_${travelerIndex}_${flightIndex}`, hasLayover ? 'yes' : 'no', element);
+  
+  // Show/hide layover section
+  const layoverSection = element.querySelector(`[data-layover-section="${type}_${travelerIndex}_${flightIndex}"]`);
+  if (layoverSection) {
+    layoverSection.style.display = hasLayover ? 'block' : 'none';
+  }
+  
+  // Populate layovers for this flight (layovers are inside flight object)
+  const flightLayovers = data.layovers || [];
+  const layoverContainer = element.querySelector(`[data-layover-container="${type}_${travelerIndex}_${flightIndex}"]`);
+  if (layoverContainer && flightLayovers.length > 0) {
+    // First layover already exists
+    const firstLayover = layoverContainer.querySelector('.layover-entry');
+    if (firstLayover && flightLayovers[0]) {
+      populateLayoverEntry(firstLayover, type, travelerIndex, flightIndex, 1, flightLayovers[0]);
+    }
+    // Add additional layovers
+    for (let i = 1; i < flightLayovers.length; i++) {
+      const newLayover = createLayoverEntryElement(type, travelerIndex, flightIndex, i + 1);
+      layoverContainer.appendChild(newLayover);
+      populateLayoverEntry(newLayover, type, travelerIndex, flightIndex, i + 1, flightLayovers[i]);
+    }
+    updateLayoverRemoveButtons(layoverContainer);
+  }
+}
+
+// Helper function to populate layover entry (with flightIndex)
+function populateLayoverEntry(element, type, travelerIndex, flightIndex, layoverIndex, data) {
+  setInputValue(`${type}_layover_airport_${travelerIndex}_${flightIndex}_${layoverIndex}`, data.airport, element);
+  setInputValue(`${type}_layover_duration_${travelerIndex}_${flightIndex}_${layoverIndex}`, data.duration, element);
+  setInputValue(`${type}_layover_flight_name_${travelerIndex}_${flightIndex}_${layoverIndex}`, data.flight_name, element);
+  setInputValue(`${type}_layover_flight_${travelerIndex}_${flightIndex}_${layoverIndex}`, data.connecting_flight, element);
+  setInputValue(`${type}_layover_departure_${travelerIndex}_${flightIndex}_${layoverIndex}`, fromISODateTime(data.departure), element);
+  setInputValue(`${type}_layover_arrival_${travelerIndex}_${flightIndex}_${layoverIndex}`, fromISODateTime(data.arrival), element);
+}
+
+// Helper function to populate hotel entry
+function populateHotelEntry(element, travelerIndex, hotelIndex, data) {
+  setInputValue(`hotel_name_${travelerIndex}_${hotelIndex}`, data.name, element);
+  setInputValue(`hotel_location_${travelerIndex}_${hotelIndex}`, data.location, element);
+  setInputValue(`check_in_${travelerIndex}_${hotelIndex}`, fromISODateTime(data.check_in), element);
+  setInputValue(`check_out_${travelerIndex}_${hotelIndex}`, fromISODateTime(data.check_out), element);
+  setInputValue(`hotel_quote_${travelerIndex}_${hotelIndex}`, data.quote, element);
+  setInputValue(`hotel_confirmation_${travelerIndex}_${hotelIndex}`, data.confirmation, element);
+  setCheckboxValue(`hotel_quote_approved_${travelerIndex}_${hotelIndex}`, data.quote_approved, element);
+}
+
+// Helper function to populate car entry
+function populateCarEntry(element, travelerIndex, carIndex, data) {
+  setInputValue(`car_company_${travelerIndex}_${carIndex}`, data.company, element);
+  setInputValue(`car_number_${travelerIndex}_${carIndex}`, data.number, element);
+  setInputValue(`car_pickup_${travelerIndex}_${carIndex}`, fromISODateTime(data.pickup), element);
+  setInputValue(`car_dropoff_${travelerIndex}_${carIndex}`, fromISODateTime(data.dropoff), element);
+  setInputValue(`car_pickup_address_${travelerIndex}_${carIndex}`, data.pickup_address, element);
+  setInputValue(`car_dropoff_address_${travelerIndex}_${carIndex}`, data.dropoff_address, element);
+  setInputValue(`car_quote_${travelerIndex}_${carIndex}`, data.quote, element);
+  setInputValue(`car_confirmation_${travelerIndex}_${carIndex}`, data.confirmation, element);
+  setCheckboxValue(`car_quote_approved_${travelerIndex}_${carIndex}`, data.quote_approved, element);
+}
+
+// Helper function to populate truck entry
+function populateTruckEntry(element, travelerIndex, truckIndex, data) {
+  setInputValue(`truck_company_${travelerIndex}_${truckIndex}`, data.company, element);
+  setInputValue(`truck_number_${travelerIndex}_${truckIndex}`, data.number, element);
+  setInputValue(`truck_pickup_${travelerIndex}_${truckIndex}`, fromISODateTime(data.pickup), element);
+  setInputValue(`truck_dropoff_${travelerIndex}_${truckIndex}`, fromISODateTime(data.dropoff), element);
+  setInputValue(`truck_pickup_address_${travelerIndex}_${truckIndex}`, data.pickup_address, element);
+  setInputValue(`truck_dropoff_address_${travelerIndex}_${truckIndex}`, data.dropoff_address, element);
+  setInputValue(`truck_quote_${travelerIndex}_${truckIndex}`, data.quote, element);
+  setInputValue(`truck_confirmation_${travelerIndex}_${truckIndex}`, data.confirmation, element);
+  setCheckboxValue(`truck_quote_approved_${travelerIndex}_${truckIndex}`, data.quote_approved, element);
+}
+
+// Update remove buttons visibility
+function updateFlightRemoveButtons(container) {
+  const entries = container.querySelectorAll('.flight-entry');
+  entries.forEach((entry, idx) => {
+    const removeBtn = entry.querySelector('.remove-flight-btn');
+    setRemoveButtonVisibility(removeBtn, entries.length > 1);
+  });
+}
+
+function updateLayoverRemoveButtons(container) {
+  const entries = container.querySelectorAll('.layover-entry');
+  entries.forEach((entry, idx) => {
+    const removeBtn = entry.querySelector('.remove-layover-btn');
+    setRemoveButtonVisibility(removeBtn, entries.length > 1);
+  });
+}
+
+function updateCarRemoveButtons(container) {
+  const entries = container.querySelectorAll('.car-entry');
+  entries.forEach((entry, idx) => {
+    const removeBtn = entry.querySelector('.remove-car-btn');
+    setRemoveButtonVisibility(removeBtn, entries.length > 1);
+  });
+}
+
+function updateTruckRemoveButtons(container) {
+  const entries = container.querySelectorAll('.truck-entry');
+  entries.forEach((entry, idx) => {
+    const removeBtn = entry.querySelector('.remove-truck-btn');
+    setRemoveButtonVisibility(removeBtn, entries.length > 1);
+  });
 }
 
 // Populate Travel Meta - WITH FILE DISPLAY and Names (no special_instructions - moved to per entry)
@@ -1962,7 +2333,7 @@ function createTruckingEntry(index) {
               <span class="entry-badge" style="width: 20px; height: 20px; font-size: 10px;">1</span>
               <span class="entry-label" style="font-size: 13px;">Driver #1</span>
             </div>
-            <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver" style="display:none;">
+            <button type="button" class="remove-entry-btn remove-driver-btn is-hidden" onclick="removeDriverEntry(this)" aria-label="Remove driver">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -2027,7 +2398,7 @@ function createDriverEntry(truckingIndex, driverIndex) {
         <span class="entry-badge" style="width: 20px; height: 20px; font-size: 10px;">${driverIndex}</span>
         <span class="entry-label" style="font-size: 13px;">Driver #${driverIndex}</span>
       </div>
-      <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver" style="display:flex;">
+      <button type="button" class="remove-entry-btn remove-driver-btn" onclick="removeDriverEntry(this)" aria-label="Remove driver">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -2059,11 +2430,11 @@ function addDriverEntry(button) {
   
   // Show remove buttons on all entries except the first one
   existingEntries.forEach((entry, idx) => {
-    if (idx > 0) {
-      const removeBtn = entry.querySelector('.remove-driver-btn');
-      if (removeBtn) removeBtn.style.display = 'flex';
-    }
+    const removeBtn = entry.querySelector('.remove-driver-btn');
+    setRemoveButtonVisibility(removeBtn, idx > 0);
   });
+
+  setRemoveButtonVisibility(newEntry.querySelector('.remove-driver-btn'), true);
 }
 
 // Remove a driver entry
@@ -2099,9 +2470,7 @@ function removeDriverEntry(button) {
     
     // Show/hide remove button
     const removeBtn = entry.querySelector('.remove-driver-btn');
-    if (removeBtn) {
-      removeBtn.style.display = idx === 0 ? 'none' : 'flex';
-    }
+    setRemoveButtonVisibility(removeBtn, idx !== 0);
   });
 }
 
@@ -2160,49 +2529,196 @@ function createTravelEntry(index) {
     
     <div class="travel-subsection" data-travel-type="airline" style="display: none;">
       <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg><span>Flight Details</span></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Flight Name</label><input type="text" class="form-input" name="flight_name_${index}" placeholder="Flight Name"></div>
-        <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-input" name="flight_number_${index}" placeholder="Flight Number"></div>
+      
+      <!-- ONE-WAY FLIGHTS -->
+      <div class="flight-section">
+        <div class="flight-section-header"><h4 class="flight-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>One-Way Flight</h4></div>
+        <div id="onewayFlights_${index}" class="flight-entries-container">
+          <div class="flight-entry" data-flight-index="1" data-flight-type="oneway">
+            <div class="entry-header">
+              <span class="entry-badge">1</span>
+              <span class="entry-label">Flight #1</span>
+              <button type="button" class="remove-entry-btn remove-flight-btn is-hidden" onclick="removeFlightEntry(this, 'oneway', ${index})" aria-label="Remove flight">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Airline</label><input type="text" class="form-input" name="oneway_airline_${index}_1" placeholder="e.g., Delta, United"></div>
+              <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-input" name="oneway_flight_number_${index}_1" placeholder="e.g., DL1234"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">From</label><input type="text" class="form-input" name="oneway_from_${index}_1" placeholder="Departure City/Airport"></div>
+              <div class="form-group"><label class="form-label">To</label><input type="text" class="form-input" name="oneway_to_${index}_1" placeholder="Arrival City/Airport"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Departure</label><input type="datetime-local" class="form-input" name="oneway_departure_${index}_1"></div>
+              <div class="form-group"><label class="form-label">Arrival</label><input type="datetime-local" class="form-input" name="oneway_arrival_${index}_1"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="oneway_quote_${index}_1" placeholder="$0.00"></div>
+              <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="oneway_confirmation_${index}_1" placeholder="Booking confirmation"></div>
+            </div>
+            <div class="form-group approval-checkbox-group"><label class="single-checkbox"><input type="checkbox" name="oneway_quote_approved_${index}_1"><span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="checkbox-label">Is this quote approved?</span></label></div>
+            <div class="layover-toggle"><label class="form-label">Has Layover?</label><div class="radio-group"><label class="radio-item"><input type="radio" name="oneway_has_layover_${index}_1" value="no" checked><span class="radio-custom"></span><span class="radio-label">No</span></label><label class="radio-item"><input type="radio" name="oneway_has_layover_${index}_1" value="yes"><span class="radio-custom"></span><span class="radio-label">Yes</span></label></div></div>
+            <div class="layover-section" data-layover-section="oneway_${index}_1" style="display: none;">
+              <div class="layover-section-header"><h5 class="layover-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Layover Details</h5></div>
+              <div class="layover-entries-container" data-layover-container="oneway_${index}_1">
+                <div class="layover-entry" data-layover-index="1">
+                  <div class="entry-header">
+                    <span class="entry-badge layover-badge">L1</span>
+                    <span class="entry-label">Layover #1</span>
+                    <button type="button" class="remove-entry-btn remove-layover-btn is-hidden" onclick="removeLayoverEntry(this, 'oneway', ${index}, 1)" aria-label="Remove layover">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Layover Airport</label><input type="text" class="form-input" name="oneway_layover_airport_${index}_1_1" placeholder="e.g., ORD, ATL"></div><div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-input" name="oneway_layover_duration_${index}_1_1" placeholder="e.g., 2h 30m"></div></div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Connecting Flight Name</label><input type="text" class="form-input" name="oneway_layover_flight_name_${index}_1_1" placeholder="e.g., Delta, United"></div><div class="form-group"><label class="form-label">Connecting Flight Number</label><input type="text" class="form-input" name="oneway_layover_flight_${index}_1_1" placeholder="e.g., DL5678"></div></div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Departure Time</label><input type="datetime-local" class="form-input" name="oneway_layover_departure_${index}_1_1"></div><div class="form-group"><label class="form-label">Arrival Time</label><input type="datetime-local" class="form-input" name="oneway_layover_arrival_${index}_1_1"></div></div>
+                </div>
+              </div>
+              <button type="button" class="add-layover-btn" data-traveler-index="${index}" data-flight-index="1" data-flight-type="oneway" onclick="addLayoverEntry(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Layover</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="add-flight-btn" data-traveler-index="${index}" data-flight-type="oneway" onclick="addFlightEntry(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another One-Way Flight</button>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Departure</label><input type="datetime-local" class="form-input" name="flight_departure_${index}"></div>
-        <div class="form-group"><label class="form-label">Arrival</label><input type="datetime-local" class="form-input" name="flight_arrival_${index}"></div>
+      
+      <!-- RETURN FLIGHTS -->
+      <div class="flight-section return-flight-section">
+        <div class="flight-section-header"><h4 class="flight-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Return Flight</h4></div>
+        <div id="returnFlights_${index}" class="flight-entries-container">
+          <div class="flight-entry" data-flight-index="1" data-flight-type="return">
+            <div class="entry-header">
+              <span class="entry-badge return-badge">1</span>
+              <span class="entry-label">Flight #1</span>
+              <button type="button" class="remove-entry-btn remove-flight-btn is-hidden" onclick="removeFlightEntry(this, 'return', ${index})" aria-label="Remove flight">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Airline</label><input type="text" class="form-input" name="return_airline_${index}_1" placeholder="e.g., Delta, United"></div>
+              <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-input" name="return_flight_number_${index}_1" placeholder="e.g., DL5678"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">From</label><input type="text" class="form-input" name="return_from_${index}_1" placeholder="Departure City/Airport"></div>
+              <div class="form-group"><label class="form-label">To</label><input type="text" class="form-input" name="return_to_${index}_1" placeholder="Arrival City/Airport"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Departure</label><input type="datetime-local" class="form-input" name="return_departure_${index}_1"></div>
+              <div class="form-group"><label class="form-label">Arrival</label><input type="datetime-local" class="form-input" name="return_arrival_${index}_1"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="return_quote_${index}_1" placeholder="$0.00"></div>
+              <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="return_confirmation_${index}_1" placeholder="Booking confirmation"></div>
+            </div>
+            <div class="form-group approval-checkbox-group"><label class="single-checkbox"><input type="checkbox" name="return_quote_approved_${index}_1"><span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="checkbox-label">Is this quote approved?</span></label></div>
+            <div class="layover-toggle"><label class="form-label">Has Layover?</label><div class="radio-group"><label class="radio-item"><input type="radio" name="return_has_layover_${index}_1" value="no" checked><span class="radio-custom"></span><span class="radio-label">No</span></label><label class="radio-item"><input type="radio" name="return_has_layover_${index}_1" value="yes"><span class="radio-custom"></span><span class="radio-label">Yes</span></label></div></div>
+            <div class="layover-section" data-layover-section="return_${index}_1" style="display: none;">
+              <div class="layover-section-header"><h5 class="layover-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Layover Details</h5></div>
+              <div class="layover-entries-container" data-layover-container="return_${index}_1">
+                <div class="layover-entry" data-layover-index="1">
+                  <div class="entry-header">
+                    <span class="entry-badge layover-badge">L1</span>
+                    <span class="entry-label">Layover #1</span>
+                    <button type="button" class="remove-entry-btn remove-layover-btn is-hidden" onclick="removeLayoverEntry(this, 'return', ${index}, 1)" aria-label="Remove layover">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Layover Airport</label><input type="text" class="form-input" name="return_layover_airport_${index}_1_1" placeholder="e.g., ORD, ATL"></div><div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-input" name="return_layover_duration_${index}_1_1" placeholder="e.g., 2h 30m"></div></div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Connecting Flight Name</label><input type="text" class="form-input" name="return_layover_flight_name_${index}_1_1" placeholder="e.g., Delta, United"></div><div class="form-group"><label class="form-label">Connecting Flight Number</label><input type="text" class="form-input" name="return_layover_flight_${index}_1_1" placeholder="e.g., DL5678"></div></div>
+                  <div class="form-row"><div class="form-group"><label class="form-label">Departure Time</label><input type="datetime-local" class="form-input" name="return_layover_departure_${index}_1_1"></div><div class="form-group"><label class="form-label">Arrival Time</label><input type="datetime-local" class="form-input" name="return_layover_arrival_${index}_1_1"></div></div>
+                </div>
+              </div>
+              <button type="button" class="add-layover-btn" data-traveler-index="${index}" data-flight-index="1" data-flight-type="return" onclick="addLayoverEntry(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Layover</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="add-flight-btn" data-traveler-index="${index}" data-flight-type="return" onclick="addFlightEntry(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Return Flight</button>
       </div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="flight_quote_${index}"></div></div>
     </div>
     
     <div class="travel-subsection" data-travel-type="rental_car" style="display: none;">
       <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Rental Car Details</span></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Car Company</label><input type="text" class="form-input" name="car_company_${index}" placeholder="Car Company"></div>
-        <div class="form-group"><label class="form-label">Car Number</label><input type="text" class="form-input" name="car_number_${index}" placeholder="Car Number"></div>
+      <div class="car-entries-container" id="carEntries_${index}">
+        <div class="car-entry" data-car-index="1">
+          <div class="entry-header">
+            <span class="entry-badge">1</span>
+            <span class="entry-label">Car #1</span>
+            <button type="button" class="remove-entry-btn remove-car-btn is-hidden" onclick="removeCarEntry(this, ${index})" aria-label="Remove car">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Car Company</label><input type="text" class="form-input" name="car_company_${index}_1" placeholder="e.g., Enterprise, Hertz"></div>
+            <div class="form-group"><label class="form-label">Car Number / Type</label><input type="text" class="form-input" name="car_number_${index}_1" placeholder="e.g., Sedan, SUV"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="car_pickup_${index}_1"></div>
+            <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="car_dropoff_${index}_1"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="car_pickup_address_${index}_1" placeholder="Pickup location"></textarea></div>
+            <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="car_dropoff_address_${index}_1" placeholder="Drop-off location"></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="car_quote_${index}_1" placeholder="$0.00"></div>
+            <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="car_confirmation_${index}_1" placeholder="Booking confirmation"></div>
+          </div>
+          <div class="form-group approval-checkbox-group"><label class="single-checkbox"><input type="checkbox" name="car_quote_approved_${index}_1"><span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="checkbox-label">Is this quote approved?</span></label></div>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="car_pickup_${index}"></div>
-        <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="car_dropoff_${index}"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="car_pickup_address_${index}"></textarea></div>
-        <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="car_dropoff_address_${index}"></textarea></div>
-      </div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="car_quote_${index}"></div></div>
+      <button type="button" class="add-entry-btn" onclick="addCarEntry(${index})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Car</button>
     </div>
     
     <div class="travel-subsection" data-travel-type="rental_truck" style="display: none;">
-      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Rental Truck</span></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Truck Company</label><input type="text" class="form-input" name="truck_company_${index}" placeholder="e.g., Enterprise"></div>
-        <div class="form-group"><label class="form-label">Truck Number</label><input type="text" class="form-input" name="truck_number_${index}" placeholder="Truck Number"></div>
+      <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle></svg><span>Rental Truck Details</span></div>
+      <div class="truck-entries-container" id="truckEntries_${index}">
+        <div class="truck-entry" data-truck-index="1">
+          <div class="entry-header">
+            <span class="entry-badge">1</span>
+            <span class="entry-label">Truck #1</span>
+            <button type="button" class="remove-entry-btn remove-truck-btn is-hidden" onclick="removeTruckEntry(this, ${index})" aria-label="Remove truck">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Truck Company</label><input type="text" class="form-input" name="truck_company_${index}_1" placeholder="e.g., U-Haul, Penske"></div>
+            <div class="form-group"><label class="form-label">Truck Number / Type</label><input type="text" class="form-input" name="truck_number_${index}_1" placeholder="e.g., 10ft, 15ft Box Truck"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="truck_pickup_${index}_1"></div>
+            <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="truck_dropoff_${index}_1"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="truck_pickup_address_${index}_1" placeholder="Pickup location"></textarea></div>
+            <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="truck_dropoff_address_${index}_1" placeholder="Drop-off location"></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="truck_quote_${index}_1" placeholder="$0.00"></div>
+            <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="truck_confirmation_${index}_1" placeholder="Booking confirmation"></div>
+          </div>
+          <div class="form-group approval-checkbox-group"><label class="single-checkbox"><input type="checkbox" name="truck_quote_approved_${index}_1"><span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="checkbox-label">Is this quote approved?</span></label></div>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="truck_pickup_${index}"></div>
-        <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="truck_dropoff_${index}"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="truck_pickup_address_${index}"></textarea></div>
-        <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="truck_dropoff_address_${index}"></textarea></div>
-      </div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="truck_quote_${index}"></div></div>
+      <button type="button" class="add-entry-btn" onclick="addTruckEntry(${index})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Truck</button>
     </div>
     
     <div class="travel-subsection" data-travel-type="personal" style="display: none;">
@@ -2212,15 +2728,34 @@ function createTravelEntry(index) {
     
     <div class="travel-subsection">
       <div class="travel-subsection-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4M5 21V10.85M19 21V10.85"></path></svg><span>Hotel</span></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Hotel Name</label><input type="text" class="form-input" name="hotel_name_${index}" placeholder="Hotel Name"></div>
-        <div class="form-group"><label class="form-label">Hotel Location</label><textarea class="form-input" name="hotel_location_${index}" placeholder="Hotel Location"></textarea></div>
+      <div class="hotel-entries-container" id="hotelEntries_${index}">
+        <div class="hotel-entry" data-hotel-index="1">
+          <div class="entry-header">
+            <span class="entry-badge hotel-badge">1</span>
+            <span class="entry-label">Hotel #1</span>
+            <button type="button" class="remove-entry-btn remove-hotel-btn is-hidden" onclick="removeHotelEntry(this, ${index})" aria-label="Remove hotel">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Hotel Name</label><input type="text" class="form-input" name="hotel_name_${index}_1" placeholder="Hotel Name"></div>
+            <div class="form-group"><label class="form-label">Hotel Location</label><textarea class="form-input" name="hotel_location_${index}_1" placeholder="Hotel Location"></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Check In</label><input type="datetime-local" class="form-input" name="check_in_${index}_1"></div>
+            <div class="form-group"><label class="form-label">Check Out</label><input type="datetime-local" class="form-input" name="check_out_${index}_1"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="hotel_quote_${index}_1" placeholder="$0.00"></div>
+            <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="hotel_confirmation_${index}_1" placeholder="Booking confirmation"></div>
+          </div>
+          <div class="form-group approval-checkbox-group"><label class="single-checkbox"><input type="checkbox" name="hotel_quote_approved_${index}_1"><span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span class="checkbox-label">Is this quote approved?</span></label></div>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Check In</label><input type="datetime-local" class="form-input" name="check_in_${index}"></div>
-        <div class="form-group"><label class="form-label">Check Out</label><input type="datetime-local" class="form-input" name="check_out_${index}"></div>
-      </div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="hotel_quote_${index}"></div></div>
+      <button type="button" class="add-hotel-btn" data-traveler-index="${index}" onclick="addHotelEntry(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Add Another Hotel</button>
     </div>
     
     <div class="form-group">
@@ -2243,6 +2778,646 @@ function removeEntry(button) {
       updateDismantleRemoveButtons();
     }, 300);
   }
+}
+
+// ============================================
+// Flight Entry Functions
+// ============================================
+
+function createFlightEntryElement(type, travelerIndex, flightIndex) {
+  const badgeClass = type === 'return' ? 'return-badge' : '';
+  const entry = document.createElement('div');
+  entry.className = 'flight-entry';
+  entry.dataset.flightIndex = flightIndex;
+  entry.dataset.flightType = type;
+  
+  entry.innerHTML = `
+    <div class="entry-header">
+      <span class="entry-badge ${badgeClass}">${flightIndex}</span>
+      <span class="entry-label">Flight #${flightIndex}</span>
+      <button type="button" class="remove-entry-btn remove-flight-btn" onclick="removeFlightEntry(this, '${type}', ${travelerIndex})" aria-label="Remove flight">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Airline</label><input type="text" class="form-input" name="${type}_airline_${travelerIndex}_${flightIndex}" placeholder="e.g., Delta, United"></div>
+      <div class="form-group"><label class="form-label">Flight Number</label><input type="text" class="form-input" name="${type}_flight_number_${travelerIndex}_${flightIndex}" placeholder="e.g., DL1234"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">From</label><input type="text" class="form-input" name="${type}_from_${travelerIndex}_${flightIndex}" placeholder="Departure City/Airport"></div>
+      <div class="form-group"><label class="form-label">To</label><input type="text" class="form-input" name="${type}_to_${travelerIndex}_${flightIndex}" placeholder="Arrival City/Airport"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Departure</label><input type="datetime-local" class="form-input" name="${type}_departure_${travelerIndex}_${flightIndex}"></div>
+      <div class="form-group"><label class="form-label">Arrival</label><input type="datetime-local" class="form-input" name="${type}_arrival_${travelerIndex}_${flightIndex}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="${type}_quote_${travelerIndex}_${flightIndex}" placeholder="$0.00"></div>
+      <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="${type}_confirmation_${travelerIndex}_${flightIndex}" placeholder="Booking confirmation"></div>
+    </div>
+    
+    <!-- Quote Approval -->
+    <div class="form-group approval-checkbox-group">
+      <label class="single-checkbox">
+        <input type="checkbox" name="${type}_quote_approved_${travelerIndex}_${flightIndex}">
+        <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
+    
+    <!-- Has Layover Toggle -->
+    <div class="layover-toggle">
+      <label class="form-label">Has Layover?</label>
+      <div class="radio-group">
+        <label class="radio-item"><input type="radio" name="${type}_has_layover_${travelerIndex}_${flightIndex}" value="no" checked><span class="radio-custom"></span><span class="radio-label">No</span></label>
+        <label class="radio-item"><input type="radio" name="${type}_has_layover_${travelerIndex}_${flightIndex}" value="yes"><span class="radio-custom"></span><span class="radio-label">Yes</span></label>
+      </div>
+    </div>
+    
+    <!-- Layover Details Section -->
+    <div class="layover-section" data-layover-section="${type}_${travelerIndex}_${flightIndex}" style="display: none;">
+      <div class="layover-section-header">
+        <h5 class="layover-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Layover Details
+        </h5>
+      </div>
+      <div class="layover-entries-container" data-layover-container="${type}_${travelerIndex}_${flightIndex}">
+        <div class="layover-entry" data-layover-index="1">
+          <div class="entry-header">
+            <span class="entry-badge layover-badge">L1</span>
+            <span class="entry-label">Layover #1</span>
+      <button type="button" class="remove-entry-btn remove-layover-btn is-hidden" onclick="removeLayoverEntry(this, '${type}', ${travelerIndex}, ${flightIndex})" aria-label="Remove layover">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Layover Airport</label><input type="text" class="form-input" name="${type}_layover_airport_${travelerIndex}_${flightIndex}_1" placeholder="e.g., ORD, ATL"></div>
+            <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-input" name="${type}_layover_duration_${travelerIndex}_${flightIndex}_1" placeholder="e.g., 2h 30m"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Connecting Flight Name</label><input type="text" class="form-input" name="${type}_layover_flight_name_${travelerIndex}_${flightIndex}_1" placeholder="e.g., Delta, United"></div>
+            <div class="form-group"><label class="form-label">Connecting Flight Number</label><input type="text" class="form-input" name="${type}_layover_flight_${travelerIndex}_${flightIndex}_1" placeholder="e.g., DL5678"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Departure Time</label><input type="datetime-local" class="form-input" name="${type}_layover_departure_${travelerIndex}_${flightIndex}_1"></div>
+            <div class="form-group"><label class="form-label">Arrival Time</label><input type="datetime-local" class="form-input" name="${type}_layover_arrival_${travelerIndex}_${flightIndex}_1"></div>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="add-layover-btn" data-traveler-index="${travelerIndex}" data-flight-index="${flightIndex}" data-flight-type="${type}" onclick="addLayoverEntry(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add Another Layover
+      </button>
+    </div>
+  `;
+  
+  return entry;
+}
+
+function addFlightEntry(button) {
+  const travelerIndex = button.dataset.travelerIndex;
+  const flightType = button.dataset.flightType;
+  const containerId = `${flightType}Flights_${travelerIndex}`;
+  const container = document.getElementById(containerId);
+  
+  if (container) {
+    const existingEntries = container.querySelectorAll('.flight-entry');
+    const newIndex = existingEntries.length + 1;
+    const newEntry = createFlightEntryElement(flightType, travelerIndex, newIndex);
+    container.appendChild(newEntry);
+    updateFlightRemoveButtons(container);
+    initializeCheckboxes();
+    initializeRadios();
+    initializeLayoverToggles();
+    newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function removeFlightEntry(button, type, travelerIndex) {
+  const entry = button.closest('.flight-entry');
+  const container = entry?.parentElement;
+  
+  if (entry && container) {
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      entry.remove();
+      reindexFlightEntries(container, type, travelerIndex);
+      updateFlightRemoveButtons(container);
+    }, 300);
+  }
+}
+
+function reindexFlightEntries(container, type, travelerIndex) {
+  const entries = container.querySelectorAll('.flight-entry');
+  entries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.flightIndex = newIndex;
+    
+    // Update badge
+    const badge = entry.querySelector('.entry-badge');
+    if (badge) badge.textContent = newIndex;
+    
+    // Update label
+    const label = entry.querySelector('.entry-label');
+    if (label) label.textContent = `Flight #${newIndex}`;
+    
+    // Update remove button onclick
+    const removeBtn = entry.querySelector('.remove-flight-btn');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeFlightEntry(this, '${type}', ${travelerIndex})`);
+    }
+    
+    // Update all input names
+    const inputs = entry.querySelectorAll('input');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        // Match pattern like "oneway_airline_1_2" and replace the last number
+        const parts = name.split('_');
+        if (parts.length >= 3) {
+          parts[parts.length - 1] = newIndex;
+          input.name = parts.join('_');
+        }
+      }
+    });
+  });
+}
+
+// ============================================
+// Layover Entry Functions
+// ============================================
+
+function createLayoverEntryElement(type, travelerIndex, flightIndex, layoverIndex) {
+  const entry = document.createElement('div');
+  entry.className = 'layover-entry';
+  entry.dataset.layoverIndex = layoverIndex;
+  
+  entry.innerHTML = `
+    <div class="entry-header">
+      <span class="entry-badge layover-badge">L${layoverIndex}</span>
+      <span class="entry-label">Layover #${layoverIndex}</span>
+      <button type="button" class="remove-entry-btn remove-layover-btn" onclick="removeLayoverEntry(this, '${type}', ${travelerIndex}, ${flightIndex})" aria-label="Remove layover">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Layover Airport</label><input type="text" class="form-input" name="${type}_layover_airport_${travelerIndex}_${flightIndex}_${layoverIndex}" placeholder="e.g., ORD, ATL"></div>
+      <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-input" name="${type}_layover_duration_${travelerIndex}_${flightIndex}_${layoverIndex}" placeholder="e.g., 2h 30m"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Connecting Flight Name</label><input type="text" class="form-input" name="${type}_layover_flight_name_${travelerIndex}_${flightIndex}_${layoverIndex}" placeholder="e.g., Delta, United"></div>
+      <div class="form-group"><label class="form-label">Connecting Flight Number</label><input type="text" class="form-input" name="${type}_layover_flight_${travelerIndex}_${flightIndex}_${layoverIndex}" placeholder="e.g., DL5678"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Departure Time</label><input type="datetime-local" class="form-input" name="${type}_layover_departure_${travelerIndex}_${flightIndex}_${layoverIndex}"></div>
+      <div class="form-group"><label class="form-label">Arrival Time</label><input type="datetime-local" class="form-input" name="${type}_layover_arrival_${travelerIndex}_${flightIndex}_${layoverIndex}"></div>
+    </div>
+  `;
+  
+  return entry;
+}
+
+function addLayoverEntry(button) {
+  const travelerIndex = button.dataset.travelerIndex;
+  const flightIndex = button.dataset.flightIndex;
+  const flightType = button.dataset.flightType;
+  const container = button.closest('.layover-section').querySelector('.layover-entries-container');
+  
+  if (container) {
+    const existingEntries = container.querySelectorAll('.layover-entry');
+    const newIndex = existingEntries.length + 1;
+    const newEntry = createLayoverEntryElement(flightType, travelerIndex, flightIndex, newIndex);
+    container.appendChild(newEntry);
+    updateLayoverRemoveButtons(container);
+    newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function removeLayoverEntry(button, type, travelerIndex, flightIndex) {
+  const entry = button.closest('.layover-entry');
+  const container = entry?.parentElement;
+  
+  if (entry && container) {
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      entry.remove();
+      reindexLayoverEntries(container, type, travelerIndex, flightIndex);
+      updateLayoverRemoveButtons(container);
+    }, 300);
+  }
+}
+
+function reindexLayoverEntries(container, type, travelerIndex, flightIndex) {
+  const entries = container.querySelectorAll('.layover-entry');
+  entries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.layoverIndex = newIndex;
+    
+    // Update badge
+    const badge = entry.querySelector('.entry-badge');
+    if (badge) badge.textContent = `L${newIndex}`;
+    
+    // Update label
+    const label = entry.querySelector('.entry-label');
+    if (label) label.textContent = `Layover #${newIndex}`;
+    
+    // Update remove button onclick
+    const removeBtn = entry.querySelector('.remove-layover-btn');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeLayoverEntry(this, '${type}', ${travelerIndex}, ${flightIndex})`);
+    }
+    
+    // Update all input names
+    const inputs = entry.querySelectorAll('input');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        const parts = name.split('_');
+        if (parts.length >= 5) {
+          parts[parts.length - 1] = newIndex;
+          input.name = parts.join('_');
+        }
+      }
+    });
+  });
+}
+
+// ============================================
+// Layover Toggle Initialization
+// ============================================
+
+function initializeLayoverToggles() {
+  // Layover toggles for all flight entries (oneway and return)
+  document.querySelectorAll('input[name^="oneway_has_layover_"], input[name^="return_has_layover_"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Parse name like "oneway_has_layover_1_1" to get type, travelerIndex, flightIndex
+      const nameParts = this.name.split('_');
+      const type = nameParts[0]; // oneway or return
+      const travelerIndex = nameParts[3];
+      const flightIndex = nameParts[4];
+      const layoverSectionKey = `${type}_${travelerIndex}_${flightIndex}`;
+      const layoverSection = document.querySelector(`[data-layover-section="${layoverSectionKey}"]`);
+      if (layoverSection) {
+        layoverSection.style.display = this.value === 'yes' ? 'block' : 'none';
+      }
+    });
+  });
+}
+
+// ============================================
+// Hotel Entry Functions
+// ============================================
+
+function createHotelEntryElement(travelerIndex, hotelIndex) {
+  const entry = document.createElement('div');
+  entry.className = 'hotel-entry';
+  entry.dataset.hotelIndex = hotelIndex;
+  
+  entry.innerHTML = `
+    <div class="entry-header">
+      <span class="entry-badge hotel-badge">${hotelIndex}</span>
+      <span class="entry-label">Hotel #${hotelIndex}</span>
+      <button type="button" class="remove-entry-btn remove-hotel-btn" onclick="removeHotelEntry(this, ${travelerIndex})" aria-label="Remove hotel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Hotel Name</label><input type="text" class="form-input" name="hotel_name_${travelerIndex}_${hotelIndex}" placeholder="Hotel Name"></div>
+      <div class="form-group"><label class="form-label">Hotel Location</label><textarea class="form-input" name="hotel_location_${travelerIndex}_${hotelIndex}" placeholder="Hotel Location"></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Check In</label><input type="datetime-local" class="form-input" name="check_in_${travelerIndex}_${hotelIndex}"></div>
+      <div class="form-group"><label class="form-label">Check Out</label><input type="datetime-local" class="form-input" name="check_out_${travelerIndex}_${hotelIndex}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="hotel_quote_${travelerIndex}_${hotelIndex}" placeholder="$0.00"></div>
+      <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="hotel_confirmation_${travelerIndex}_${hotelIndex}" placeholder="Booking confirmation"></div>
+    </div>
+    <div class="form-group approval-checkbox-group">
+      <label class="single-checkbox">
+        <input type="checkbox" name="hotel_quote_approved_${travelerIndex}_${hotelIndex}">
+        <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
+  `;
+  
+  return entry;
+}
+
+function addHotelEntry(button) {
+  const travelerIndex = button.dataset.travelerIndex;
+  const containerId = `hotelEntries_${travelerIndex}`;
+  const container = document.getElementById(containerId);
+  
+  if (container) {
+    const existingEntries = container.querySelectorAll('.hotel-entry');
+    const newIndex = existingEntries.length + 1;
+    const newEntry = createHotelEntryElement(travelerIndex, newIndex);
+    container.appendChild(newEntry);
+    updateHotelRemoveButtons(container);
+    initializeCheckboxes();
+    newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function removeHotelEntry(button, travelerIndex) {
+  const entry = button.closest('.hotel-entry');
+  const container = entry?.parentElement;
+  
+  if (entry && container) {
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      entry.remove();
+      reindexHotelEntries(container, travelerIndex);
+      updateHotelRemoveButtons(container);
+    }, 300);
+  }
+}
+
+function reindexHotelEntries(container, travelerIndex) {
+  const entries = container.querySelectorAll('.hotel-entry');
+  entries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.hotelIndex = newIndex;
+    
+    // Update badge
+    const badge = entry.querySelector('.entry-badge');
+    if (badge) badge.textContent = newIndex;
+    
+    // Update label
+    const label = entry.querySelector('.entry-label');
+    if (label) label.textContent = `Hotel #${newIndex}`;
+    
+    // Update remove button onclick
+    const removeBtn = entry.querySelector('.remove-hotel-btn');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeHotelEntry(this, ${travelerIndex})`);
+    }
+    
+    // Update all input names
+    const inputs = entry.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        const parts = name.split('_');
+        if (parts.length >= 3) {
+          parts[parts.length - 1] = newIndex;
+          input.name = parts.join('_');
+        }
+      }
+    });
+  });
+}
+
+function updateHotelRemoveButtons(container) {
+  const entries = container.querySelectorAll('.hotel-entry');
+  entries.forEach((entry, idx) => {
+    const removeBtn = entry.querySelector('.remove-hotel-btn');
+    setRemoveButtonVisibility(removeBtn, entries.length > 1);
+  });
+}
+
+// ============================================
+// Car Entry Functions
+// ============================================
+
+function createCarEntryElement(travelerIndex, carIndex) {
+  const entry = document.createElement('div');
+  entry.className = 'car-entry';
+  entry.dataset.carIndex = carIndex;
+  
+  entry.innerHTML = `
+    <div class="entry-header">
+      <span class="entry-badge">${carIndex}</span>
+      <span class="entry-label">Car #${carIndex}</span>
+      <button type="button" class="remove-entry-btn remove-car-btn" onclick="removeCarEntry(this, ${travelerIndex})" aria-label="Remove car">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Car Company</label><input type="text" class="form-input" name="car_company_${travelerIndex}_${carIndex}" placeholder="e.g., Enterprise, Hertz"></div>
+      <div class="form-group"><label class="form-label">Car Number / Type</label><input type="text" class="form-input" name="car_number_${travelerIndex}_${carIndex}" placeholder="e.g., Sedan, SUV"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="car_pickup_${travelerIndex}_${carIndex}"></div>
+      <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="car_dropoff_${travelerIndex}_${carIndex}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="car_pickup_address_${travelerIndex}_${carIndex}" placeholder="Pickup location"></textarea></div>
+      <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="car_dropoff_address_${travelerIndex}_${carIndex}" placeholder="Drop-off location"></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="car_quote_${travelerIndex}_${carIndex}" placeholder="$0.00"></div>
+      <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="car_confirmation_${travelerIndex}_${carIndex}" placeholder="Booking confirmation"></div>
+    </div>
+    <div class="form-group approval-checkbox-group">
+      <label class="single-checkbox">
+        <input type="checkbox" name="car_quote_approved_${travelerIndex}_${carIndex}">
+        <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
+  `;
+  
+  return entry;
+}
+
+function addCarEntry(travelerIndex) {
+  const containerId = `carEntries_${travelerIndex}`;
+  const container = document.getElementById(containerId);
+  
+  if (container) {
+    const existingEntries = container.querySelectorAll('.car-entry');
+    const newIndex = existingEntries.length + 1;
+    const newEntry = createCarEntryElement(travelerIndex, newIndex);
+    container.appendChild(newEntry);
+    updateCarRemoveButtons(container);
+    initializeCheckboxes();
+    newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function removeCarEntry(button, travelerIndex) {
+  const entry = button.closest('.car-entry');
+  const container = entry?.parentElement;
+  
+  if (entry && container) {
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      entry.remove();
+      reindexCarEntries(container, travelerIndex);
+      updateCarRemoveButtons(container);
+    }, 300);
+  }
+}
+
+function reindexCarEntries(container, travelerIndex) {
+  const entries = container.querySelectorAll('.car-entry');
+  entries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.carIndex = newIndex;
+    
+    // Update badge
+    const badge = entry.querySelector('.entry-badge');
+    if (badge) badge.textContent = newIndex;
+    
+    // Update label
+    const label = entry.querySelector('.entry-label');
+    if (label) label.textContent = `Car #${newIndex}`;
+    
+    // Update remove button onclick
+    const removeBtn = entry.querySelector('.remove-car-btn');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeCarEntry(this, ${travelerIndex})`);
+    }
+    
+    // Update all input names
+    const inputs = entry.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        const parts = name.split('_');
+        if (parts.length >= 3) {
+          parts[parts.length - 1] = newIndex;
+          input.name = parts.join('_');
+        }
+      }
+    });
+  });
+}
+
+// ============================================
+// Truck Entry Functions
+// ============================================
+
+function createTruckEntryElement(travelerIndex, truckIndex) {
+  const entry = document.createElement('div');
+  entry.className = 'truck-entry';
+  entry.dataset.truckIndex = truckIndex;
+  
+  entry.innerHTML = `
+    <div class="entry-header">
+      <span class="entry-badge">${truckIndex}</span>
+      <span class="entry-label">Truck #${truckIndex}</span>
+      <button type="button" class="remove-entry-btn remove-truck-btn" onclick="removeTruckEntry(this, ${travelerIndex})" aria-label="Remove truck">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Truck Company</label><input type="text" class="form-input" name="truck_company_${travelerIndex}_${truckIndex}" placeholder="e.g., U-Haul, Penske"></div>
+      <div class="form-group"><label class="form-label">Truck Number / Type</label><input type="text" class="form-input" name="truck_number_${travelerIndex}_${truckIndex}" placeholder="e.g., 10ft, 15ft Box Truck"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Pickup</label><input type="datetime-local" class="form-input" name="truck_pickup_${travelerIndex}_${truckIndex}"></div>
+      <div class="form-group"><label class="form-label">Drop-off</label><input type="datetime-local" class="form-input" name="truck_dropoff_${travelerIndex}_${truckIndex}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Pickup Address</label><textarea class="form-input" name="truck_pickup_address_${travelerIndex}_${truckIndex}" placeholder="Pickup location"></textarea></div>
+      <div class="form-group"><label class="form-label">Drop-off Address</label><textarea class="form-input" name="truck_dropoff_address_${travelerIndex}_${truckIndex}" placeholder="Drop-off location"></textarea></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quote</label><input type="text" class="form-input" name="truck_quote_${travelerIndex}_${truckIndex}" placeholder="$0.00"></div>
+      <div class="form-group"><label class="form-label">Confirmation #</label><input type="text" class="form-input" name="truck_confirmation_${travelerIndex}_${truckIndex}" placeholder="Booking confirmation"></div>
+    </div>
+    <div class="form-group approval-checkbox-group">
+      <label class="single-checkbox">
+        <input type="checkbox" name="truck_quote_approved_${travelerIndex}_${truckIndex}">
+        <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="checkbox-label">Is this quote approved?</span>
+      </label>
+    </div>
+  `;
+  
+  return entry;
+}
+
+function addTruckEntry(travelerIndex) {
+  const containerId = `truckEntries_${travelerIndex}`;
+  const container = document.getElementById(containerId);
+  
+  if (container) {
+    const existingEntries = container.querySelectorAll('.truck-entry');
+    const newIndex = existingEntries.length + 1;
+    const newEntry = createTruckEntryElement(travelerIndex, newIndex);
+    container.appendChild(newEntry);
+    updateTruckRemoveButtons(container);
+    initializeCheckboxes();
+    newEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function removeTruckEntry(button, travelerIndex) {
+  const entry = button.closest('.truck-entry');
+  const container = entry?.parentElement;
+  
+  if (entry && container) {
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+      entry.remove();
+      reindexTruckEntries(container, travelerIndex);
+      updateTruckRemoveButtons(container);
+    }, 300);
+  }
+}
+
+function reindexTruckEntries(container, travelerIndex) {
+  const entries = container.querySelectorAll('.truck-entry');
+  entries.forEach((entry, idx) => {
+    const newIndex = idx + 1;
+    entry.dataset.truckIndex = newIndex;
+    
+    // Update badge
+    const badge = entry.querySelector('.entry-badge');
+    if (badge) badge.textContent = newIndex;
+    
+    // Update label
+    const label = entry.querySelector('.entry-label');
+    if (label) label.textContent = `Truck #${newIndex}`;
+    
+    // Update remove button onclick
+    const removeBtn = entry.querySelector('.remove-truck-btn');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeTruckEntry(this, ${travelerIndex})`);
+    }
+    
+    // Update all input names
+    const inputs = entry.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+      const name = input.name;
+      if (name) {
+        const parts = name.split('_');
+        if (parts.length >= 3) {
+          parts[parts.length - 1] = newIndex;
+          input.name = parts.join('_');
+        }
+      }
+    });
+  });
 }
 
 function initializeDynamicSections() {
@@ -2335,6 +3510,7 @@ function initializeDynamicSections() {
       travelContainer.appendChild(entry);
       initializeRadios();
       initializeTravelType();
+      initializeLayoverToggles();
       entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
@@ -2347,7 +3523,7 @@ function updateInstallationRemoveButtons() {
   const entries = document.querySelectorAll('.installation-date-entry');
   entries.forEach((entry) => {
     const btn = entry.querySelector('.remove-entry-btn');
-    if (btn) btn.style.display = entries.length > 1 ? 'block' : 'none';
+    setRemoveButtonVisibility(btn, entries.length > 1);
   });
 }
 
@@ -2355,7 +3531,7 @@ function updateDismantleRemoveButtons() {
   const entries = document.querySelectorAll('.dismantle-date-entry');
   entries.forEach((entry) => {
     const btn = entry.querySelector('.remove-entry-btn');
-    if (btn) btn.style.display = entries.length > 1 ? 'block' : 'none';
+    setRemoveButtonVisibility(btn, entries.length > 1);
   });
 }
 
@@ -2458,113 +3634,6 @@ function autoSetBookingSoftwareFromBookingApp(bookingAppData) {
   }
 }
 
-const createProjectBtn = document.getElementById('createProjectBtn');
-if (createProjectBtn) {
-    createProjectBtn.addEventListener('click', () => {
-      createAsanaProjectFromForm();
-    });
-  }
-
-  /**
- * Create Asana project via Make.com webhook
- */
-async function createAsanaProjectFromForm() {
-    // Replace with your Make.com webhook URL
-    const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/65ekfm999df11s29ypulbd3rf28lhh3n';
-    
-    try {
-       // showMessage('Creating Asana project...', 'info');
-        
-        // Collect form data
-        const payload = {
-            // Basic Info
-            event_name: document.getElementById('event-name-detail')?.value || '',
-            event_date: document.getElementById('event_date')?.value || '',
-            client_name: document.getElementById('client_name')?.value || '',
-            
-            // Trucking Section
-            trucking: collectTruckingDataForAsana(),
-            
-            // Artwork Section
-            artwork: {
-                graphics_upload_link: document.getElementById('graphics_upload_link')?.value || '',
-                proofs_folder_link: document.getElementById('proofs_folder_link')?.value || '',
-                deadline: document.getElementById('artwork_deadline')?.value || ''
-            },
-            
-            // Booking Software Section
-            booking: {
-                client_graphics_folder: document.getElementById('client_graphics_folder_link')?.value || '',
-                generated_graphics_folder: document.getElementById('generated_graphics_folder_link')?.value || ''
-            },
-            
-            // Catering Section (add your fields)
-            catering: {
-                vendor: document.getElementById('catering_vendor')?.value || '',
-                headcount: document.getElementById('catering_headcount')?.value || '',
-                dietary_notes: document.getElementById('dietary_notes')?.value || ''
-            },
-            
-            // Metadata
-            created_at: new Date().toISOString(),
-            created_by: 'Internal Onboarding Form'
-        };
-        
-        console.log('Sending to Make.com:', payload);
-        
-        const response = await fetch(MAKE_WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Webhook failed: ${response.status}`);
-        }
-        
-        console.log('Asana project creation triggered successfully');
-        return true;
-        
-    } catch (error) {
-        console.error('Error creating Asana project:', error);
-        return false;
-    }
-}
-
-/**
- * Collect trucking data for Asana
- */
-function collectTruckingDataForAsana() {
-    const truckingEntries = document.querySelectorAll('.trucking-entry');
-    const routes = [];
-    
-    truckingEntries.forEach((entry, index) => {
-        routes.push({
-            route_number: index + 1,
-            pickup_address: entry.querySelector(`[name="truck_pickup_address_${index + 1}"]`)?.value || '',
-            pickup_date: entry.querySelector(`[name="truck_pickup_date_${index + 1}"]`)?.value || '',
-            dropoff_address: entry.querySelector(`[name="truck_dropoff_address_${index + 1}"]`)?.value || '',
-            dropoff_date: entry.querySelector(`[name="truck_dropoff_date_${index + 1}"]`)?.value || '',
-            quote_axle: entry.querySelector(`[name="truck_quote_axle_${index + 1}"]`)?.value || '',
-            quote_edward: entry.querySelector(`[name="truck_quote_edward_${index + 1}"]`)?.value || '',
-            quote_other: entry.querySelector(`[name="truck_quote_other_${index + 1}"]`)?.value || ''
-        });
-    });
-    
-    // Return first route for simple case, or all routes
-    return {
-        pickup_address: routes[0]?.pickup_address || '',
-        pickup_date: routes[0]?.pickup_date || '',
-        dropoff_address: routes[0]?.dropoff_address || '',
-        dropoff_date: routes[0]?.dropoff_date || '',
-        quote_axle: routes[0]?.quote_axle || '',
-        quote_edward: routes[0]?.quote_edward || '',
-        quote_other: routes[0]?.quote_other || '',
-        all_routes: routes
-    };
-}
 
 // ============================================
 // Initialize Application
@@ -2582,6 +3651,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initializeRadios();
   initializeCOI();
   initializeTravelType();
+  initializeLayoverToggles();
   initializeTabs();
   initializeDynamicSections();
   initializeSectionSaveButtons();
@@ -2606,3 +3676,9 @@ window.removeEntry = removeEntry;
 window.saveSection = saveSection;
 window.loadAllSectionData = loadAllSectionData;
 window.showToast = showToast;
+window.addFlightEntry = addFlightEntry;
+window.removeFlightEntry = removeFlightEntry;
+window.addLayoverEntry = addLayoverEntry;
+window.removeLayoverEntry = removeLayoverEntry;
+window.addHotelEntry = addHotelEntry;
+window.removeHotelEntry = removeHotelEntry;

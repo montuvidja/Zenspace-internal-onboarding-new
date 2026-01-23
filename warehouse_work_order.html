@@ -167,6 +167,12 @@
         <div style="flex:0 0 auto"><b>Due Date:</b> <span id="dueDate">—</span></div>
       </div>
 
+      <div class="meta">
+        <div style="flex:1; min-width:420px; max-width:900px"><b>Installer:</b>
+          <span id="installer">—</span>
+        </div>
+      </div>
+
       
 
       <!-- Order Summary -->
@@ -337,7 +343,22 @@
         return `${pad(dt.getDate())}-${months[dt.getMonth()]}-${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
       }
 
-      document.getElementById("dueDate").textContent = safeText(formatPackingDeadline(data?.packingDeadline));
+      // Support both camelCase and snake_case keys, just in case
+      const pdRaw = data?.packingDeadline || data?.packing_deadline || "";
+      document.getElementById("dueDate").textContent = safeText(formatPackingDeadline(pdRaw));
+
+      // Pre-fill Installer (from Assign Installer in Preplanning)
+      const installerEl = document.getElementById("installer");
+      if (installerEl) {
+        installerEl.textContent = safeText(data?.installer);
+      }
+
+      // Pre-fill Special Instruction textarea with preplanning special instructions
+      const sp = data?.specialInstructionsPreplanning || "";
+      const spEl = document.getElementById("specialInstruction");
+      if (spEl) {
+        spEl.value = sp;
+      }
 
       const os = document.getElementById("orderSummaryBody");
       os.innerHTML = "";
@@ -356,23 +377,7 @@
 
       console.log("data?.eventStartDate:", data);
 
-      // Append manual fields (Special Instruction & Checklist) from the DOM so they are visible in summary/pdf
-      try{
-        const specialText = document.getElementById('specialInstruction')?.value || '';
-        const checks = document.querySelectorAll('#specialChecklistContainer input[type="checkbox"]');
-        const selected = Array.from(checks).filter(cb=>cb.checked).map(cb=>cb.value).join(', ');
-        const tr1 = document.createElement("tr");
-        const td1a = document.createElement("td"); td1a.textContent = 'Special Instruction';
-        const td1b = document.createElement("td"); td1b.textContent = safeText(specialText);
-        tr1.appendChild(td1a); tr1.appendChild(td1b); os.appendChild(tr1);
-
-        const tr2 = document.createElement("tr");
-        const td2a = document.createElement("td"); td2a.textContent = 'Checklist';
-        const td2b = document.createElement("td"); td2b.textContent = safeText(selected);
-        tr2.appendChild(td2a); tr2.appendChild(td2b); os.appendChild(tr2);
-      }catch(e){
-        // ignore if DOM elements not present
-      }
+      // Note: intentionally not adding Special Instruction / Checklist rows to Order Summary
 
       // Pods table: currently only show Pod Type, Quantity and Pod IDs.
       setTbodyRows("podsBookedBody", data?.podsBooked, ["podType","quantity","podIds"]);
