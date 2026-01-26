@@ -164,23 +164,8 @@ async function loadArtWorkAndBranding() {
         "Task":"artwork_and_branding"
       };
 
+      updateProjectTask(data);
 
-      const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/tfl2towp9ly3bxrce6qupd35ng4cg464';
-
-      const response = await fetch(MAKE_WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Webhook failed: ${response.status}`);
-        }
-
-     
-      
 }
 
 // Fetch internal printing data with associated quotes
