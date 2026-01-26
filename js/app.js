@@ -152,14 +152,27 @@ function getArtworkData() {
 // Section 3: Printing (main data)
 function getPrintingData() {
   const section = document.querySelector('[data-section="printing"]');
+  
+  // Get assigned_printer value - if "third_party" is selected, use the other name
+  let assignedPrinterValue = getRadioValue('assigned_printer', section);
+  const assignedPrinterOtherName = getInputValue('assigned_printer_other', section);
+  if (assignedPrinterValue === 'third_party' && assignedPrinterOtherName && assignedPrinterOtherName.trim()) {
+    assignedPrinterValue = assignedPrinterOtherName.trim();
+  }
+  
+  // Get assigned_graphic_installer value - if "third_party" is selected, use the other name
+  let assignedGraphicInstallerValue = getRadioValue('assigned_graphic_installer', section);
+  const assignedGraphicInstallerOtherName = getInputValue('assigned_graphic_installer_other', section);
+  if (assignedGraphicInstallerValue === 'third_party' && assignedGraphicInstallerOtherName && assignedGraphicInstallerOtherName.trim()) {
+    assignedGraphicInstallerValue = assignedGraphicInstallerOtherName.trim();
+  }
+  
   return {
     event_id: currentEventId,
-    assigned_printer: getRadioValue('assigned_printer', section),
-    assigned_printer_other: getInputValue('assigned_printer_other', section),
+    assigned_printer: assignedPrinterValue,
     assigned_printer_other_email: getInputValue('assigned_printer_other_email', section),
     installation_quote: getInputValue('installation_quote', section),
-    assigned_graphic_installer: getRadioValue('assigned_graphic_installer', section),
-    assigned_graphic_installer_other: getInputValue('assigned_graphic_installer_other', section),
+    assigned_graphic_installer: assignedGraphicInstallerValue,
     assigned_graphic_installer_other_email: getInputValue('assigned_graphic_installer_other_email', section),
     printing_start_date: getInputValue('printing_start_date', section) || null,
     installation_date: getInputValue('installation_date', section) || null,
@@ -175,11 +188,18 @@ function getPrintingQuotesData() {
   
   quoteEntries.forEach((entry, idx) => {
     const index = parseInt(entry.dataset.index) || (idx + 1);
+    
+    // Get quote_source value - if "third_party" is selected, use the other name
+    let quoteSourceValue = getRadioValue(`quote_source_${index}`, entry);
+    const quoteSourceOtherName = getInputValue(`quote_source_other_${index}`, entry);
+    if (quoteSourceValue === 'third_party' && quoteSourceOtherName && quoteSourceOtherName.trim()) {
+      quoteSourceValue = quoteSourceOtherName.trim();
+    }
+    
     quotes.push({
       event_id: currentEventId,
       quote_index: index,
-      quote_source: getRadioValue(`quote_source_${index}`, entry),
-      quote_source_other: getInputValue(`quote_source_other_${index}`, entry),
+      quote_source: quoteSourceValue,
       quote_source_other_email: getInputValue(`quote_source_other_${index}_email`, entry),
       quote_price: getInputValue(`quote_price_${index}`, entry),
       is_quote_approved: getCheckboxValue(`is_quote_approved_${index}`, entry)
@@ -213,19 +233,30 @@ function getTruckingData() {
       });
     }
     
+    // Get truck source value - single selection (radio)
+    let truckSourceValue = getRadioValue(`truck_source_${index}`, entry);
+    const truckSourceOtherName = getInputValue(`truck_source_${index}_other_name`, entry);
+    const truckSourceOtherEmail = getInputValue(`truck_source_${index}_other_email`, entry);
+    
+    // Store truck_source as array (single element) for database compatibility
+    // If "other" is selected, store "other" in array and custom name in truck_source_other
+    let truckSourceArray = truckSourceValue ? [truckSourceValue] : [];
+    let truckSourceOther = null;
+    
+    if (truckSourceValue === 'other' && truckSourceOtherName && truckSourceOtherName.trim()) {
+      truckSourceOther = truckSourceOtherName.trim();
+    }
+    
     entries.push({
       event_id: currentEventId,
       entry_index: index,
-      truck_source: getCheckedValues(`truck_source_${index}`, entry),
-      truck_source_other: getInputValue(`truck_source_${index}_other`, entry),
-      truck_source_other_email: getInputValue(`truck_source_${index}_other_email`, entry),
+      truck_source: truckSourceArray,
+      truck_source_other: truckSourceOther,
+      truck_source_other_email: truckSourceOtherEmail,
       truck_type: getRadioValue(`truck_type_${index}`, entry),
       sub_truck_type: getRadioValue(`sub_truck_type_${index}`, entry),
       truck_size: getInputValue(`truck_size_${index}`, entry),
-      truck_quote_enterprise: getInputValue(`truck_quote_enterprise_${index}`, entry),
-      truck_quote_axle: getInputValue(`truck_quote_axle_${index}`, entry),
-      truck_quote_edward: getInputValue(`truck_quote_edward_${index}`, entry),
-      truck_quote_other: getInputValue(`truck_quote_other_${index}`, entry),
+      truck_quote: getInputValue(`truck_quote_${index}`, entry),
       is_trucking_quote_approved: getCheckboxValue(`is_trucking_quote_approved_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
       pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
@@ -506,11 +537,17 @@ function getTravelData() {
       });
     }
     
+    // Get traveler_name value - if "other" is selected, use the other name
+    let travelerNameValue = getRadioValue(`traveler_name_${index}`, entry);
+    const travelerNameOther = getInputValue(`traveler_name_other_${index}`, entry);
+    if (travelerNameValue === 'other' && travelerNameOther && travelerNameOther.trim()) {
+      travelerNameValue = travelerNameOther.trim();
+    }
+    
     entries.push({
       event_id: currentEventId,
       traveler_index: index,
-      traveler_name: getRadioValue(`traveler_name_${index}`, entry),
-      traveler_name_other: getInputValue(`traveler_name_other_${index}`, entry),
+      traveler_name: travelerNameValue,
       traveler_name_other_email: getInputValue(`traveler_name_other_${index}_email`, entry),
       travel_from: getInputValue(`travel_from_${index}`, entry),
       travel_to: getInputValue(`travel_to_${index}`, entry),
@@ -1139,13 +1176,40 @@ function populatePrinting(data) {
   const section = document.querySelector('[data-section="printing"]');
   if (!section) return;
   
-  setRadioValue('assigned_printer', data.assigned_printer, section);
-  setInputValue('assigned_printer_other', data.assigned_printer_other, section);
+  // Handle assigned_printer - check if it's a predefined value or custom
+  const predefinedPrinters = ['alan', 'third_party'];
+  if (data.assigned_printer && !predefinedPrinters.includes(data.assigned_printer)) {
+    // It's a custom value - set radio to "third_party" and fill the other name field
+    setRadioValue('assigned_printer', 'third_party', section);
+    setInputValue('assigned_printer_other', data.assigned_printer, section);
+    // Enable the other input fields
+    const otherNameInput = section.querySelector('[name="assigned_printer_other"]');
+    const otherEmailInput = section.querySelector('[name="assigned_printer_other_email"]');
+    if (otherNameInput) otherNameInput.disabled = false;
+    if (otherEmailInput) otherEmailInput.disabled = false;
+  } else {
+    setRadioValue('assigned_printer', data.assigned_printer, section);
+  }
   setInputValue('assigned_printer_other_email', data.assigned_printer_other_email, section);
+  
   setInputValue('installation_quote', data.installation_quote, section);
-  setRadioValue('assigned_graphic_installer', data.assigned_graphic_installer, section);
-  setInputValue('assigned_graphic_installer_other', data.assigned_graphic_installer_other, section);
+  
+  // Handle assigned_graphic_installer - check if it's a predefined value or custom
+  const predefinedInstallers = ['alan', 'Eliseo', 'Clint', 'third_party'];
+  if (data.assigned_graphic_installer && !predefinedInstallers.includes(data.assigned_graphic_installer)) {
+    // It's a custom value - set radio to "third_party" and fill the other name field
+    setRadioValue('assigned_graphic_installer', 'third_party', section);
+    setInputValue('assigned_graphic_installer_other', data.assigned_graphic_installer, section);
+    // Enable the other input fields
+    const otherNameInput = section.querySelector('[name="assigned_graphic_installer_other"]');
+    const otherEmailInput = section.querySelector('[name="assigned_graphic_installer_other_email"]');
+    if (otherNameInput) otherNameInput.disabled = false;
+    if (otherEmailInput) otherEmailInput.disabled = false;
+  } else {
+    setRadioValue('assigned_graphic_installer', data.assigned_graphic_installer, section);
+  }
   setInputValue('assigned_graphic_installer_other_email', data.assigned_graphic_installer_other_email, section);
+  
   setInputValue('printing_start_date', data.printing_start_date, section);
   setInputValue('installation_date', data.installation_date, section);
   setInputValue('installation_location', data.installation_location, section);
@@ -1173,8 +1237,20 @@ function populatePrintingQuotes(quotes) {
     
     const entry = container.querySelector(`.quote-entry[data-index="${quote.quote_index}"]`);
     if (entry) {
-      setRadioValue(`quote_source_${quote.quote_index}`, quote.quote_source, entry);
-      setInputValue(`quote_source_other_${quote.quote_index}`, quote.quote_source_other, entry);
+      // Handle quote_source - check if it's a predefined value or custom
+      const predefinedSources = ['alan', 'third_party'];
+      if (quote.quote_source && !predefinedSources.includes(quote.quote_source)) {
+        // It's a custom value - set radio to "third_party" and fill the other name field
+        setRadioValue(`quote_source_${quote.quote_index}`, 'third_party', entry);
+        setInputValue(`quote_source_other_${quote.quote_index}`, quote.quote_source, entry);
+        // Enable the other input fields
+        const otherNameInput = entry.querySelector(`[name="quote_source_other_${quote.quote_index}"]`);
+        const otherEmailInput = entry.querySelector(`[name="quote_source_other_${quote.quote_index}_email"]`);
+        if (otherNameInput) otherNameInput.disabled = false;
+        if (otherEmailInput) otherEmailInput.disabled = false;
+      } else {
+        setRadioValue(`quote_source_${quote.quote_index}`, quote.quote_source, entry);
+      }
       setInputValue(`quote_source_other_${quote.quote_index}_email`, quote.quote_source_other_email, entry);
       setInputValue(`quote_price_${quote.quote_index}`, quote.quote_price, entry);
       setCheckboxValue(`is_quote_approved_${quote.quote_index}`, quote.is_quote_approved, entry);
@@ -1203,16 +1279,38 @@ function populateTrucking(entries) {
     
     const entry = container.querySelector(`.trucking-entry[data-index="${data.entry_index}"]`);
     if (entry) {
-      setCheckboxValues(`truck_source_${data.entry_index}`, data.truck_source, entry);
-      setInputValue(`truck_source_${data.entry_index}_other`, data.truck_source_other, entry);
+      // Handle truck_source - stored as array in DB, displayed as single radio selection
+      // Extract first value from array if it's an array
+      const predefinedSources = ['zenspace', 'alex_logistics', 'edward', 'other'];
+      let truckSourceValue = null;
+      
+      if (Array.isArray(data.truck_source) && data.truck_source.length > 0) {
+        truckSourceValue = data.truck_source[0];
+      } else if (typeof data.truck_source === 'string') {
+        truckSourceValue = data.truck_source;
+      }
+      
+      if (truckSourceValue === 'other') {
+        // "Other" is selected - set radio to "other" and fill in the custom name from truck_source_other
+        setRadioValue(`truck_source_${data.entry_index}`, 'other', entry);
+        if (data.truck_source_other) {
+          setInputValue(`truck_source_${data.entry_index}_other_name`, data.truck_source_other, entry);
+        }
+        // Enable the other input fields
+        const otherNameInput = entry.querySelector(`[name="truck_source_${data.entry_index}_other_name"]`);
+        const otherEmailInput = entry.querySelector(`[name="truck_source_${data.entry_index}_other_email"]`);
+        if (otherNameInput) otherNameInput.disabled = false;
+        if (otherEmailInput) otherEmailInput.disabled = false;
+      } else if (truckSourceValue && predefinedSources.includes(truckSourceValue)) {
+        // It's a predefined value
+        setRadioValue(`truck_source_${data.entry_index}`, truckSourceValue, entry);
+      }
+      
       setInputValue(`truck_source_${data.entry_index}_other_email`, data.truck_source_other_email, entry);
       setRadioValue(`truck_type_${data.entry_index}`, data.truck_type, entry);
       setRadioValue(`sub_truck_type_${data.entry_index}`, data.sub_truck_type, entry);
       setInputValue(`truck_size_${data.entry_index}`, data.truck_size, entry);
-      setInputValue(`truck_quote_enterprise_${data.entry_index}`, data.truck_quote_enterprise, entry);
-      setInputValue(`truck_quote_axle_${data.entry_index}`, data.truck_quote_axle, entry);
-      setInputValue(`truck_quote_edward_${data.entry_index}`, data.truck_quote_edward, entry);
-      setInputValue(`truck_quote_other_${data.entry_index}`, data.truck_quote_other, entry);
+      setInputValue(`truck_quote_${data.entry_index}`, data.truck_quote, entry);
       setCheckboxValue(`is_trucking_quote_approved_${data.entry_index}`, data.is_trucking_quote_approved, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
       setRadioValue(`pickup_warehouse_${data.entry_index}`, data.pickup_warehouse, entry);
@@ -1542,9 +1640,22 @@ function populateTravel(entries) {
     
     const entry = container.querySelector(`.travel-entry[data-index="${data.traveler_index}"]`);
     if (entry) {
-      setRadioValue(`traveler_name_${data.traveler_index}`, data.traveler_name, entry);
-      setInputValue(`traveler_name_other_${data.traveler_index}`, data.traveler_name_other, entry);
+      // Handle traveler_name - check if it's a predefined value or custom
+      const predefinedTravelers = ['eliseo', 'clinton', 'edward', 'other'];
+      if (data.traveler_name && !predefinedTravelers.includes(data.traveler_name)) {
+        // It's a custom value - set radio to "other" and fill the other name field
+        setRadioValue(`traveler_name_${data.traveler_index}`, 'other', entry);
+        setInputValue(`traveler_name_other_${data.traveler_index}`, data.traveler_name, entry);
+        // Enable the other input fields
+        const otherNameInput = entry.querySelector(`[name="traveler_name_other_${data.traveler_index}"]`);
+        const otherEmailInput = entry.querySelector(`[name="traveler_name_other_${data.traveler_index}_email"]`);
+        if (otherNameInput) otherNameInput.disabled = false;
+        if (otherEmailInput) otherEmailInput.disabled = false;
+      } else {
+        setRadioValue(`traveler_name_${data.traveler_index}`, data.traveler_name, entry);
+      }
       setInputValue(`traveler_name_other_${data.traveler_index}_email`, data.traveler_name_other_email, entry);
+      
       setInputValue(`travel_from_${data.traveler_index}`, data.travel_from, entry);
       setInputValue(`travel_to_${data.traveler_index}`, data.travel_to, entry);
       setInputValue(`traveler_from_datetime_${data.traveler_index}`, fromISODateTime(data.traveler_from_datetime), entry);
@@ -2202,29 +2313,29 @@ function createTruckingEntry(index) {
     
     <div class="form-group">
       <label class="form-label">Truck Source</label>
-      <div class="checkbox-group">
-        <label class="checkbox-item">
-          <input type="checkbox" name="truck_source_${index}" value="zenspace">
-          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-          <span class="checkbox-label">Enterprise</span>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="truck_source_${index}" value="zenspace">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Enterprise</span>
         </label>
-        <label class="checkbox-item">
-          <input type="checkbox" name="truck_source_${index}" value="alex_logistics">
-          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-          <span class="checkbox-label">Alex Logistics</span>
+        <label class="radio-item">
+          <input type="radio" name="truck_source_${index}" value="alex_logistics">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Alex Logistics</span>
         </label>
-        <label class="checkbox-item">
-          <input type="checkbox" name="truck_source_${index}" value="edward">
-          <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-          <span class="checkbox-label">Edward</span>
+        <label class="radio-item">
+          <input type="radio" name="truck_source_${index}" value="edward">
+          <span class="radio-custom"></span>
+          <span class="radio-label">Edward</span>
         </label>
         <div class="other-input-wrapper">
-          <label class="checkbox-item">
-            <input type="checkbox" name="truck_source_${index}" value="other">
-            <span class="checkbox-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-            <span class="checkbox-label">Other</span>
+          <label class="radio-item">
+            <input type="radio" name="truck_source_${index}" value="other">
+            <span class="radio-custom"></span>
+            <span class="radio-label">Other</span>
           </label>
-          <input type="text" class="other-input" name="truck_source_${index}_other" placeholder="Enter name..." disabled>
+          <input type="text" class="other-input" name="truck_source_${index}_other_name" placeholder="Enter name..." disabled>
           <input type="email" class="other-input" name="truck_source_${index}_other_email" placeholder="Enter email..." disabled>
         </div>
       </div>
@@ -2254,28 +2365,9 @@ function createTruckingEntry(index) {
       <input type="text" class="form-input" name="truck_size_${index}" placeholder="Enter truck size...">
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Quote Price from Enterprise (if rented)</label>
-        <input type="text" class="form-input" name="truck_quote_enterprise_${index}" placeholder="$0.00">
-      </div>
-      
-      <div class="form-group">
-        <label class="form-label">Quote Price from Axle Logistics (if Axle is providing)</label>
-        <input type="text" class="form-input" name="truck_quote_axle_${index}" placeholder="$0.00">
-      </div>
-    </div>
-    
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Quote Price from Edward</label>
-        <input type="text" class="form-input" name="truck_quote_edward_${index}" placeholder="$0.00">
-      </div>
-      
-      <div class="form-group">
-        <label class="form-label">Quote Price from Others</label>
-        <input type="text" class="form-input" name="truck_quote_other_${index}" placeholder="$0.00">
-      </div>
+    <div class="form-group">
+      <label class="form-label">Truck Quote</label>
+      <input type="text" class="form-input" name="truck_quote_${index}" placeholder="$0.00">
     </div>
     
     <div class="form-row">

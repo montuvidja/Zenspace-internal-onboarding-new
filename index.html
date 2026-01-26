@@ -17,6 +17,7 @@
   <script>
      const apiversion = "1.0.4";
      let currentEventName = "";
+     let currentProjectId = "";
      const NycWarehouseAddress = "17 Madison Ave., Paterson, NJ";
      const HaywardWarehouseAddress = "31259 Wiegman Rd #104, Hayward, CA, 94544, United States";
      const NycWarehouse = "NJ Warehouse";
@@ -399,6 +400,12 @@
                   </svg>
                   <span>Save Section</span>
                 </button>
+                <button type="button" class="btn btn-primary" id="updateArtworkProjectBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Update Task</span>
+                </button>
               </div>
             </div>
           </div>
@@ -576,6 +583,12 @@
                   </svg>
                   <span>Save Section</span>
                 </button>
+                <button type="button" class="btn btn-primary" id="updatePrintingProjectBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Update Task</span>
+                </button>
               </div>
             </div>
           </div>
@@ -609,45 +622,29 @@
                 
                 <div class="form-group">
                   <label class="form-label">Truck Source</label>
-                  <div class="checkbox-group">
-                    <label class="checkbox-item">
-                      <input type="checkbox" name="truck_source_1" value="zenspace">
-                      <span class="checkbox-custom">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </span>
-                      <span class="checkbox-label">Enterprise</span>
+                  <div class="radio-group">
+                    <label class="radio-item">
+                      <input type="radio" name="truck_source_1" value="zenspace">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Enterprise</span>
                     </label>
-                    <label class="checkbox-item">
-                      <input type="checkbox" name="truck_source_1" value="alex_logistics">
-                      <span class="checkbox-custom">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </span>
-                      <span class="checkbox-label">Alex Logistics</span>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_source_1" value="alex_logistics">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Alex Logistics</span>
                     </label>
-                    <label class="checkbox-item">
-                      <input type="checkbox" name="truck_source_1" value="edward">
-                      <span class="checkbox-custom">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </span>
-                      <span class="checkbox-label">Edward</span>
+                    <label class="radio-item">
+                      <input type="radio" name="truck_source_1" value="edward">
+                      <span class="radio-custom"></span>
+                      <span class="radio-label">Edward</span>
                     </label>
                     <div class="other-input-wrapper">
-                      <label class="checkbox-item">
-                        <input type="checkbox" name="truck_source_1" value="other">
-                        <span class="checkbox-custom">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                        </span>
-                        <span class="checkbox-label">Other</span>
+                      <label class="radio-item">
+                        <input type="radio" name="truck_source_1" value="other">
+                        <span class="radio-custom"></span>
+                        <span class="radio-label">Other</span>
                       </label>
-                      <input type="text" class="other-input" name="truck_source_1_other" placeholder="Enter name..." disabled>
+                      <input type="text" class="other-input" name="truck_source_1_other_name" placeholder="Enter name..." disabled>
                       <input type="email" class="other-input" name="truck_source_1_other_email" placeholder="Enter email..." disabled>
                     </div>
                   </div>
@@ -702,27 +699,9 @@
                   <label class="form-label">Truck Size</label>
                   <input type="text" class="form-input" name="truck_size_1" placeholder="Enter truck size...">
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label">Quote Price from Enterprise (if rented)</label>
-                    <input type="text" class="form-input" name="truck_quote_enterprise_1" placeholder="$0.00">
-                  </div>
-                  
-                  <div class="form-group">
-                    <label class="form-label">Quote Price from Axle Logistics (if Axle is providing)</label>
-                    <input type="text" class="form-input" name="truck_quote_axle_1" placeholder="$0.00">
-                  </div>
-                </div>
-               <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label">Quote Price from Edward</label>
-                    <input type="text" class="form-input" name="truck_quote_edward_1" placeholder="$0.00">
-                  </div>
-                  
-                  <div class="form-group">
-                    <label class="form-label">Quote Price from Others</label>
-                    <input type="text" class="form-input" name="truck_quote_other_1" placeholder="$0.00">
-                  </div>
+                <div class="form-group">
+                  <label class="form-label">Truck Quote</label>
+                  <input type="text" class="form-input" name="truck_quote_1" placeholder="$0.00">
                 </div>
                 
                 

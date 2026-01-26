@@ -61,11 +61,11 @@ function getWorkOrderFormOverridesFromDOM() {
 async function loadEventData() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      console.log("Ensuring Supabase client...");
+      
       await ensureSupabaseClient();
     //  showLoader("Loading event data...");
       const eventId = urlParams.get('event_id');// '4718866000034408037';
-      console.log("Loading data for event:", eventId);
+     
   
   
       // 1) core event
@@ -77,11 +77,11 @@ async function loadEventData() {
       if (evErr) throw evErr;
       if (!ev) throw new Error("Event not found");
   
-      console.log("Loading data for event:", ev);
       // Build the shape your UI expects
       const data = {
         "deal-id": ev.event_id,
         "event-name-detail": ev.event_name || "",
+        "project_id": ev.project_id || "",
         "contact-name": ev.contact_name || "",
         "contact-email": ev.contact_email || "",
         "start-date": ev.event_start_at ? formatEventDate(ev.event_start_at) : "",
@@ -95,7 +95,9 @@ async function loadEventData() {
         "country": ev.country || "",
         "main_onboarding_sheet_link": ev.main_onboarding_sheet_link || ""
       };
-      console.log("Event data:", data);
+
+      currentProjectId = ev.project_id || "";
+      console.log("Event data:", currentProjectId);
 
       fetchEventFolderLinks(ev.event_name || "", ev.event_start_at);
       
