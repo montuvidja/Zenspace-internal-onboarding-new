@@ -163,8 +163,8 @@ async function loadEventData1() {
     const gc_contactName = contact 
       ? `${contact.gc_first_name || ''} ${contact.gc_last_name || ''}`.trim()
       : '';
-    const gc_contactPhone = contact?.org_phone || '';
-    const gc_contactEmail = contact?.org_email || '';
+    const gc_contactPhone = contact?.gc_phone || '';
+    const gc_contactEmail = contact?.gc_email || '';
     const gc_contactInfo = [gc_contactName, gc_contactPhone, gc_contactEmail].filter(Boolean).join(' | ') || 'N/A';
 
     // Build the description
