@@ -16,6 +16,14 @@ if (updatePrintingProjectBtn) {
     });
   }
 
+
+const updatePrePlanBtn = document.getElementById('updatePrePlanBtn');
+if (updatePrePlanBtn) {
+    updatePrePlanBtn.addEventListener('click', () => {
+      loadEventData1();
+    });
+  }
+
   /**
  * Create Asana project via Make.com webhook
  */
@@ -73,65 +81,141 @@ async function loadEventData1() {
     //  showLoader("Loading event data...");
       const eventId = urlParams.get('event_id');// '4718866000034408037';
      
-  
-  
-      // 1) core event
-      const { data: ev, error: evErr } = await supabase
+
+
+    // Fetch all data in parallel
+    const [eventResult, podResult, evContactResult, bookingResult, brandingResult] = await Promise.all([
+      supabase
         .from("events")
         .select("*")
         .eq("event_id", eventId)
-        .maybeSingle();
-      if (evErr) throw evErr;
-      if (!ev) throw new Error("Event not found");
-  
+        .single(),
+      
+      supabase
+        .from('pods_booked')
+        .select('*')
+        .eq('event_id', eventId),
+
+      supabase
+        .from('event_contacts')
+        .select('*')
+        .eq('event_id', eventId)
+        .single(),
+
+      supabase
+        .from('booking_app_addons')
+        .select('*')
+        .eq('event_id', eventId),
+
+      supabase
+        .from('branding_items')
+        .select('*')
+        .eq('event_id', eventId),
+    ]);
+
+    // Extract data
+    const event = eventResult.data;
+    const pods = podResult.data || [];
+    const contact = evContactResult.data;
+    const addons = bookingResult.data || [];
+    const branding = brandingResult.data || [];
+
+    // Format dates
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
+    const formatTime = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    // Build pods summary (e.g., "2 units of 4-Seater Pods, 1 unit of 6-Seater Pod")
+    const podsSummary = pods.map(p => 
+      `${p.quantity || 1} unit${(p.quantity || 1) > 1 ? 's' : ''} of ${p.pod_type}`
+    ).join(', ') || 'N/A';
+
+    // Build branding summary
+    const brandingSummary = branding.length > 0 
+      ? branding.map(b => b.branding_name).join(', ')
+      : 'No Branding';
+
+    // Check for booking software addon
+    const hasBookingSoftware = addons.some(a => 
+      a.product_type?.toLowerCase().includes('booking') || 
+      a.product?.toLowerCase().includes('booking')
+    );
+
+    const hasBranding = branding.length > 0;
+
+    // Build contact info
+    const contactName = contact 
+      ? `${contact.org_first_name || ''} ${contact.org_last_name || ''}`.trim()
+      : '';
+    const contactPhone = contact?.org_phone || '';
+    const contactEmail = contact?.org_email || '';
+    const contactInfo = [contactName, contactPhone, contactEmail].filter(Boolean).join(' | ') || 'N/A';
+
+    // Build contact info
+    const gc_contactName = contact 
+      ? `${contact.gc_first_name || ''} ${contact.gc_last_name || ''}`.trim()
+      : '';
+    const gc_contactPhone = contact?.org_phone || '';
+    const gc_contactEmail = contact?.org_email || '';
+    const gc_contactInfo = [gc_contactName, gc_contactPhone, gc_contactEmail].filter(Boolean).join(' | ') || 'N/A';
+
+    // Build the description
+    const description = `Event Overview
     
-      // Build the shape your UI expects
+          Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
+
+          Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
+
+          Event Start Date & Time: ${formatDate(event?.event_start_at)} | ${formatTime(event?.event_start_at)}
+          Event End Date & Time: ${formatDate(event?.event_end_at)} | ${formatTime(event?.event_end_at)}
+
+          Load-In: ${formatDate(event?.load_in_date)} | ${formatTime(event?.load_in_date)}
+          Load-Out: ${formatDate(event?.load_out_date)} | ${formatTime(event?.load_out_date)}
+
+          Event Organiser's Contact: 
+               Name: ${contactName}
+               Phone: ${contactPhone}
+               Email: ${contactEmail}
+
+          GC's Contact: 
+               Name: ${gc_contactName}
+               Phone: ${gc_contactPhone}
+               Email: ${gc_contactEmail}
+
+          Scope of Work
+          1. Pods: ${podsSummary}
+          2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
+          3. Delivery Type: 
+          4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
+
+
+      console.log("Generated Description:", description);
+
+
       const data = {
-        "deal-id": ev.event_id,
-        "event-name-detail": ev.event_name || "",
-        "contact-name": ev.contact_name || "",
-        "contact-email": ev.contact_email || "",
-        "project_id": ev.project_id || "",
-        "load_in_date": ev.load_in_date || "",
-        "load_out_date": ev.load_out_date || "",
-        "start-date": ev.event_start_at ? formatEventDate(ev.event_start_at) : "",
-        "end-date": ev.event_end_at ? formatEventDate(ev.event_end_at) : "",
-        "address-line1": ev.address_line1 || "",
-        "address-line2": ev.address_line2 || "",
-        "display-address": ev.display_address || "",
-        "city": ev.city || "",
-        "state": ev.state || "",
-        "postal-code": ev.postal_code || "",
-        "country": ev.country || "",
-        "main_onboarding_sheet_link": ev.main_onboarding_sheet_link || ""
+        "project_id": getProjectId(),
+        "confirm_details": description,
+        "Task":"pre_event_planning"
       };
-      
 
-      
-      
-
-      // 3) Booking app addons (bookables)
-      const { data: bookables, error: bkErr } = await supabase
-        .from("booking_app_addons")
-        .select("product_type, product, bookable")
-        .eq("event_id", eventId)
-        .order("id", { ascending: true });
-      if (bkErr) throw bkErr;
-      data.BookingApp = (bookables || []).map(r => ({ Product_Type: r.product_type, Product: r.product, Bookable: !!r.bookable }));
-     
-
-      return data;
-      
+      updateProjectTask(data);
   
-    //  hideLoader();
-    } catch (err) {
-      console.error("loadEventData error:", err);
-      document.getElementById("not-found-message")?.classList.remove("d-none");
-      document.getElementById("form-wrapper")?.classList.add("d-none");
-    return null;
-    //  hideLoader();
-    }
-  }
+  } catch (err) {
+        console.error("loadEventData error:", err);
+        document.getElementById("not-found-message")?.classList.remove("d-none");
+        document.getElementById("form-wrapper")?.classList.add("d-none");
+      return null;
+      //  hideLoader();
+      }
+}
 
 async function loadArtWorkAndBranding() {
 
@@ -217,8 +301,53 @@ async function getInternalPrintingData() {
   }
 }
 
-// Example usage:
-// const { data, error } = await getInternalPrintingData(supabase, 'EVENT_123');
+async function getPrePlanData() {
+  try {
+      const urlParams = new URLSearchParams(window.location.search);
+      await ensureSupabaseClient();
+    //  showLoader("Loading event data...");
+      const eventId = urlParams.get('event_id');
+       // 1) core event
+      const [printingResult, quotesResult] = await Promise.all([
+      supabase
+        .from('internal_printing')
+        .select('*')
+        .eq('event_id', eventId)
+        .single(),
+      
+      supabase
+        .from('internal_printing_quotes')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('quote_index', { ascending: true })
+    ]);
+
+    // Handle errors
+    if (printingResult.error && printingResult.error.code !== 'PGRST116') {
+      throw printingResult.error;
+    }
+    if (quotesResult.error) {
+      throw quotesResult.error;
+    }
+
+    const printingData = {
+      ...printingResult.data,
+      quotes: quotesResult.data || [] // Include quotes if available
+    }
+
+     const data = {
+        "project_id": getProjectId(),
+        "printing_data": printingData,
+        "Task":"printing"
+      };
+
+    updateProjectTask(data);
+    
+  } catch (error) {
+    console.error('Error fetching internal printing data:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 async function updateProjectTask(data) {
 
