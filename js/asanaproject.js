@@ -163,13 +163,12 @@ async function loadEventData1() {
     const gc_contactName = contact 
       ? `${contact.gc_first_name || ''} ${contact.gc_last_name || ''}`.trim()
       : '';
-    const gc_contactPhone = contact?.gc_phone || '';
-    const gc_contactEmail = contact?.gc_email || '';
+    const gc_contactPhone = contact?.org_phone || '';
+    const gc_contactEmail = contact?.org_email || '';
     const gc_contactInfo = [gc_contactName, gc_contactPhone, gc_contactEmail].filter(Boolean).join(' | ') || 'N/A';
 
     // Build the description
     const description = `Event Overview
-
           Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
 
           Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
@@ -187,17 +186,16 @@ async function loadEventData1() {
                Email: ${contactEmail}
 
           GC's Contact: 
-
+          
                Name: ${gc_contactName}
                Phone: ${gc_contactPhone}
                Email: ${gc_contactEmail}
 
           Scope of Work
-
-              1. Pods: ${podsSummary}
-              2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
-              3. Delivery Type: 
-              4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
+          1. Pods: ${podsSummary}
+          2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
+          3. Delivery Type: 
+          4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
 
 
       console.log("Generated Description:", description);
