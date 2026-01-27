@@ -169,7 +169,7 @@ async function loadEventData1() {
 
     // Build the description
     const description = `Event Overview
-    
+
           Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
 
           Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
@@ -181,20 +181,23 @@ async function loadEventData1() {
           Load-Out: ${formatDate(event?.load_out_date)} | ${formatTime(event?.load_out_date)}
 
           Event Organiser's Contact: 
+
                Name: ${contactName}
                Phone: ${contactPhone}
                Email: ${contactEmail}
 
           GC's Contact: 
+
                Name: ${gc_contactName}
                Phone: ${gc_contactPhone}
                Email: ${gc_contactEmail}
 
           Scope of Work
-          1. Pods: ${podsSummary}
-          2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
-          3. Delivery Type: 
-          4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
+
+              1. Pods: ${podsSummary}
+              2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
+              3. Delivery Type: 
+              4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
 
 
       console.log("Generated Description:", description);
