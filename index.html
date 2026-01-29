@@ -15,7 +15,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabaseClient.js"></script>
   <script>
-     const apiversion = "1.0.4";
+     const apiversion = "1.0.5";
      let currentEventName = "";
      let currentProjectId = "";
      const NycWarehouseAddress = "17 Madison Ave., Paterson, NJ";
@@ -167,7 +167,7 @@
                 </label>
                 <div class="other-input-wrapper">
                   <label class="radio-item">
-                    <input type="radio" name="onboarding_filled_by" value="other">
+                    <input type="radio" name="onboarding_filled_by" value="Other">
                     <span class="radio-custom"></span>
                     <span class="radio-label">Other</span>
                   </label>
@@ -180,7 +180,7 @@
               <label class="form-label">Assign Installer</label>
               <div class="checkbox-group">
                 <label class="checkbox-item">
-                  <input type="checkbox" name="preplanning_installer" value="eliseo">
+                  <input type="checkbox" name="preplanning_installer" value="Eliseo">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -189,7 +189,7 @@
                   <span class="checkbox-label">Eliseo</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" name="preplanning_installer" value="clinton">
+                  <input type="checkbox" name="preplanning_installer" value="Clinton">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -198,7 +198,7 @@
                   <span class="checkbox-label">Clinton</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" name="preplanning_installer" value="edward">
+                  <input type="checkbox" name="preplanning_installer" value="Edward">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -208,7 +208,7 @@
                 </label>
                 <div class="other-input-wrapper">
                   <label class="checkbox-item">
-                    <input type="checkbox" name="preplanning_installer" value="other">
+                    <input type="checkbox" name="preplanning_installer" value="Other">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -226,7 +226,7 @@
               <label class="form-label">Assign Warehouse Pickup Address</label>
               <div class="address-options">
                 <label class="address-option ">
-                  <input type="radio" name="warehouse_address" value="nyc">
+                  <input type="radio" name="warehouse_address" value="NJ">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
@@ -237,7 +237,7 @@
                   </div>
                 </label>
                 <label class="address-option">
-                  <input type="radio" name="warehouse_address" value="hayward">
+                  <input type="radio" name="warehouse_address" value="Hayward">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
@@ -248,7 +248,7 @@
                   </div>
                 </label>
                 <label class="address-option">
-                  <input type="radio" name="warehouse_address" value="other">
+                  <input type="radio" name="warehouse_address" value="Other">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">Other Location</div>
@@ -332,7 +332,7 @@
                 </label>
                 <div class="other-input-wrapper">
                   <label class="radio-item">
-                    <input type="radio" name="proofs_responsible" value="other">
+                    <input type="radio" name="proofs_responsible" value="Other">
                     <span class="radio-custom"></span>
                     <span class="radio-label">Other</span>
                   </label>
@@ -630,23 +630,23 @@
                   <label class="form-label">Truck Source</label>
                   <div class="radio-group">
                     <label class="radio-item">
-                      <input type="radio" name="truck_source_1" value="zenspace">
+                      <input type="radio" name="truck_source_1" value="Zenspace">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Enterprise</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_source_1" value="alex_logistics">
+                      <input type="radio" name="truck_source_1" value="Axle Logistics">
                       <span class="radio-custom"></span>
-                      <span class="radio-label">Alex Logistics</span>
+                      <span class="radio-label">Axle Logistics</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="truck_source_1" value="edward">
+                      <input type="radio" name="truck_source_1" value="Edward">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Edward</span>
                     </label>
                     <div class="other-input-wrapper">
                       <label class="radio-item">
-                        <input type="radio" name="truck_source_1" value="other">
+                        <input type="radio" name="truck_source_1" value="Other">
                         <span class="radio-custom"></span>
                         <span class="radio-label">Other</span>
                       </label>
@@ -718,12 +718,13 @@
                     <input type="datetime-local" class="form-input" name="pickup_datetime_1">
                   </div>
                 </div>
+
                 
                 <div class="form-group">
                   <label class="form-label">Pickup Warehouse Address</label>
                   <div class="address-options">
                     <label class="address-option">
-                      <input type="radio" name="pickup_warehouse_1" value="nyc">
+                      <input type="radio" name="pickup_warehouse_1" value="NJ">
                       <span class="radio-custom"></span>
                       <div class="address-content">
                         <div class="address-title">
@@ -734,7 +735,7 @@
                       </div>
                     </label>
                     <label class="address-option">
-                      <input type="radio" name="pickup_warehouse_1" value="hayward">
+                      <input type="radio" name="pickup_warehouse_1" value="Hayward">
                       <span class="radio-custom"></span>
                       <div class="address-content">
                         <div class="address-title">
@@ -745,7 +746,7 @@
                       </div>
                     </label>
                     <label class="address-option">
-                      <input type="radio" name="pickup_warehouse_1" value="other">
+                      <input type="radio" name="pickup_warehouse_1" value="Other">
                       <span class="radio-custom"></span>
                       <div class="address-content">
                         <div class="address-title">Other Location</div>
@@ -755,6 +756,13 @@
                     <div class="address-other-input" style="display: none;">
                       <textarea class="form-textarea" name="pickup_warehouse_other_1" placeholder="Enter full address..." rows="2"></textarea>
                     </div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Delivery Date & Time</label>
+                    <input type="datetime-local" class="form-input" name="delivery_datetime_1">
                   </div>
                 </div>
                 
@@ -861,7 +869,13 @@
                   </svg>
                   <span>Generate BOL</span>
                 </button>
+                <a href="${folderUrl}" target="_blank" class="folder-link-btn" id="folder_bol_url">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg> BOL Folder 
+                </a>
               </div>
+              
               <div class="section-actions-right">
                 <span class="save-status">
                   <span>Not saved</span>
@@ -873,6 +887,12 @@
                     <polyline points="7 3 7 8 15 8"></polyline>
                   </svg>
                   <span>Save Section</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="updateTruckingProjectBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Update Task</span>
                 </button>
               </div>
             </div>
@@ -906,7 +926,7 @@
                 <label class="form-label">Assign Installer</label>
                 <div class="checkbox-group">
                   <label class="checkbox-item">
-                    <input type="checkbox" name="install_installer" value="eliseo">
+                    <input type="checkbox" name="install_installer" value="Eliseo">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -915,7 +935,7 @@
                     <span class="checkbox-label">Eliseo</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" name="install_installer" value="clinton">
+                    <input type="checkbox" name="install_installer" value="Clinton">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -924,7 +944,7 @@
                     <span class="checkbox-label">Clinton</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" name="install_installer" value="edward">
+                    <input type="checkbox" name="install_installer" value="Edward">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -934,7 +954,7 @@
                   </label>
                   <div class="other-input-wrapper">
                     <label class="checkbox-item">
-                      <input type="checkbox" name="install_installer" value="other">
+                      <input type="checkbox" name="install_installer" value="Other">
                       <span class="checkbox-custom">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                           <polyline points="20 6 9 17 4 12"></polyline>
@@ -1004,7 +1024,7 @@
                 <label class="form-label">Assign Installer</label>
                 <div class="checkbox-group">
                   <label class="checkbox-item">
-                    <input type="checkbox" name="dismantle_installer" value="eliseo">
+                    <input type="checkbox" name="dismantle_installer" value="Eliseo">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -1013,7 +1033,7 @@
                     <span class="checkbox-label">Eliseo</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" name="dismantle_installer" value="clinton">
+                    <input type="checkbox" name="dismantle_installer" value="Clinton">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -1022,7 +1042,7 @@
                     <span class="checkbox-label">Clinton</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" name="dismantle_installer" value="edward">
+                    <input type="checkbox" name="dismantle_installer" value="Edward">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -1032,7 +1052,7 @@
                   </label>
                   <div class="other-input-wrapper">
                     <label class="checkbox-item">
-                      <input type="checkbox" name="dismantle_installer" value="other">
+                      <input type="checkbox" name="dismantle_installer" value="Other">
                       <span class="checkbox-custom">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                           <polyline points="20 6 9 17 4 12"></polyline>
@@ -1137,7 +1157,7 @@
               <label class="form-label">Assign Warehouse Receiving Person</label>
               <div class="checkbox-group">
                 <label class="checkbox-item">
-                  <input type="checkbox" name="warehouse_receiving" value="eliseo">
+                  <input type="checkbox" name="warehouse_receiving" value="Eliseo">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -1146,7 +1166,7 @@
                   <span class="checkbox-label">Eliseo</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" name="warehouse_receiving" value="clinton">
+                  <input type="checkbox" name="warehouse_receiving" value="Clinton">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -1155,7 +1175,7 @@
                   <span class="checkbox-label">Clinton</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" name="warehouse_receiving" value="edward">
+                  <input type="checkbox" name="warehouse_receiving" value="Edward">
                   <span class="checkbox-custom">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="20 6 9 17 4 12"></polyline>
@@ -1165,7 +1185,7 @@
                 </label>
                 <div class="other-input-wrapper">
                   <label class="checkbox-item">
-                    <input type="checkbox" name="warehouse_receiving" value="other">
+                    <input type="checkbox" name="warehouse_receiving" value="Other">
                     <span class="checkbox-custom">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -1189,7 +1209,7 @@
               <label class="form-label">Return Location</label>
               <div class="address-options">
                 <label class="address-option">
-                  <input type="radio" name="return_address" value="nyc">
+                  <input type="radio" name="return_address" value="NJ">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
@@ -1200,7 +1220,7 @@
                   </div>
                 </label>
                 <label class="address-option">
-                  <input type="radio" name="return_address" value="hayward">
+                  <input type="radio" name="return_address" value="Hayward">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">
@@ -1211,7 +1231,7 @@
                   </div>
                 </label>
                 <label class="address-option">
-                  <input type="radio" name="return_address_1" value="other">
+                  <input type="radio" name="return_address_1" value="Other">
                   <span class="radio-custom"></span>
                   <div class="address-content">
                     <div class="address-title">Other Location</div>
@@ -1275,6 +1295,12 @@
                   </svg>
                   <span>Save Section</span>
                 </button>
+                <button type="button" class="btn btn-primary" id="updatePostEventProjectBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Update Task</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1310,23 +1336,23 @@
                   <label class="form-label">Traveler</label>
                   <div class="radio-group">
                     <label class="radio-item">
-                      <input type="radio" name="traveler_name_1" value="eliseo">
+                      <input type="radio" name="traveler_name_1" value="Eliseo">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Eliseo</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="traveler_name_1" value="clinton">
+                      <input type="radio" name="traveler_name_1" value="Clinton">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Clinton</span>
                     </label>
                     <label class="radio-item">
-                      <input type="radio" name="traveler_name_1" value="edward">
+                      <input type="radio" name="traveler_name_1" value="Edward">
                       <span class="radio-custom"></span>
                       <span class="radio-label">Edward</span>
                     </label>
                     <div class="other-input-wrapper">
                       <label class="radio-item">
-                        <input type="radio" name="traveler_name_1" value="other">
+                        <input type="radio" name="traveler_name_1" value="Other">
                         <span class="radio-custom"></span>
                         <span class="radio-label">Other</span>
                       </label>

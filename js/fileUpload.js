@@ -1087,7 +1087,8 @@ const uploadStyles = `
 }
 
 .folder-link-btn:hover {
-  background: #cfe2ff;
+  background: #63a0fc;
+  color: #ffffff;
 }
 
 /* New list-style display */

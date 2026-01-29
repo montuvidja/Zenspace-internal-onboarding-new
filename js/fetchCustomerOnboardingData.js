@@ -274,6 +274,11 @@ function populateFolderLinks(folderLinks) {
   
   // Create folder items from subfoldersList
   folderLinks.subfoldersList.forEach(folder => {
+
+    if(folder && folder.name.toLowerCase().includes("bol")){
+      document.getElementById("folder_bol_url").href = folder.url || "#";
+      return;
+    } 
     const folderItem = document.createElement("div");
     folderItem.className = "folder-item";
     folderItem.innerHTML = `

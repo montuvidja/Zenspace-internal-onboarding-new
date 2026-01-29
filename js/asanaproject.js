@@ -20,9 +20,23 @@ if (updatePrintingProjectBtn) {
 const updatePrePlanBtn = document.getElementById('updatePrePlanBtn');
 if (updatePrePlanBtn) {
     updatePrePlanBtn.addEventListener('click', () => {
-      loadEventData1();
+      getPrePlanData();
     });
   }
+
+const updateTruckingProjectBtn = document.getElementById('updateTruckingProjectBtn');
+if (updateTruckingProjectBtn) {
+    updateTruckingProjectBtn.addEventListener('click', () => {
+    generateTruckingDescription();
+    });
+  }
+const updatePostEventProjectBtn = document.getElementById('updatePostEventProjectBtn');
+if (updatePostEventProjectBtn) {
+    updatePostEventProjectBtn.addEventListener('click', () => {
+    generatePostEventDescription();
+    });
+  }
+
 
   /**
  * Create Asana project via Make.com webhook
@@ -33,7 +47,7 @@ async function createAsanaProjectFromForm() {
     
     try {
        // showMessage('Creating Asana project...', 'info');
-      eventData1 = await loadEventData1(); // Ensure data is loaded before collecting form data
+      eventData1 = await getPrePlanData(); // Ensure data is loaded before collecting form data
         
         // Collect form data
         const payload = {
@@ -74,7 +88,7 @@ async function createAsanaProjectFromForm() {
 }
 
 
-async function loadEventData1() {
+async function getPrePlanData() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       await ensureSupabaseClient();
@@ -169,6 +183,7 @@ async function loadEventData1() {
 
     // Build the description
     const description = `Event Overview
+
           Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
 
           Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
@@ -186,7 +201,7 @@ async function loadEventData1() {
                Email: ${contactEmail}
 
           GC's Contact: 
-          
+
                Name: ${gc_contactName}
                Phone: ${gc_contactPhone}
                Email: ${gc_contactEmail}
@@ -302,53 +317,315 @@ async function getInternalPrintingData() {
   }
 }
 
-async function getPrePlanData() {
+
+
+async function generateTruckingDescription() {
   try {
-      const urlParams = new URLSearchParams(window.location.search);
-      await ensureSupabaseClient();
-    //  showLoader("Loading event data...");
-      const eventId = urlParams.get('event_id');
-       // 1) core event
-      const [printingResult, quotesResult] = await Promise.all([
+    const bol_folder_link = document.getElementById("folder_bol_url").href || "";
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch trucking entries and meta in parallel
+    const [truckingResult, metaResult] = await Promise.all([
       supabase
-        .from('internal_printing')
+        .from('internal_trucking')
         .select('*')
         .eq('event_id', eventId)
-        .single(),
+        .order('entry_index', { ascending: true }),
       
       supabase
-        .from('internal_printing_quotes')
+        .from('internal_trucking_meta')
         .select('*')
         .eq('event_id', eventId)
-        .order('quote_index', { ascending: true })
+        .single()
     ]);
 
-    // Handle errors
-    if (printingResult.error && printingResult.error.code !== 'PGRST116') {
-      throw printingResult.error;
-    }
-    if (quotesResult.error) {
-      throw quotesResult.error;
+    const truckingEntries = truckingResult.data || [];
+    const meta = metaResult.data;
+
+    // Format date (DD/MM/YYYY)
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    // Format time (h:mm am/pm)
+    const formatTime = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }).toLowerCase();
+    };
+
+    // Format date with time
+    const formatDateTime = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      return `${formatDate(dateStr)} - ${formatTime(dateStr)}`;
+    };
+
+    // Get truck source name
+    const getTruckSource = (entry) => {
+      if (entry.truck_source_new) return entry.truck_source_new;
+      if (entry.truck_source_other) return entry.truck_source_other;
+      if (entry.truck_source && entry.truck_source.length > 0) {
+        return entry.truck_source.join(', ');
+      }
+      return 'N/A';
+    };
+
+    // Get truck quote
+    const getTruckQuote = (entry) => {
+      return entry.truck_quote || 
+             entry.truck_quote_enterprise || 
+             entry.truck_quote_axle || 
+             entry.truck_quote_edward || 
+             entry.truck_quote_other || 
+             'N/A';
+    };
+
+    // Get pickup address
+    const getPickupAddress = (entry) => {
+      if (entry.pickup_warehouse_other) {
+        return entry.pickup_warehouse_other;
+      }
+      if (entry.pickup_warehouse) {
+        return entry.pickup_warehouse;
+      }
+      return 'N/A';
+    };
+
+    // Format drivers from JSONB
+    const formatDrivers = (drivers) => {
+      if (!drivers || !Array.isArray(drivers) || drivers.length === 0) {
+        return '    No drivers assigned';
+      }
+      
+      const sortedDrivers = [...drivers].sort((a, b) => 
+        (a.driver_index || 0) - (b.driver_index || 0)
+      );
+      
+      return sortedDrivers.map((driver, index) => {
+        const driverNum = driver.driver_index || (index + 1);
+        let driverText = `    Driver \n`;
+        driverText += `      Name: ${driver.driver_name || 'N/A'}\n`;
+        driverText += `      Mobile No: ${driver.driver_mobile || 'N/A'}\n`;
+        driverText += `      Email: ${driver.driver_email || 'N/A'}`;
+        return driverText;
+      }).join('\n');
+    };
+
+    // Build trucking description (all entries)
+    let truckingDescription = '';
+
+    truckingEntries.forEach((entry, index) => {
+      const entryNumber = entry.entry_index || (index + 1);
+      
+      truckingDescription += `Truck Source #${entryNumber}\n`;
+      truckingDescription += `  Source Name: ${getTruckSource(entry)}\n`;
+      truckingDescription += `  Truck Type: ${entry.truck_type || 'N/A'}\n`;
+      truckingDescription += `  Truck Size: ${entry.truck_size || 'N/A'}\n`;
+      truckingDescription += `  Truck Quote: ${getTruckQuote(entry)}\n`;
+      truckingDescription += `  Pick Up Address: ${getPickupAddress(entry)}\n`;
+      truckingDescription += `  Delivery Address: ${entry.delivery_address || 'N/A'}\n`;
+      truckingDescription += `  Pick Up Date: ${formatDate(entry.pickup_datetime)}\n`;
+      truckingDescription += `  Special Delivery Instruction: ${entry.delivery_instructions || ''}\n`;
+      truckingDescription += `  Is Approved: ${entry.is_trucking_quote_approved ? 'Yes' : 'No'}\n`;
+      
+      if (index < truckingEntries.length - 1) {
+        truckingDescription += '\n';
+      }
+    });
+
+    if (meta?.special_instructions) {
+      truckingDescription += '\n\nGeneral Trucking Instructions:\n';
+      truckingDescription += meta.special_instructions;
     }
 
-    const printingData = {
-      ...printingResult.data,
-      quotes: quotesResult.data || [] // Include quotes if available
+    // Filter approved entries
+    const approvedEntries = truckingEntries.filter(entry => entry.is_trucking_quote_approved === true);
+
+    // Build driver description (only approved truck sources)
+    let driverDescription = '';
+
+    if (approvedEntries.length === 0) {
+      driverDescription = 'No approved truck sources found.';
+    } else {
+      approvedEntries.forEach((entry, index) => {
+        const entryNumber = entry.entry_index || (index + 1);
+        
+        driverDescription += `Truck Source #${entryNumber} - ${getTruckSource(entry)}\n`;
+        driverDescription += `  Pick Up Date: ${formatDate(entry.pickup_datetime)}\n`;
+        driverDescription += `  Delivery Address: ${entry.delivery_address || 'N/A'}\n`;
+        driverDescription += `  Driver Details:\n`;
+        driverDescription += formatDrivers(entry.drivers);
+        
+        if (index < approvedEntries.length - 1) {
+          driverDescription += '\n\n';
+        }
+      });
     }
 
-     const data = {
-        "project_id": getProjectId(),
-        "printing_data": printingData,
-        "Task":"printing"
-      };
+    // Build pickup/delivery description (only approved truck sources)
+    let pickupDeliveryDescription = '';
+
+    if (approvedEntries.length === 0) {
+      pickupDeliveryDescription = 'No approved truck sources found.';
+    } else {
+      approvedEntries.forEach((entry, index) => {
+        const entryNumber = entry.entry_index || (index + 1);
+        
+        pickupDeliveryDescription += `Truck Source #${entryNumber} - ${getTruckSource(entry)}\n`;
+        pickupDeliveryDescription += `----------------------------------------\n`;
+        
+        // Pickup section
+        if(entry.pickup_warehouse.toLowerCase() === 'other') {
+          pickupDeliveryDescription += `Pickup - ${entry.pickup_warehouse_other} \n`;
+        } else {
+          pickupDeliveryDescription += `Pickup - ${entry.pickup_warehouse || 'N/A'} Warehouse (Zenspace) \n`;
+          pickupDeliveryDescription += `         ${entry.pickup_warehouse_other}\n`;
+        }
+        pickupDeliveryDescription += `Pick up Date - ${formatDateTime(entry.pickup_datetime)}`;
+        
+        pickupDeliveryDescription += `\n \n`;
+        
+        // Drop off section
+        pickupDeliveryDescription += `Drop off - ${entry.delivery_address || 'N/A'}\n`;
+        pickupDeliveryDescription += `Drop off Date - ${formatDateTime(entry.delivery_datetime)}\n`;
+        
+        if (index < approvedEntries.length - 1) {
+          pickupDeliveryDescription += '\n\n';
+        }
+      });
+    }
+
+    const data = {
+      "project_id": getProjectId(),
+      "confirm_details": truckingDescription,
+      "driver_details": driverDescription,
+      "pickup_delivery_details": pickupDeliveryDescription,
+      "bol_folder_link": bol_folder_link || "",
+      "Task": "trucking_source"
+    };
 
     updateProjectTask(data);
-    
+
   } catch (error) {
-    console.error('Error fetching internal printing data:', error);
+    console.error('Error generating trucking description:', error);
     return { success: false, error: error.message };
   }
 }
+
+async function generatePostEventDescription() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch post-event data
+    const { data: postEventData, error } = await supabase
+      .from('internal_postevent')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    const postEvent = postEventData;
+
+    // Format date with time
+    const formatDateTime = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const time = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }).toLowerCase();
+      return `${day}/${month}/${year} ${time}`;
+    };
+
+    // Format receiving persons
+    const formatReceivingPersons = (receivingArray, otherName, otherEmail) => {
+      if (!receivingArray || !Array.isArray(receivingArray) || receivingArray.length === 0) {
+        return 'N/A';
+      }
+
+      return receivingArray.map((person, index) => {
+        const num = index + 1;
+        if (person.toLowerCase() === 'other') {
+          // Use other name and email
+          const otherDetails = otherEmail ? `${otherName || 'N/A'} - ${otherEmail}` : (otherName || 'N/A');
+          return `${num}. ${otherDetails}`;
+        }
+        return `${num}. ${person}`;
+      }).join('\n         ');
+    };
+
+    // 1. Receiving Person Details
+    const receivingPersonDescription = `Receiving Person Details
+-----------------------------------------
+Name: ${formatReceivingPersons(postEvent?.warehouse_receiving, postEvent?.warehouse_receiving_other, postEvent?.warehouse_receiving_other_email)}
+Return Date: ${formatDateTime(postEvent?.return_datetime)}
+Return Address: ${postEvent?.return_address || postEvent?.return_address_other || 'N/A'}
+Special Instruction: ${postEvent?.special_instructions || 'None'}`;
+
+    // 2. Damage Check
+    const hasDamage = postEvent?.items_damage?.toLowerCase() === 'yes' || 
+                      (postEvent?.damage_images_urls && postEvent?.damage_images_urls.length > 0);
+    
+    let damageDescription = '';
+    if (hasDamage) {
+      damageDescription = `Damage Check 🔍
+-----------------------------------------
+Damages: Yes
+Damage Photo Folder: ${postEvent?.damage_images_folder_url || 'N/A'}`;
+    } else {
+      damageDescription = `Damage Check 🔍
+-----------------------------------------
+Damages: No`;
+    }
+
+    // 3. Event Photos
+    const eventPhotosDescription = `Pod Paparazzi Time 📸
+-----------------------------------------
+Events Photo Folder: ${postEvent?.event_images_folder_url || 'N/A'}`;
+
+    // 4. Client Debrief
+    const clientDebriefDescription = `Client Debrief ☕
+-----------------------------------------
+${postEvent?.debrief_note || 'No debrief notes available.'}`;
+
+    const data = {
+      "project_id": getProjectId(),
+      "receiving_person": receivingPersonDescription,
+      "is_damage": damageDescription,
+      "event_photos": eventPhotosDescription,
+      "client_debrief": clientDebriefDescription,
+      "Task": "post_event"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating post-event description:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
 
 async function updateProjectTask(data) {
 

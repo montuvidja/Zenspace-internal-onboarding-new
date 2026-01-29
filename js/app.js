@@ -127,10 +127,35 @@ function getPreplanningData() {
     preplanning_installer_other: getInputValue('preplanning_installer_other', section),
     preplanning_installer_other_email: getInputValue('preplanning_installer_other_email', section),
     warehouse_address: getRadioValue('warehouse_address', section),
-    warehouse_address_other: getInputValue('warehouse_address_other', section),
+    warehouse_address_other: getSelectedPrePlanWarehouse(),//getInputValue('warehouse_address_other', section),
     packing_deadline: toISODateTime(getInputValue('packing_deadline', section)),
     special_instructions: getInputValue('special_instructions_preplanning', section)
   };
+}
+
+function getSelectedPrePlanWarehouse() {
+  // checked radio for this index group
+  const checked = document.querySelector(`input[name="warehouse_address"]:checked`);
+  if (!checked) return null;
+
+  // the label that wraps this radio + content
+  const option = checked.closest(".address-option");
+
+ // const title = option.querySelector(".address-title")?.textContent.trim() || "";
+  const detailsEl = option.querySelector(".address-details");
+  const details = detailsEl?.dataset.address?.trim() || detailsEl?.innerText.trim() || "";
+
+  // handle "other"
+  if (checked.value === "Other") {
+    const otherText = option.closest(".address-options")
+      .querySelector(`textarea[name="warehouse_address_other"]`)?.value.trim() || "";
+
+    return `${otherText}`;
+  }
+
+  console.log("Pickup Warehouse Title:", `${details}`);
+
+  return `${details}`;
 }
 
 // Section 2: Artwork & Branding
@@ -243,10 +268,11 @@ function getTruckingData() {
     let truckSourceArray = truckSourceValue ? [truckSourceValue] : [];
     let truckSourceOther = null;
     
-    if (truckSourceValue === 'other' && truckSourceOtherName && truckSourceOtherName.trim()) {
+    if (truckSourceValue === 'Other' && truckSourceOtherName && truckSourceOtherName.trim()) {
       truckSourceOther = truckSourceOtherName.trim();
     }
     
+ // getSelectedPickupWarehouse(index);
     entries.push({
       event_id: currentEventId,
       entry_index: index,
@@ -259,16 +285,45 @@ function getTruckingData() {
       truck_quote: getInputValue(`truck_quote_${index}`, entry),
       is_trucking_quote_approved: getCheckboxValue(`is_trucking_quote_approved_${index}`, entry),
       pickup_datetime: toISODateTime(getInputValue(`pickup_datetime_${index}`, entry)),
+      delivery_datetime: toISODateTime(getInputValue(`delivery_datetime_${index}`, entry)),
       pickup_warehouse: getRadioValue(`pickup_warehouse_${index}`, entry),
-      pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
+      pickup_warehouse_other: getSelectedPickupWarehouse(index),
+    //  pickup_warehouse_other: getInputValue(`pickup_warehouse_other_${index}`, entry),
       delivery_address: getInputValue(`delivery_address_${index}`, entry),
       delivery_instructions: getInputValue(`delivery_instructions_${index}`, entry),
       drivers: drivers,
       truck_payment_status: getRadioValue(`truck_payment_status_${index}`, entry)
     });
   });
+
+
   
   return entries;
+}
+
+function getSelectedPickupWarehouse(index) {
+  // checked radio for this index group
+  const checked = document.querySelector(`input[name="pickup_warehouse_${index}"]:checked`);
+  if (!checked) return null;
+
+  // the label that wraps this radio + content
+  const option = checked.closest(".address-option");
+
+ // const title = option.querySelector(".address-title")?.textContent.trim() || "";
+  const detailsEl = option.querySelector(".address-details");
+  const details = detailsEl?.dataset.address?.trim() || detailsEl?.innerText.trim() || "";
+
+  // handle "other"
+  if (checked.value === "Other") {
+    const otherText = option.closest(".address-options")
+      .querySelector(`textarea[name="pickup_warehouse_other_${index}"]`)?.value.trim() || "";
+
+    return `${otherText}`;
+  }
+
+  console.log("Pickup Warehouse Title:", `${details}`);
+
+  return `${details}`;
 }
 
 // Section 4: Trucking Meta (section-level) - WITH FILE URLs
@@ -370,7 +425,7 @@ function getPosteventData() {
     warehouse_receiving_other_email: getInputValue('warehouse_receiving_other_email', section),
     return_datetime: toISODateTime(getInputValue('return_datetime', section)),
     return_address: getRadioValue('return_address', section),
-    return_address_other: getInputValue('return_address_other_1', section),
+    return_address_other: getSelectedPostPlanWarehouse(), //getInputValue('return_address_other_1', section),
     items_damage: getRadioValue('items_damage', section),
     debrief_note: getInputValue('debrief_note', section),
     special_instructions: getInputValue('special_instructions_postevent', section),
@@ -382,6 +437,29 @@ function getPosteventData() {
     event_images_names: eventNames.length > 0 ? eventNames : null,
     event_images_folder_url: eventImagesData.folderUrl || null
   };
+}
+
+function getSelectedPostPlanWarehouse() {
+  // checked radio for this index group
+  const checked = document.querySelector(`input[name="return_address"]:checked`);
+  if (!checked) return null;
+
+  // the label that wraps this radio + content
+  const option = checked.closest(".address-option");
+
+ // const title = option.querySelector(".address-title")?.textContent.trim() || "";
+  const detailsEl = option.querySelector(".address-details");
+  const details = detailsEl?.dataset.address?.trim() || detailsEl?.innerText.trim() || "";
+
+  // handle "other"
+  if (checked.value === "Other") {
+    const otherText = option.closest(".address-options")
+      .querySelector(`textarea[name="return_address_other_1"]`)?.value.trim() || "";
+
+    return `${otherText}`;
+  }
+
+  return `${details}`;
 }
 
 // Section 7: Travel (multiple entries)
@@ -540,7 +618,7 @@ function getTravelData() {
     // Get traveler_name value - if "other" is selected, use the other name
     let travelerNameValue = getRadioValue(`traveler_name_${index}`, entry);
     const travelerNameOther = getInputValue(`traveler_name_other_${index}`, entry);
-    if (travelerNameValue === 'other' && travelerNameOther && travelerNameOther.trim()) {
+    if (travelerNameValue === 'Other' && travelerNameOther && travelerNameOther.trim()) {
       travelerNameValue = travelerNameOther.trim();
     }
     
@@ -1064,7 +1142,7 @@ function setRadioValue(name, value, container = document) {
     radio.closest('.radio-item')?.classList.add('selected');
     radio.closest('.address-option')?.classList.add('selected');
     
-    if (value === 'other' || value === 'third_party') {
+    if (value === 'Other' || value === 'third_party') {
       const wrapper = radio.closest('.radio-group, .address-options');
       const otherInputs = wrapper?.querySelectorAll('.other-input');
       if (otherInputs && otherInputs.length) {
@@ -1089,7 +1167,7 @@ function setCheckboxValues(name, values, container = document) {
       checkbox.checked = true;
       checkbox.closest('.checkbox-item')?.classList.add('checked');
       
-      if (value === 'other') {
+      if (value === 'Other') {
         const wrapper = checkbox.closest('.other-input-wrapper');
         const otherInputs = wrapper?.querySelectorAll('.other-input');
         if (otherInputs && otherInputs.length) {
@@ -1148,7 +1226,7 @@ function populatePreplanning(data) {
   setInputValue('packing_deadline', fromISODateTime(data.packing_deadline), section);
   setInputValue('special_instructions_preplanning', data.special_instructions, section);
   
-  if (data.warehouse_address === 'other') {
+  if (data.warehouse_address === 'Other') {
     const otherDiv = section.querySelector('.address-other-input');
     if (otherDiv) otherDiv.style.display = 'block';
   }
@@ -1281,7 +1359,7 @@ function populateTrucking(entries) {
     if (entry) {
       // Handle truck_source - stored as array in DB, displayed as single radio selection
       // Extract first value from array if it's an array
-      const predefinedSources = ['zenspace', 'alex_logistics', 'edward', 'other'];
+      const predefinedSources = ['Zenspace', 'Axle Logistics', 'Edward', 'Other'];
       let truckSourceValue = null;
       
       if (Array.isArray(data.truck_source) && data.truck_source.length > 0) {
@@ -1290,9 +1368,9 @@ function populateTrucking(entries) {
         truckSourceValue = data.truck_source;
       }
       
-      if (truckSourceValue === 'other') {
-        // "Other" is selected - set radio to "other" and fill in the custom name from truck_source_other
-        setRadioValue(`truck_source_${data.entry_index}`, 'other', entry);
+      if (truckSourceValue === 'Other') {
+        // "Other" is selected - set radio to "Other" and fill in the custom name from truck_source_other
+        setRadioValue(`truck_source_${data.entry_index}`, 'Other', entry);
         if (data.truck_source_other) {
           setInputValue(`truck_source_${data.entry_index}_other_name`, data.truck_source_other, entry);
         }
@@ -1313,6 +1391,7 @@ function populateTrucking(entries) {
       setInputValue(`truck_quote_${data.entry_index}`, data.truck_quote, entry);
       setCheckboxValue(`is_trucking_quote_approved_${data.entry_index}`, data.is_trucking_quote_approved, entry);
       setInputValue(`pickup_datetime_${data.entry_index}`, fromISODateTime(data.pickup_datetime), entry);
+      setInputValue(`delivery_datetime_${data.entry_index}`, fromISODateTime(data.delivery_datetime), entry);
       setRadioValue(`pickup_warehouse_${data.entry_index}`, data.pickup_warehouse, entry);
       setInputValue(`pickup_warehouse_other_${data.entry_index}`, data.pickup_warehouse_other, entry);
       setInputValue(`delivery_address_${data.entry_index}`, data.delivery_address, entry);
@@ -1354,7 +1433,7 @@ function populateTrucking(entries) {
       
       setRadioValue(`truck_payment_status_${data.entry_index}`, data.truck_payment_status, entry);
       
-      if (data.pickup_warehouse === 'other') {
+      if (data.pickup_warehouse === 'Other') {
         const otherDiv = entry.querySelector('.address-other-input');
         if (otherDiv) otherDiv.style.display = 'block';
       }
@@ -1553,7 +1632,7 @@ function populatePostevent(data) {
   setInputValue('debrief_note', data.debrief_note, section);
   setInputValue('special_instructions_postevent', data.special_instructions, section);
   
-  if (data.return_address === 'other') {
+  if (data.return_address === 'Other') {
     const otherDiv = section.querySelector('.address-other-input');
     if (otherDiv) otherDiv.style.display = 'block';
   }
@@ -1641,10 +1720,10 @@ function populateTravel(entries) {
     const entry = container.querySelector(`.travel-entry[data-index="${data.traveler_index}"]`);
     if (entry) {
       // Handle traveler_name - check if it's a predefined value or custom
-      const predefinedTravelers = ['eliseo', 'clinton', 'edward', 'other'];
+      const predefinedTravelers = ['Eliseo', 'Clinton', 'Edward', 'Other'];
       if (data.traveler_name && !predefinedTravelers.includes(data.traveler_name)) {
-        // It's a custom value - set radio to "other" and fill the other name field
-        setRadioValue(`traveler_name_${data.traveler_index}`, 'other', entry);
+        // It's a custom value - set radio to "Other" and fill the other name field
+        setRadioValue(`traveler_name_${data.traveler_index}`, 'Other', entry);
         setInputValue(`traveler_name_other_${data.traveler_index}`, data.traveler_name, entry);
         // Enable the other input fields
         const otherNameInput = entry.querySelector(`[name="traveler_name_other_${data.traveler_index}"]`);
@@ -2124,7 +2203,7 @@ function initializeRadios() {
         if (groupWrapper) {
           const otherInputs = groupWrapper.querySelectorAll('.other-input');
           if (otherInputs && otherInputs.length) {
-            const isOther = radio.value === 'other' || radio.value === 'third_party';
+            const isOther = radio.value === 'Other' || radio.value === 'third_party';
             otherInputs.forEach((oi, i) => {
               oi.disabled = !isOther;
               if (isOther && i === 0) oi.focus();
@@ -2151,7 +2230,7 @@ function initializeRadios() {
           option.classList.add('selected');
           const otherInput = container.querySelector('.address-other-input');
           if (otherInput) {
-            otherInput.style.display = radio.value === 'other' ? 'block' : 'none';
+            otherInput.style.display = radio.value === 'Other' ? 'block' : 'none';
           }
         }
         radio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2315,23 +2394,23 @@ function createTruckingEntry(index) {
       <label class="form-label">Truck Source</label>
       <div class="radio-group">
         <label class="radio-item">
-          <input type="radio" name="truck_source_${index}" value="zenspace">
+          <input type="radio" name="truck_source_${index}" value="Zenspace">
           <span class="radio-custom"></span>
           <span class="radio-label">Enterprise</span>
         </label>
         <label class="radio-item">
-          <input type="radio" name="truck_source_${index}" value="alex_logistics">
+          <input type="radio" name="truck_source_${index}" value="Axle Logistics">
           <span class="radio-custom"></span>
-          <span class="radio-label">Alex Logistics</span>
+          <span class="radio-label">Axle Logistics</span>
         </label>
         <label class="radio-item">
-          <input type="radio" name="truck_source_${index}" value="edward">
+          <input type="radio" name="truck_source_${index}" value="Edward">
           <span class="radio-custom"></span>
           <span class="radio-label">Edward</span>
         </label>
         <div class="other-input-wrapper">
           <label class="radio-item">
-            <input type="radio" name="truck_source_${index}" value="other">
+            <input type="radio" name="truck_source_${index}" value="Other">
             <span class="radio-custom"></span>
             <span class="radio-label">Other</span>
           </label>
@@ -2381,7 +2460,7 @@ function createTruckingEntry(index) {
       <label class="form-label">Pickup Warehouse Address</label>
       <div class="address-options">
         <label class="address-option">
-          <input type="radio" name="pickup_warehouse_${index}" value="nyc">
+          <input type="radio" name="pickup_warehouse_${index}" value="NJ">
           <span class="radio-custom"></span>
           <div class="address-content">
             <div class="address-title">${NycWarehouse} </div>
@@ -2389,7 +2468,7 @@ function createTruckingEntry(index) {
           </div>
         </label>
         <label class="address-option">
-          <input type="radio" name="pickup_warehouse_${index}" value="hayward">
+          <input type="radio" name="pickup_warehouse_${index}" value="Hayward">
           <span class="radio-custom"></span>
           <div class="address-content">
             <div class="address-title">${HaywardWarehouse}</div>
@@ -2397,7 +2476,7 @@ function createTruckingEntry(index) {
           </div>
         </label>
         <label class="address-option">
-          <input type="radio" name="pickup_warehouse_${index}" value="other">
+          <input type="radio" name="pickup_warehouse_${index}" value="Other">
           <span class="radio-custom"></span>
           <div class="address-content">
             <div class="address-title">Other Location</div>
@@ -2410,10 +2489,19 @@ function createTruckingEntry(index) {
       </div>
     </div>
     
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Delivery Date & Time</label>
+        <input type="datetime-local" class="form-input" name="delivery_datetime_${index}">
+      </div>
+    </div>
+    
     <div class="form-group">
       <label class="form-label">Delivery Address</label>
       <input type="text" class="form-input" name="delivery_address_${index}" placeholder="Enter delivery address">
     </div>
+
+
 
     <!-- Driver Details - Dynamic Entries -->
     <div class="form-group">
@@ -2588,11 +2676,11 @@ function createTravelEntry(index) {
     <div class="form-group">
       <label class="form-label">Traveler</label>
       <div class="radio-group">
-        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="eliseo"><span class="radio-custom"></span><span class="radio-label">Eliseo</span></label>
-        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="clinton"><span class="radio-custom"></span><span class="radio-label">Clinton</span></label>
-        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="edward"><span class="radio-custom"></span><span class="radio-label">Edward</span></label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="Eliseo"><span class="radio-custom"></span><span class="radio-label">Eliseo</span></label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="Clinton"><span class="radio-custom"></span><span class="radio-label">Clinton</span></label>
+        <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="Edward"><span class="radio-custom"></span><span class="radio-label">Edward</span></label>
         <div class="other-input-wrapper">
-          <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="other"><span class="radio-custom"></span><span class="radio-label">Other</span></label>
+          <label class="radio-item"><input type="radio" name="traveler_name_${index}" value="Other"><span class="radio-custom"></span><span class="radio-label">Other</span></label>
           <input type="text" class="other-input" name="traveler_name_other_${index}" placeholder="Enter traveler name..." disabled>
           <input type="email" class="other-input" name="traveler_name_other_${index}_email" placeholder="Enter email..." disabled>
         </div>
