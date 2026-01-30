@@ -30,6 +30,7 @@ if (updateTruckingProjectBtn) {
     generateTruckingDescription();
     });
   }
+
 const updatePostEventProjectBtn = document.getElementById('updatePostEventProjectBtn');
 if (updatePostEventProjectBtn) {
     updatePostEventProjectBtn.addEventListener('click', () => {
@@ -37,10 +38,18 @@ if (updatePostEventProjectBtn) {
     });
 
   }
+
 const updateInstallerProjectBtn = document.getElementById('updateInstallerProjectBtn');
 if (updateInstallerProjectBtn) {
     updateInstallerProjectBtn.addEventListener('click', () => {
     generateInstallationDescription();
+    });
+  }
+  
+const updateSoftwareProjectBtn = document.getElementById('updateSoftwareProjectBtn');
+if (updateSoftwareProjectBtn) {
+    updateSoftwareProjectBtn.addEventListener('click', () => {
+    generateSoftwareDescription();
     });
   }
 
@@ -763,6 +772,63 @@ Special Instructions: ${installation?.dismantle_special_instructions || 'None'}`
     console.error('Error generating installation description:', error);
     return { success: false, error: error.message };
   }
+}
+
+async function generateSoftwareDescription() {
+
+  const urlParams = new URLSearchParams(window.location.search);
+      await ensureSupabaseClient();
+    //  showLoader("Loading event data...");
+      const eventId = urlParams.get('event_id');
+       // 1) core event
+      const { data: ev, error: evErr } = await supabase
+        .from("internal_booking_software")
+        .select("*")
+        .eq("event_id", eventId)
+        .single();
+      if (evErr) throw evErr;
+      if (!ev) throw new Error("Event not found");
+
+      const description = `Hi Abhijeet,
+Please create a booking page with the details outlined below:
+
+1. Booking Page 
+Slug - 
+Contact Details (footer) - 
+Address - 
+Pod address - 
+
+2. Branding & Visuals
+Banner Image: 
+
+Color Palette / Brand Style Guide:
+
+3. Calendar Availability:
+
+4. Admin Access
+Please provide admin access to: 
+
+Let me know once the page is live or if you need anything further from my side.`
+
+const graphics_links = ` Client Provided Graphics Folder Link: ${ev.client_graphics_folder_link || "N/A"}
+Generated Graphics Folder Link: ${ev.generated_graphics_folder_link || "N/A"}`
+  
+
+      // Build the shape your UI expects
+      const data = {
+        "project_id": getProjectId(),
+        "event_id": ev.event_id,
+        "client_graphics_folder_link": ev.client_graphics_folder_link || "",
+        "generated_graphics_folder_link": ev.generated_graphics_folder_link || "",
+        "graphics_links": graphics_links || "",
+        "booking_web_url": ev.booking_web_url || "",
+        "descritpion": description || "",
+        "note": ev.notes || "",
+        "Task":"booking_software"
+      };
+
+      updateProjectTask(data);
+
 }
 
 
