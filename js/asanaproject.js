@@ -35,7 +35,16 @@ if (updatePostEventProjectBtn) {
     updatePostEventProjectBtn.addEventListener('click', () => {
     generatePostEventDescription();
     });
+
   }
+const updateInstallerProjectBtn = document.getElementById('updateInstallerProjectBtn');
+if (updateInstallerProjectBtn) {
+    updateInstallerProjectBtn.addEventListener('click', () => {
+    generateInstallationDescription();
+    });
+  }
+
+
 
 
   /**
@@ -625,6 +634,136 @@ ${postEvent?.debrief_note || 'No debrief notes available.'}`;
   }
 }
 
+
+async function generateInstallationDescription() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch installation data
+    const { data: installationData, error: installError } = await supabase
+      .from('internal_installation')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+
+    if (installError && installError.code !== 'PGRST116') {
+      throw installError;
+    }
+
+    const installation = installationData;
+
+    // Fetch installation dates
+    const { data: datesData, error: datesError } = await supabase
+      .from('internal_installation_dates')
+      .select('*')
+      .eq('event_id', eventId)
+      .order('date_index', { ascending: true });
+
+    if (datesError && datesError.code !== 'PGRST116') {
+      throw datesError;
+    }
+
+    // Separate install and dismantle dates
+    const installDates = (datesData || []).filter(d => d.date_type === 'install');
+    const dismantleDates = (datesData || []).filter(d => d.date_type === 'dismantle');
+
+    // Format time from 24h to 12h (e.g., "14:00:00" -> "2 pm")
+    const formatTime = (timeStr) => {
+      if (!timeStr) return 'N/A';
+      const [hours, minutes] = timeStr.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'pm' : 'am';
+      const hour12 = hour % 12 || 12;
+      if (minutes && minutes !== '00') {
+        return `${hour12}:${minutes} ${ampm}`;
+      }
+      return `${hour12} ${ampm}`;
+    };
+
+    // Format date from YYYY-MM-DD to DD/MM/YYYY
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    // Format installer/dismantler names from array
+    const formatNames = (namesArray, otherName, otherEmail) => {
+      if (!namesArray || !Array.isArray(namesArray) || namesArray.length === 0) {
+        return 'N/A';
+      }
+      return namesArray.map((name, index) => {
+        const num = index + 1;
+        if (name.toLowerCase() === 'other') {
+          const otherDetails = otherEmail ? `${otherName || 'N/A'} - ${otherEmail}` : (otherName || 'N/A');
+          return ` ${num}. ${otherDetails}`;
+        }
+        return ` ${num}. ${name}`;
+      }).join('\n          ');
+    };
+
+    // Format dates section (handles single or multiple dates)
+    const formatDatesSection = (dates) => {
+      if (!dates || dates.length === 0) {
+        return `Date: N/A
+                From Time: N/A
+                To Time: N/A`;
+      }
+
+      if (dates.length === 1) {
+        const d = dates[0];
+        return `Date: ${formatDate(d.date_value)}
+                From Time: ${formatTime(d.from_time)}
+                To Time: ${formatTime(d.to_time)}`;
+      }
+
+      // Multiple dates
+      return dates.map((d, idx) => {
+        return `Date ${idx + 1}: ${formatDate(d.date_value)} | From: ${formatTime(d.from_time)} | To: ${formatTime(d.to_time)}`;
+      }).join('\n');
+    };
+
+    // 1. Installer Details
+    const installerDescription = `Installer Details 🔧
+-----------------------------------------
+Name: ${formatNames(installation?.install_installer, installation?.install_installer_other, installation?.install_installer_other_email)}
+
+${formatDatesSection(installDates)}
+
+Location: ${installation?.install_location || 'N/A'}
+
+Special Instructions: ${installation?.install_special_instructions || 'None'}`;
+
+    // 2. Dismantler Details
+    const dismantlerDescription = `Dismantler Details 🔨
+-----------------------------------------
+Name: ${formatNames(installation?.dismantle_installer, installation?.dismantle_installer_other, installation?.dismantle_installer_other_email)}
+
+${formatDatesSection(dismantleDates)}
+
+Location: ${installation?.dismantle_location || 'N/A'}
+
+Special Instructions: ${installation?.dismantle_special_instructions || 'None'}`;
+
+    const data = {
+      "project_id": getProjectId(),
+      "installer_details": installerDescription,
+      "dismantler_details": dismantlerDescription,
+      "Task": "installation"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating installation description:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 
 async function updateProjectTask(data) {

@@ -1255,7 +1255,7 @@ function populatePrinting(data) {
   if (!section) return;
   
   // Handle assigned_printer - check if it's a predefined value or custom
-  const predefinedPrinters = ['alan', 'third_party'];
+  const predefinedPrinters = ['Alan', 'third_party'];
   if (data.assigned_printer && !predefinedPrinters.includes(data.assigned_printer)) {
     // It's a custom value - set radio to "third_party" and fill the other name field
     setRadioValue('assigned_printer', 'third_party', section);
@@ -1273,7 +1273,7 @@ function populatePrinting(data) {
   setInputValue('installation_quote', data.installation_quote, section);
   
   // Handle assigned_graphic_installer - check if it's a predefined value or custom
-  const predefinedInstallers = ['alan', 'Eliseo', 'Clint', 'third_party'];
+  const predefinedInstallers = ['Alan', 'Eliseo', 'Clint', 'third_party'];
   if (data.assigned_graphic_installer && !predefinedInstallers.includes(data.assigned_graphic_installer)) {
     // It's a custom value - set radio to "third_party" and fill the other name field
     setRadioValue('assigned_graphic_installer', 'third_party', section);
@@ -1316,7 +1316,7 @@ function populatePrintingQuotes(quotes) {
     const entry = container.querySelector(`.quote-entry[data-index="${quote.quote_index}"]`);
     if (entry) {
       // Handle quote_source - check if it's a predefined value or custom
-      const predefinedSources = ['alan', 'third_party'];
+      const predefinedSources = ['Alan', 'third_party'];
       if (quote.quote_source && !predefinedSources.includes(quote.quote_source)) {
         // It's a custom value - set radio to "third_party" and fill the other name field
         setRadioValue(`quote_source_${quote.quote_index}`, 'third_party', entry);
@@ -2335,7 +2335,7 @@ function createQuoteEntry(index) {
       <label class="form-label">Get Quote From</label>
       <div class="radio-group">
         <label class="radio-item">
-          <input type="radio" name="quote_source_${index}" value="alan">
+          <input type="radio" name="quote_source_${index}" value="Alan">
           <span class="radio-custom"></span>
           <span class="radio-label">Alan</span>
         </label>
