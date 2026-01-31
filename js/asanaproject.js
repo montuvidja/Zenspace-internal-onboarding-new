@@ -719,16 +719,12 @@ async function generateInstallationDescription() {
     // Format dates section (handles single or multiple dates)
     const formatDatesSection = (dates) => {
       if (!dates || dates.length === 0) {
-        return `Date: N/A
-                From Time: N/A
-                To Time: N/A`;
+        return `Date: N/A | From Time: N/A | To Time: N/A`;
       }
 
       if (dates.length === 1) {
         const d = dates[0];
-        return `Date: ${formatDate(d.date_value)}
-                From Time: ${formatTime(d.from_time)}
-                To Time: ${formatTime(d.to_time)}`;
+        return `Date: ${formatDate(d.date_value)} | From: ${formatTime(d.from_time)} | To: ${formatTime(d.to_time)}`;
       }
 
       // Multiple dates
