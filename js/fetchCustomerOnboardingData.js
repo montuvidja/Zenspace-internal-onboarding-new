@@ -405,16 +405,19 @@ function getSelectedWarehouseAddress() {
   if (!selected) return "";
   // include the address title (e.g. "NYC Warehouse") along with details
   const label = selected.closest(".address-option");
-  const title = label?.querySelector(".address-title")?.textContent?.trim() || "";
-  if (selected.value === "other") {
+  // Use innerText instead of textContent to get rendered values (not script tag code)
+  const titleEl = label?.querySelector(".address-title");
+  const title = titleEl?.innerText?.trim() || titleEl?.textContent?.trim() || "";
+  if (selected.value === "Other") {
     const ta = document.querySelector('textarea[name="warehouse_address_other"]');
     const other = (ta?.value || "").trim();
     // For custom 'Other' addresses we return only the entered text (no title)
     return other;
   }
-  // get text from the selected option card
-  const details = label?.querySelector(".address-details")?.textContent || "";
-  return title ? `${title} — ${details.trim()}` : details.trim();
+  // get text from the selected option card - use innerText for rendered content
+  const detailsEl = label?.querySelector(".address-details");
+  const details = detailsEl?.innerText?.trim() || detailsEl?.textContent?.trim() || "";
+  return title ? `${title} — ${details}` : details;
 }
 
 function buildWarehouseWorkOrderPayload(data) {
@@ -437,15 +440,18 @@ function buildWarehouseWorkOrderPayload(data) {
   let installer = "";
   const rawInstaller = data["preplanning_installer"];
   if (Array.isArray(rawInstaller)) {
-    installer = rawInstaller.join(", ");
-  } else if (rawInstaller != null) {
+    // Filter out "Other" from the list - we'll show the actual name instead
+    const filteredInstallers = rawInstaller.filter(name => name !== "Other");
+    installer = filteredInstallers.join(", ");
+  } else if (rawInstaller != null && rawInstaller !== "Other") {
     installer = String(rawInstaller);
   }
 
+  // Add the other installer name (without "Other:" prefix, just the name)
   const otherInstaller = (data["preplanning_installer_other"] || "").trim();
   if (otherInstaller) {
     installer = installer
-      ? `${installer}, Other: ${otherInstaller}`
+      ? `${installer}, ${otherInstaller}`
       : otherInstaller;
   }
 
@@ -491,15 +497,18 @@ function getSelectedWarehouseLocation() {
   if (!selected) return { name: "", address: "" };
 
   const card = selected.closest(".address-option");
-  const title = card?.querySelector(".address-title")?.textContent?.trim() || "";
+  // Use innerText for rendered content instead of textContent
+  const titleEl = card?.querySelector(".address-title");
+  const title = titleEl?.innerText?.trim() || titleEl?.textContent?.trim() || "";
 
-  if (selected.value === "other") {
+  if (selected.value === "Other") {
     const ta = document.querySelector('textarea[name="warehouse_address_other"]');
     const other = (ta?.value || "").trim();
     return { name: "", address: other };
   }
 
-  const details = (card?.querySelector(".address-details")?.textContent || "").trim();
+  const detailsEl = card?.querySelector(".address-details");
+  const details = detailsEl?.innerText?.trim() || detailsEl?.textContent?.trim() || "";
   return { name: title, address: details };
 }
 
@@ -642,4 +651,3 @@ async function fetchEventFolderLinks(eventName, startDate) {
   }
   
 }
-

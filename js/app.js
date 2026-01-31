@@ -2134,6 +2134,10 @@ function initializeCheckboxes() {
           const otherInputs = wrapper.querySelectorAll('.other-input');
           otherInputs.forEach(oi => {
             oi.disabled = !checkbox.checked;
+            // Clear values when checkbox is unchecked
+            if (!checkbox.checked) {
+              oi.value = '';
+            }
             if (checkbox.checked) oi.focus();
           });
         }
@@ -2151,6 +2155,10 @@ function initializeCheckboxes() {
           const otherInputs = wrapper.querySelectorAll('.other-input');
           otherInputs.forEach(oi => {
             oi.disabled = !checkbox.checked;
+            // Clear values when checkbox is unchecked
+            if (!checkbox.checked) {
+              oi.value = '';
+            }
             if (checkbox.checked) oi.focus();
           });
         }
@@ -2206,6 +2214,10 @@ function initializeRadios() {
             const isOther = radio.value === 'Other' || radio.value === 'third_party';
             otherInputs.forEach((oi, i) => {
               oi.disabled = !isOther;
+              // Clear values when Other/3rd Party is deselected
+              if (!isOther) {
+                oi.value = '';
+              }
               if (isOther && i === 0) oi.focus();
             });
           }
@@ -2230,7 +2242,13 @@ function initializeRadios() {
           option.classList.add('selected');
           const otherInput = container.querySelector('.address-other-input');
           if (otherInput) {
-            otherInput.style.display = radio.value === 'Other' ? 'block' : 'none';
+            const isOther = radio.value === 'Other';
+            otherInput.style.display = isOther ? 'block' : 'none';
+            // Clear textarea value when Other is deselected
+            if (!isOther) {
+              const textarea = otherInput.querySelector('textarea');
+              if (textarea) textarea.value = '';
+            }
           }
         }
         radio.dispatchEvent(new Event('change', { bubbles: true }));

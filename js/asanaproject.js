@@ -1,18 +1,172 @@
-
-
 let eventData1 = null;
+
+// Reusable confirmation dialog function
+function showConfirmDialog(title, message, onConfirm) {
+  // Remove any existing dialog
+  const existingDialog = document.querySelector('.confirm-dialog-overlay');
+  if (existingDialog) existingDialog.remove();
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-dialog-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-dialog">
+      <div class="confirm-dialog-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h3>${title}</h3>
+      </div>
+      <p class="confirm-dialog-message">${message}</p>
+      <div class="confirm-dialog-actions">
+        <button class="confirm-dialog-btn cancel">Cancel</button>
+        <button class="confirm-dialog-btn confirm">Confirm</button>
+      </div>
+    </div>
+  `;
+
+  // Add styles if not already added
+  if (!document.getElementById('confirm-dialog-styles')) {
+    const styles = document.createElement('style');
+    styles.id = 'confirm-dialog-styles';
+    styles.textContent = `
+      .confirm-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.2s ease;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .confirm-dialog {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      }
+      @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .confirm-dialog-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .confirm-dialog-header svg {
+        width: 24px;
+        height: 24px;
+        color: #f59e0b;
+      }
+      .confirm-dialog-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .confirm-dialog-message {
+        color: #6b7280;
+        margin: 0 0 24px 0;
+        line-height: 1.5;
+      }
+      .confirm-dialog-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+      .confirm-dialog-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+      .confirm-dialog-btn.cancel {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .confirm-dialog-btn.cancel:hover {
+        background: #e5e7eb;
+      }
+      .confirm-dialog-btn.confirm {
+        background: #3b82f6;
+        color: white;
+      }
+      .confirm-dialog-btn.confirm:hover {
+        background: #2563eb;
+      }
+    `;
+    document.head.appendChild(styles);
+  }
+
+  document.body.appendChild(overlay);
+
+  // Handle button clicks
+  const cancelBtn = overlay.querySelector('.confirm-dialog-btn.cancel');
+  const confirmBtn = overlay.querySelector('.confirm-dialog-btn.confirm');
+
+  cancelBtn.addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    overlay.remove();
+    if (onConfirm) onConfirm();
+  });
+
+  // Close on overlay click
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+
+  // Close on Escape key
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+}
 
 const createProjectBtn = document.getElementById('updateArtworkProjectBtn');
 if (createProjectBtn) {
     createProjectBtn.addEventListener('click', () => {
-      loadArtWorkAndBranding();
+      showConfirmDialog(
+        'Update Artwork Project',
+        'Are you sure you want to update the Artwork & Branding project in Asana?',
+        () => loadArtWorkAndBranding()
+      );
     });
   }
 
 const updatePrintingProjectBtn = document.getElementById('updatePrintingProjectBtn');
 if (updatePrintingProjectBtn) {
     updatePrintingProjectBtn.addEventListener('click', () => {
-      getInternalPrintingData();
+      showConfirmDialog(
+        'Update Printing Project',
+        'Are you sure you want to update the Printing project in Asana?',
+        () => getInternalPrintingData()
+      );
     });
   }
 
@@ -20,21 +174,33 @@ if (updatePrintingProjectBtn) {
 const updatePrePlanBtn = document.getElementById('updatePrePlanBtn');
 if (updatePrePlanBtn) {
     updatePrePlanBtn.addEventListener('click', () => {
-      getPrePlanData();
+      showConfirmDialog(
+        'Update Pre-Plan Project',
+        'Are you sure you want to update the Pre-Planning project in Asana?',
+        () => getPrePlanData()
+      );
     });
   }
 
 const updateTruckingProjectBtn = document.getElementById('updateTruckingProjectBtn');
 if (updateTruckingProjectBtn) {
     updateTruckingProjectBtn.addEventListener('click', () => {
-    generateTruckingDescription();
+      showConfirmDialog(
+        'Update Trucking Project',
+        'Are you sure you want to update the Trucking project in Asana?',
+        () => generateTruckingDescription()
+      );
     });
   }
 
 const updatePostEventProjectBtn = document.getElementById('updatePostEventProjectBtn');
 if (updatePostEventProjectBtn) {
     updatePostEventProjectBtn.addEventListener('click', () => {
-    generatePostEventDescription();
+      showConfirmDialog(
+        'Update Post-Event Project',
+        'Are you sure you want to update the Post-Event project in Asana?',
+        () => generatePostEventDescription()
+      );
     });
 
   }
@@ -42,14 +208,22 @@ if (updatePostEventProjectBtn) {
 const updateInstallerProjectBtn = document.getElementById('updateInstallerProjectBtn');
 if (updateInstallerProjectBtn) {
     updateInstallerProjectBtn.addEventListener('click', () => {
-    generateInstallationDescription();
+      showConfirmDialog(
+        'Update Installation Project',
+        'Are you sure you want to update the Installation project in Asana?',
+        () => generateInstallationDescription()
+      );
     });
   }
   
 const updateSoftwareProjectBtn = document.getElementById('updateSoftwareProjectBtn');
 if (updateSoftwareProjectBtn) {
     updateSoftwareProjectBtn.addEventListener('click', () => {
-    generateSoftwareDescription();
+      showConfirmDialog(
+        'Update Software Project',
+        'Are you sure you want to update the Software project in Asana?',
+        () => generateSoftwareDescription()
+      );
     });
   }
 
@@ -200,35 +374,39 @@ async function getPrePlanData() {
     const gc_contactInfo = [gc_contactName, gc_contactPhone, gc_contactEmail].filter(Boolean).join(' | ') || 'N/A';
 
     // Build the description
-    const description = `Event Overview
+    const description = `Event Overview:
 
-          Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
+  Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
 
-          Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
+  Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
 
-          Event Start Date & Time: ${formatDate(event?.event_start_at)} | ${formatTime(event?.event_start_at)}
-          Event End Date & Time: ${formatDate(event?.event_end_at)} | ${formatTime(event?.event_end_at)}
+  Event Start Date & Time: ${formatDate(event?.event_start_at)} | ${formatTime(event?.event_start_at)}
+  Event End Date & Time: ${formatDate(event?.event_end_at)} | ${formatTime(event?.event_end_at)}
 
-          Load-In: ${formatDate(event?.load_in_date)} | ${formatTime(event?.load_in_date)}
-          Load-Out: ${formatDate(event?.load_out_date)} | ${formatTime(event?.load_out_date)}
+  Load-In: ${formatDate(event?.load_in_date)} | ${formatTime(event?.load_in_date)}
+  Load-Out: ${formatDate(event?.load_out_date)} | ${formatTime(event?.load_out_date)}
 
-          Event Organiser's Contact: 
+--------------------------------------------------------
 
-               Name: ${contactName}
-               Phone: ${contactPhone}
-               Email: ${contactEmail}
+Event Organiser's Contact: 
 
-          GC's Contact: 
+  Name: ${contactName}
+  Phone: ${contactPhone}
+  Email: ${contactEmail}
 
-               Name: ${gc_contactName}
-               Phone: ${gc_contactPhone}
-               Email: ${gc_contactEmail}
+GC's Contact: 
 
-          Scope of Work
-          1. Pods: ${podsSummary}
-          2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
-          3. Delivery Type: 
-          4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
+  Name: ${gc_contactName}
+  Phone: ${gc_contactPhone}
+  Email: ${gc_contactEmail}
+
+--------------------------------------------------------     
+
+Scope of Work
+  1. Pods: ${podsSummary}
+  2. Branding: ${hasBranding ? 'Custom Branding' : 'No Branding'}
+  3. Delivery Type: 
+  4. Booking Software: ${hasBookingSoftware ? 'Yes' : 'No'}`;
 
 
       console.log("Generated Description:", description);
@@ -830,11 +1008,10 @@ Generated Graphics Folder Link: ${ev.generated_graphics_folder_link || "N/A"}`
 
 async function updateProjectTask(data) {
 
-  
+  try{
+        const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/tfl2towp9ly3bxrce6qupd35ng4cg464';
 
-      const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/tfl2towp9ly3bxrce6qupd35ng4cg464';
-
-      const response = await fetch(MAKE_WEBHOOK_URL, {
+        const response = await fetch(MAKE_WEBHOOK_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -844,7 +1021,12 @@ async function updateProjectTask(data) {
         
         if (!response.ok) {
             throw new Error(`Webhook failed: ${response.status}`);
-        }
+        } 
+        showToast('The Asana project has been updated successfully.', 'success');
+        
+  } catch (error) {
+      showToast('Failed to update the Asana project.', 'error');
+  }
       
 }
 
