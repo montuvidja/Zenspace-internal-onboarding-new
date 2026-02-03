@@ -151,6 +151,10 @@ function showConfirmDialog(title, message, onConfirm) {
 const createProjectBtn = document.getElementById('updateArtworkProjectBtn');
 if (createProjectBtn) {
     createProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Artwork Project',
         'Are you sure you want to update the Artwork & Branding project in Asana?',
@@ -162,10 +166,14 @@ if (createProjectBtn) {
 const updatePrintingProjectBtn = document.getElementById('updatePrintingProjectBtn');
 if (updatePrintingProjectBtn) {
     updatePrintingProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Printing Project',
         'Are you sure you want to update the Printing project in Asana?',
-        () => getInternalPrintingData()
+        () => generatePrintingDescription()
       );
     });
   }
@@ -174,6 +182,10 @@ if (updatePrintingProjectBtn) {
 const updatePrePlanBtn = document.getElementById('updatePrePlanBtn');
 if (updatePrePlanBtn) {
     updatePrePlanBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Pre-Plan Project',
         'Are you sure you want to update the Pre-Planning project in Asana?',
@@ -185,6 +197,10 @@ if (updatePrePlanBtn) {
 const updateTruckingProjectBtn = document.getElementById('updateTruckingProjectBtn');
 if (updateTruckingProjectBtn) {
     updateTruckingProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Trucking Project',
         'Are you sure you want to update the Trucking project in Asana?',
@@ -196,6 +212,10 @@ if (updateTruckingProjectBtn) {
 const updatePostEventProjectBtn = document.getElementById('updatePostEventProjectBtn');
 if (updatePostEventProjectBtn) {
     updatePostEventProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Post-Event Project',
         'Are you sure you want to update the Post-Event project in Asana?',
@@ -208,6 +228,10 @@ if (updatePostEventProjectBtn) {
 const updateInstallerProjectBtn = document.getElementById('updateInstallerProjectBtn');
 if (updateInstallerProjectBtn) {
     updateInstallerProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Installation Project',
         'Are you sure you want to update the Installation project in Asana?',
@@ -219,6 +243,10 @@ if (updateInstallerProjectBtn) {
 const updateSoftwareProjectBtn = document.getElementById('updateSoftwareProjectBtn');
 if (updateSoftwareProjectBtn) {
     updateSoftwareProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Software Project',
         'Are you sure you want to update the Software project in Asana?',
@@ -229,10 +257,29 @@ if (updateSoftwareProjectBtn) {
 const updateTravelAndLodgingProjectBtn = document.getElementById('updateTravelAndLodgingProjectBtn');
 if (updateTravelAndLodgingProjectBtn) {
     updateTravelAndLodgingProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
       showConfirmDialog(
         'Update Travel & Lodging Project',
         'Are you sure you want to update the Travel & Lodging project in Asana?',
         () => generateTravelDescription()
+      );
+    });
+  }
+
+const updateCoiProjectBtn = document.getElementById('updateCoiProjectBtn');
+if (updateCoiProjectBtn) {
+    updateCoiProjectBtn.addEventListener('click', () => {
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showToast('You must save your changes before updating the project. Please save all sections first.', 'error');
+        return;
+      }
+      showConfirmDialog(
+        'Update COI Project',
+        'Are you sure you want to update the COI project in Asana?',
+        () => generateCoiDescription()
       );
     });
   }
@@ -519,6 +566,120 @@ async function getInternalPrintingData() {
     
   } catch (error) {
     console.error('Error fetching internal printing data:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function generatePrintingDescription() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch printing data and quotes in parallel
+    const [printingResult, quotesResult] = await Promise.all([
+      supabase
+        .from('internal_printing')
+        .select('*')
+        .eq('event_id', eventId)
+        .single(),
+      supabase
+        .from('internal_printing_quotes')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('quote_index', { ascending: true })
+    ]);
+
+    if (printingResult.error && printingResult.error.code !== 'PGRST116') {
+      throw printingResult.error;
+    }
+    if (quotesResult.error && quotesResult.error.code !== 'PGRST116') {
+      throw quotesResult.error;
+    }
+
+    const printing = printingResult.data;
+    const quotes = quotesResult.data || [];
+
+    // Format date to DD/MM/YYYY
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    // Format currency
+    const formatCurrency = (amount) => {
+      if (!amount) return 'N/A';
+      return `$${parseFloat(amount).toLocaleString()}`;
+    };
+
+    // Format name with "Other" handling
+    const formatName = (name, otherName, otherEmail) => {
+      if (!name) return 'N/A';
+      if (name.toLowerCase() === 'other') {
+        const customName = otherName || 'Other';
+        const emailPart = otherEmail ? ` - ${otherEmail}` : '';
+        return `${customName}${emailPart}`;
+      }
+      return name;
+    };
+
+    // 1. Printing Quotation Details
+    let quotesSection = 'No quotes available';
+
+    if (quotes.length > 0) {
+      quotesSection = quotes.map((q) => {
+        const source = q.quote_source?.toLowerCase() === 'other'
+          ? `${q.quote_source}${q.quote_source_other_email ? ' - ' + q.quote_source_other_email : ''}`
+          : (q.quote_source || 'N/A');
+
+        return `Quote From: ${source}
+Quote Price: ${formatCurrency(q.quote_price)}
+Is Approved: ${q.is_quote_approved ? '✅ Approved' : '❌ Not Approved'}`;
+      }).join('\n\n');
+    }
+
+    const printingQuotationDescription = `Printing Quotation 🖨️
+-----------------------------------------
+${quotesSection}`;
+
+    // 2. Graphic Installation Details
+    const graphicInstallerName = formatName(
+      printing?.assigned_graphic_installer,
+      printing?.assigned_graphic_installer_other,
+      printing?.assigned_graphic_installer_other_email
+    );
+
+    const assignedPrinterName = formatName(
+      printing?.assigned_printer,
+      printing?.assigned_printer_other,
+      printing?.assigned_printer_other_email
+    );
+
+    const graphicInstallationDescription = `Graphic Installation Details 🎨
+-----------------------------------------
+Assigned Printer: ${assignedPrinterName}
+Graphic Installer: ${graphicInstallerName}
+Installation Quote: ${formatCurrency(printing?.installation_quote)}
+Printing Start Date: ${formatDate(printing?.printing_start_date)}
+Installation Date: ${formatDate(printing?.installation_date)}
+Installation Location: ${printing?.installation_location || 'N/A'}
+Special Instructions: ${printing?.special_instructions || 'None'}`;
+
+    const data = {
+      "project_id": getProjectId(),
+      "printing_quotation": printingQuotationDescription,
+      "graphic_installation": graphicInstallationDescription,
+      "Task": "printing"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating printing description:', error);
     return { success: false, error: error.message };
   }
 }
@@ -1370,6 +1531,56 @@ ${allHotelDetails.join('\n')}
 
   } catch (error) {
     console.error('Error generating travel description:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+async function generateCoiDescription() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch COI data
+    const { data: coiData, error: coiError } = await supabase
+      .from('internal_coi')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+
+    if (coiError && coiError.code !== 'PGRST116') {
+      throw coiError;
+    }
+
+    const coi = coiData;
+
+    const isRequired = coi?.coi_required?.toLowerCase() === 'yes';
+
+    let coiDescription = '';
+
+    if (isRequired) {
+      coiDescription = `COI Details 📄
+-----------------------------------------
+COI Required: ✅ Yes
+File URL: ${coi?.coi_file_url || 'N/A'}
+Folder URL: ${coi?.coi_folder_url || 'N/A'}`;
+    } else {
+      coiDescription = `COI Details 📄
+-----------------------------------------
+COI Required: ❌ No`;
+    }
+
+    const data = {
+      "project_id": getProjectId(),
+      "coi_details": coiDescription,
+      "Task": "coi"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating COI description:', error);
     return { success: false, error: error.message };
   }
 }

@@ -11,6 +11,7 @@ let currentEventId = null;
 let quoteCount = 1;
 let truckingCount = 1;
 let travelCount = 1;
+window.unsavedSections = {}; // Track unsaved changes per section
 
 // ============================================
 // Utility Functions
@@ -1026,7 +1027,9 @@ async function saveSection(sectionId) {
     `;
   }
   
-  return success;
+  if (success) {
+    window.unsavedSections[sectionId] = false;
+  }
 }
 
 // Update save status indicator
@@ -1112,6 +1115,19 @@ async function loadAllSectionData(eventId) {
     if (travelMeta.data) populateTravelMeta(travelMeta.data);
     if (coi.data) populateCOI(coi.data);
     if (bookingSoftware.data) populateBookingSoftware(bookingSoftware.data);  // ADD THIS LINE
+    
+    // Mark all sections as clean after loading
+    window.unsavedSections = {
+      'preplanning': false,
+      'artwork': false,
+      'printing': false,
+      'trucking': false,
+      'installation': false,
+      'postevent': false,
+      'travel': false,
+      'coi': false,
+      'booking-software': false
+    };
     
     console.log('All section data loaded successfully');
   } catch (error) {
@@ -2110,6 +2126,22 @@ function initializeAccordions() {
   document.querySelectorAll('.section-header').forEach(header => {
     header.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;
+      
+      // Check for unsaved changes
+      if (Object.values(window.unsavedSections).some(v => v)) {
+        showConfirmDialog(
+          'Unsaved Changes',
+          'You have unsaved changes in one or more sections. Are you sure you want to switch sections?',
+          () => {
+            const section = header.closest('.section-card');
+            const isExpanded = section.classList.contains('expanded');
+            section.classList.toggle('expanded');
+            section.classList.toggle('active', !isExpanded);
+          }
+        );
+        return;
+      }
+      
       const section = header.closest('.section-card');
       const isExpanded = section.classList.contains('expanded');
       section.classList.toggle('expanded');
@@ -2317,6 +2349,23 @@ function initializeTravelType() {
 function initializeTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      // Check for unsaved changes before switching tabs
+      if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+        showConfirmDialog(
+          'Unsaved Changes',
+          'You have unsaved changes. Are you sure you want to switch tabs?',
+          () => {
+            const container = btn.closest('.section-content');
+            const tabId = btn.dataset.tab;
+            container.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            container.querySelector(`[data-content="${tabId}"]`)?.classList.add('active');
+          }
+        );
+        return;
+      }
+      
       const container = btn.closest('.section-content');
       const tabId = btn.dataset.tab;
       container.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
@@ -3773,6 +3822,44 @@ function initializeCopyButtons() {
 }
 
 function initializeFormInteractions() {
+  // Track unsaved changes
+  document.querySelectorAll('.section-card input, .section-card textarea, .section-card select').forEach(el => {
+    el.addEventListener('input', () => {
+      const section = el.closest('.section-card');
+      if (section) {
+        const sectionId = section.dataset.section;
+        window.unsavedSections[sectionId] = true;
+      }
+    });
+    el.addEventListener('change', () => {
+      const section = el.closest('.section-card');
+      if (section) {
+        const sectionId = section.dataset.section;
+        window.unsavedSections[sectionId] = true;
+      }
+    });
+  });
+  
+  // Also for custom checkboxes and radios
+  document.querySelectorAll('.section-card .checkbox-option, .section-card .radio-option').forEach(el => {
+    el.addEventListener('click', () => {
+      const section = el.closest('.section-card');
+      if (section) {
+        const sectionId = section.dataset.section;
+        window.unsavedSections[sectionId] = true;
+      }
+    });
+  });
+  
+  // Prevent page reload/close with unsaved changes
+  window.addEventListener('beforeunload', (e) => {
+    if (window.unsavedSections && Object.values(window.unsavedSections).some(v => v)) {
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return 'You have unsaved changes. Are you sure you want to leave?';
+    }
+  });
+  
   // Booking Software - Toggle conditional fields
   const bookingSoftwareRadios = document.querySelectorAll('input[name="is_booking_software"]');
   bookingSoftwareRadios.forEach(radio => {
