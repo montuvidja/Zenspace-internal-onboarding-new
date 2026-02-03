@@ -226,6 +226,16 @@ if (updateSoftwareProjectBtn) {
       );
     });
   }
+const updateTravelAndLodgingProjectBtn = document.getElementById('updateTravelAndLodgingProjectBtn');
+if (updateTravelAndLodgingProjectBtn) {
+    updateTravelAndLodgingProjectBtn.addEventListener('click', () => {
+      showConfirmDialog(
+        'Update Travel & Lodging Project',
+        'Are you sure you want to update the Travel & Lodging project in Asana?',
+        () => generateTravelDescription()
+      );
+    });
+  }
 
 
 
@@ -375,7 +385,7 @@ async function getPrePlanData() {
 
     // Build the description
     const description = `Event Overview:
-
+======================================================
   Event Name: ${event?.event_name || event?.deal_name || 'N/A'}
 
   Event Address: ${event?.display_address || [event?.address_line1, event?.city, event?.state, event?.postal_code, event?.country].filter(Boolean).join(', ') || 'N/A'}
@@ -1005,6 +1015,364 @@ Generated Graphics Folder Link: ${ev.generated_graphics_folder_link || "N/A"}`
 
 }
 
+async function generateTravelDescription() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch travel data (multiple travelers possible)
+    const { data: travelData, error: travelError } = await supabase
+      .from('internal_travel')
+      .select('*')
+      .eq('event_id', eventId)
+      .order('traveler_index', { ascending: true });
+
+    if (travelError && travelError.code !== 'PGRST116') {
+      throw travelError;
+    }
+
+    // Fetch travel meta data
+    const { data: travelMetaData, error: metaError } = await supabase
+      .from('internal_travel_meta')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+
+    if (metaError && metaError.code !== 'PGRST116') {
+      throw metaError;
+    }
+
+    const travelers = travelData || [];
+    const travelMeta = travelMetaData;
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+
+    // Format datetime to DD/MM/YYYY hh:mm am/pm
+    const formatDateTime = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const time = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }).toLowerCase();
+      return `${day}/${month}/${year} ${time}`;
+    };
+
+    // Format date only to DD/MM/YYYY
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    // Format time only to hh:mm am/pm
+    const formatTime = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }).toLowerCase();
+    };
+
+    // Get travel type display name
+    const getTravelTypeDisplay = (type) => {
+      const types = {
+        'airline': '✈️ Airline',
+        'rental_car': '🚗 Rental Car',
+        'rental_truck': '🚚 Rental Truck',
+        'personal': '👤 Personal Travel'
+      };
+      return types[type] || type || 'N/A';
+    };
+
+    // Format currency
+    const formatCurrency = (amount) => {
+      if (!amount) return 'N/A';
+      return `$${parseFloat(amount).toLocaleString()}`;
+    };
+
+    // Format approval status
+    const formatApproval = (approved) => {
+      return approved ? '✅ Approved' : '❌ Not Approved';
+    };
+
+    // ==========================================
+    // FORMAT FLIGHT DETAILS
+    // ==========================================
+    const formatFlightDetails = (flights, flightType) => {
+      if (!flights || !Array.isArray(flights) || flights.length === 0) {
+        return `No ${flightType} flights scheduled`;
+      }
+
+      return flights.map((flight, idx) => {
+        let flightStr = `
+   ${flightType} Flight ${flight.flight_index || idx + 1}:
+   ─────────────────────────────────────
+    Airline: ${flight.airline || 'N/A'}
+    Flight #: ${flight.flight_number || 'N/A'}
+    Confirmation: ${flight.confirmation || 'N/A'}
+    
+    Route: ${flight.from || 'N/A'} → ${flight.to || 'N/A'}
+    Departure: ${formatDateTime(flight.departure)}
+    Arrival: ${formatDateTime(flight.arrival)}
+    
+    Quote: ${formatCurrency(flight.quote)}
+    Status: ${formatApproval(flight.quote_approved)}`;
+
+        // Add layover details if exists
+        if (flight.has_layover && flight.layovers && flight.layovers.length > 0) {
+          flightStr += `
+    
+    🔄 Layovers:`;
+          flight.layovers.forEach((layover, layIdx) => {
+            flightStr += `
+       Layover ${layover.layover_index || layIdx + 1}:
+       • Airport: ${layover.airport || 'N/A'}
+       • Duration: ${layover.duration || 'N/A'}
+       • Connecting Flight: ${layover.connecting_flight || 'N/A'}
+       • Arrival: ${formatDateTime(layover.arrival)}
+       • Departure: ${formatDateTime(layover.departure)}`;
+          });
+        }
+  //       flightStr += `
+  //  ─────────────────────────────────────`;
+
+        return flightStr;
+      }).join('\n');
+    };
+
+    // ==========================================
+    // FORMAT CAR RENTAL DETAILS
+    // ==========================================
+    const formatCarDetails = (cars) => {
+      if (!cars || !Array.isArray(cars) || cars.length === 0) {
+        return 'No rental cars booked';
+      }
+
+      return cars.map((car, idx) => {
+        return `
+   Rental Car ${car.car_index || idx + 1}:
+   ─────────────────────────────────────
+    Company: ${car.company || 'N/A'}
+    Car Number: ${car.number || 'N/A'}
+    Confirmation: ${car.confirmation || 'N/A'}
+    
+    Pickup: ${formatDateTime(car.pickup)}
+    Pickup Address: ${car.pickup_address || 'N/A'}
+    
+    Drop-off: ${formatDateTime(car.dropoff)}
+    Drop-off Address: ${car.dropoff_address || 'N/A'}
+    
+    Quote: ${formatCurrency(car.quote)}
+    Status: ${formatApproval(car.quote_approved)}`;
+      }).join('\n');
+    };
+
+    // ==========================================
+    // FORMAT TRUCK RENTAL DETAILS
+    // ==========================================
+    const formatTruckDetails = (trucks) => {
+      if (!trucks || !Array.isArray(trucks) || trucks.length === 0) {
+        return 'No rental trucks booked';
+      }
+
+      return trucks.map((truck, idx) => {
+        return `
+   Rental Truck ${truck.truck_index || idx + 1}:
+   ──────────────────────────────────────
+    Company: ${truck.company || 'N/A'}
+    Truck Number: ${truck.number || 'N/A'}
+    Confirmation: ${truck.confirmation || 'N/A'}
+    
+    Pickup: ${formatDateTime(truck.pickup)}
+    Pickup Address: ${truck.pickup_address || 'N/A'}
+    
+    Drop-off: ${formatDateTime(truck.dropoff)}
+    Drop-off Address: ${truck.dropoff_address || 'N/A'}
+    
+    Quote: ${formatCurrency(truck.quote)}
+    Status: ${formatApproval(truck.quote_approved)}`;
+      }).join('\n');
+    };
+
+    // ==========================================
+    // FORMAT HOTEL DETAILS
+    // ==========================================
+    const formatHotelDetails = (hotels) => {
+      if (!hotels || !Array.isArray(hotels) || hotels.length === 0) {
+        return 'No hotels booked';
+      }
+
+      return hotels.map((hotel, idx) => {
+        return `
+   Hotel ${hotel.hotel_index || idx + 1}:
+   ─────────────────────────────────────
+    Name: ${hotel.name || 'N/A'}
+    Location: ${hotel.location || 'N/A'}
+    Confirmation: ${hotel.confirmation || 'N/A'}
+    
+    Check-in: ${formatDateTime(hotel.check_in)}
+    Check-out: ${formatDateTime(hotel.check_out)}
+    
+    Quote: ${formatCurrency(hotel.quote)}
+    Status: ${formatApproval(hotel.quote_approved)}`;
+      }).join('\n');
+    };
+
+    // ==========================================
+    // BUILD DESCRIPTIONS FOR EACH TRAVELER
+    // ==========================================
+
+    let allTravelerDetails = [];
+    let allBookingDetails = [];
+    let allHotelDetails = [];
+
+    travelers.forEach((traveler, index) => {
+      // 1. TRAVELER DETAILS
+      const travelerName = traveler.traveler_name || 'N/A';
+      const travelerEmail = traveler.traveler_name_other_email ? ` (${traveler.traveler_name_other_email})` : '';
+      
+      const travelerDescription = `
+
+👤 Traveler ${traveler.traveler_index || index + 1}: ${travelerName}${travelerEmail}
+
+Travel Type: ${getTravelTypeDisplay(traveler.travel_type)}
+
+Journey Details:
+• From: ${traveler.travel_from || 'N/A'}
+• To: ${traveler.travel_to || 'N/A'}
+• Departure: ${formatDateTime(traveler.traveler_from_datetime)}
+• Return: ${formatDateTime(traveler.traveler_to_datetime)}
+
+Special Instructions: ${traveler.special_instructions || 'None'}`;
+
+      allTravelerDetails.push(travelerDescription);
+
+      // 2. BOOKING DETAILS (based on travel_type)
+      let bookingDescription = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Booking Details - ${travelerName} (${getTravelTypeDisplay(traveler.travel_type)})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+      switch (traveler.travel_type) {
+        case 'airline':
+          // Oneway Flights
+          bookingDescription += `
+
+🛫 OUTBOUND FLIGHTS:
+${formatFlightDetails(traveler.oneway_flights, 'Outbound')}
+
+🛬 RETURN FLIGHTS:
+${formatFlightDetails(traveler.return_flights, 'Return')}`;
+          break;
+
+        case 'rental_car':
+          bookingDescription += `
+
+🚗 RENTAL CAR QUOTATIONS:
+${formatCarDetails(traveler.cars)}`;
+          break;
+
+        case 'rental_truck':
+          bookingDescription += `
+
+🚚 RENTAL TRUCK QUOTATIONS:
+${formatTruckDetails(traveler.trucks)}`;
+          break;
+
+        case 'personal':
+          bookingDescription += `
+
+👤 PERSONAL TRAVEL:
+─────────────────────────────────────
+ Travel arranged personally by traveler
+ 
+ Personal Quote/Reimbursement: ${formatCurrency(traveler.personal_quote)}
+─────────────────────────────────────`;
+          break;
+
+        default:
+          bookingDescription += `
+
+No booking type specified`;
+      }
+
+//       bookingDescription += `
+
+// Special Instructions: ${traveler.special_instructions || 'None'}`;
+
+      allBookingDetails.push(bookingDescription);
+
+      // 3. HOTEL DETAILS
+      const hotelDescription = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏨 Accommodation - ${travelerName}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${formatHotelDetails(traveler.hotels)}
+
+`;
+
+      allHotelDetails.push(hotelDescription);
+    });
+
+    // ==========================================
+    // BUILD FINAL DESCRIPTIONS
+    // ==========================================
+
+    // Combine all traveler details
+    const travelerDetailsDescription = `✈️ TRAVELER DETAILS
+=========================================
+${allTravelerDetails}
+─────────────────────────────────────────
+📁 Travel Invoices Folder: ${travelMeta?.travel_invoices_folder_url || 'N/A'}`;
+//📝 Overall Special Instructions: ${travelMeta?.special_instructions || 'None'}`;
+
+    // Combine all booking details
+    const bookingDetailsDescription = `📋 BOOKING DETAILS
+All reservations and confirmations for this event
+${allBookingDetails.join('\n')}
+
+─────────────────────────────────────────
+📁 Travel Invoices Folder: ${travelMeta?.travel_invoices_folder_url || 'N/A'}`;
+//📝 Overall Special Instructions: ${travelMeta?.special_instructions || 'None'}`;
+
+    // Combine all hotel details
+    const hotelDetailsDescription = `🏨 ACCOMMODATION DETAILS
+=========================================
+All hotel reservations for this event
+${allHotelDetails.join('\n')}
+
+─────────────────────────────────────────
+📁 Travel Invoices Folder: ${travelMeta?.travel_invoices_folder_url || 'N/A'}`;
+//📝 Overall Special Instructions: ${travelMeta?.special_instructions || 'None'}`;
+
+    const data = {
+      "project_id": getProjectId(),
+      "traveler_details": travelerDetailsDescription,
+      "booking_details": bookingDetailsDescription,
+      "hotel_details": hotelDetailsDescription,
+      "Task": "travel"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating travel description:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 async function updateProjectTask(data) {
 
