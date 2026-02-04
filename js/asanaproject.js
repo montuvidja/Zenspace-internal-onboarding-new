@@ -684,9 +684,265 @@ Special Instructions: ${printing?.special_instructions || 'None'}`;
   }
 }
 
-
-
 async function generateTruckingDescription() {
+  try {
+    const bol_folder_link = document.getElementById("folder_bol_url").href || "";
+    const urlParams = new URLSearchParams(window.location.search);
+    await ensureSupabaseClient();
+    const eventId = urlParams.get('event_id');
+
+    // Fetch trucking entries and meta in parallel
+    const [truckingResult, metaResult] = await Promise.all([
+      supabase
+        .from('internal_trucking')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('entry_index', { ascending: true }),
+      
+      supabase
+        .from('internal_trucking_meta')
+        .select('*')
+        .eq('event_id', eventId)
+        .single()
+    ]);
+
+    if (truckingResult.error && truckingResult.error.code !== 'PGRST116') {
+      throw truckingResult.error;
+    }
+    if (metaResult.error && metaResult.error.code !== 'PGRST116') {
+      throw metaResult.error;
+    }
+
+    const truckingEntries = truckingResult.data || [];
+    const meta = metaResult.data;
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+
+    // Format date (DD/MM/YYYY)
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    // Format time (h:mm am/pm)
+    const formatTime = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }).toLowerCase();
+    };
+
+    // Format date with time
+    const formatDateTime = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      return `${formatDate(dateStr)} - ${formatTime(dateStr)}`;
+    };
+
+    // Format currency
+    const formatCurrency = (amount) => {
+      if (!amount) return 'N/A';
+      return `$${parseFloat(amount).toLocaleString()}`;
+    };
+
+    // Get truck source name
+    const getTruckSource = (entry) => {
+      if (entry.truck_source_new) return entry.truck_source_new;
+      if (entry.truck_source_other) return entry.truck_source_other;
+      if (entry.truck_source && entry.truck_source.length > 0) {
+        return entry.truck_source.join(', ');
+      }
+      return 'N/A';
+    };
+
+    // Get truck quote
+    const getTruckQuote = (entry) => {
+      const quote = entry.truck_quote || 
+             entry.truck_quote_enterprise || 
+             entry.truck_quote_axle || 
+             entry.truck_quote_edward || 
+             entry.truck_quote_other || 
+             null;
+      return formatCurrency(quote);
+    };
+
+    // Get pickup address
+    const getPickupAddress = (entry) => {
+      if (entry.pickup_warehouse_other) return entry.pickup_warehouse_other;
+      if (entry.pickup_warehouse) return entry.pickup_warehouse;
+      return 'N/A';
+    };
+
+    // Format drivers from JSONB
+    const formatDrivers = (drivers) => {
+      if (!drivers || !Array.isArray(drivers) || drivers.length === 0) {
+        return '   No drivers assigned';
+      }
+      
+      const sortedDrivers = [...drivers].sort((a, b) => 
+        (a.driver_index || 0) - (b.driver_index || 0)
+      );
+      
+      return sortedDrivers.map((driver, index) => {
+        const num = driver.driver_index || (index + 1);
+        return `   Driver ${num}:
+   ─────────────────────────────────────
+    Name: ${driver.driver_name || 'N/A'}
+    Mobile: ${driver.driver_mobile || 'N/A'}
+    Email: ${driver.driver_email || 'N/A'}
+   ─────────────────────────────────────`;
+      }).join('\n');
+    };
+
+    // Filter approved entries
+    const approvedEntries = truckingEntries.filter(entry => entry.is_trucking_quote_approved === true);
+
+    // ==========================================
+    // 1. CONFIRM DETAILS (all truck sources)
+    // ==========================================
+
+    let confirmSections = [];
+
+    truckingEntries.forEach((entry, index) => {
+      const entryNumber = entry.entry_index || (index + 1);
+
+      confirmSections.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚛 Truck Source #${entryNumber}: ${getTruckSource(entry)}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Truck Type: ${entry.truck_type || 'N/A'}
+Truck Size: ${entry.truck_size || 'N/A'}
+Truck Quote: ${getTruckQuote(entry)}
+Is Approved: ${entry.is_trucking_quote_approved ? '✅ Approved' : '❌ Not Approved'}
+
+Pickup Address: ${getPickupAddress(entry)}
+Pickup Date: ${formatDateTime(entry.pickup_datetime)}
+
+Delivery Address: ${entry.delivery_address || 'N/A'}
+Delivery Date: ${formatDateTime(entry.delivery_datetime)}
+
+Special Delivery Instructions: ${entry.delivery_instructions || 'None'}`);
+    });
+
+    const truckingDescription = `Trucking Sources Overview 🚛
+=========================================
+Total Sources: ${truckingEntries.length} | Approved: ${approvedEntries.length}
+
+${confirmSections.join('\n\n')}
+
+─────────────────────────────────────────
+📝 General Trucking Instructions: ${meta?.special_instructions || 'None'}`;
+
+    // ==========================================
+    // 2. DRIVER DETAILS (approved sources only)
+    // ==========================================
+
+    let driverDescription = '';
+
+    if (approvedEntries.length === 0) {
+      driverDescription = `Driver Details 👷
+=========================================
+No approved truck sources found.`;
+    } else {
+      let driverSections = [];
+
+      approvedEntries.forEach((entry, index) => {
+        const entryNumber = entry.entry_index || (index + 1);
+
+        driverSections.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚛 Truck Source #${entryNumber}: ${getTruckSource(entry)}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pickup Date: ${formatDateTime(entry.pickup_datetime)}
+Delivery Address: ${entry.delivery_address || 'N/A'}
+
+Assigned Drivers:
+${formatDrivers(entry.drivers)}`);
+      });
+
+      driverDescription = `Driver Details 👷
+=========================================
+Approved Sources: ${approvedEntries.length}
+
+${driverSections.join('\n\n')}`;
+    }
+
+    // ==========================================
+    // 3. PICKUP & DELIVERY DETAILS (approved only)
+    // ==========================================
+
+    let pickupDeliveryDescription = '';
+
+    if (approvedEntries.length === 0) {
+      pickupDeliveryDescription = `Pickup & Delivery Schedule 📦
+=========================================
+No approved truck sources found.`;
+    } else {
+      let logisticsSections = [];
+
+      approvedEntries.forEach((entry, index) => {
+        const entryNumber = entry.entry_index || (index + 1);
+
+        // Pickup section
+        let pickupLocation = '';
+        if (entry.pickup_warehouse && entry.pickup_warehouse.toLowerCase() === 'other') {
+          pickupLocation = entry.pickup_warehouse_other || 'N/A';
+        } else {
+          pickupLocation = `${entry.pickup_warehouse || 'N/A'} Warehouse (ZenSpace)`;
+          if (entry.pickup_warehouse_other) {
+            pickupLocation += `\n            ${entry.pickup_warehouse_other}`;
+          }
+        }
+
+        logisticsSections.push(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚛 Truck Source #${entryNumber}: ${getTruckSource(entry)}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📤 PICKUP:
+   Location: ${pickupLocation}
+   Date: ${formatDateTime(entry.pickup_datetime)}
+
+📥 DROP-OFF:
+   Location: ${entry.delivery_address || 'N/A'}
+   Date: ${formatDateTime(entry.delivery_datetime)}
+
+Special Delivery Instructions: ${entry.delivery_instructions || 'None'}`);
+      });
+
+      pickupDeliveryDescription = `Pickup & Delivery Schedule 📦
+=========================================
+Approved Sources: ${approvedEntries.length}
+
+${logisticsSections.join('\n\n')}
+
+─────────────────────────────────────────
+📝 General Trucking Instructions: ${meta?.special_instructions || 'None'}`;
+    }
+
+    const data = {
+      "project_id": getProjectId(),
+      "confirm_details": truckingDescription,
+      "driver_details": driverDescription,
+      "pickup_delivery_details": pickupDeliveryDescription,
+      "bol_folder_link": bol_folder_link || "",
+      "Task": "trucking_source"
+    };
+
+    updateProjectTask(data);
+
+  } catch (error) {
+    console.error('Error generating trucking description:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function generateTruckingDescription_old() {
   try {
     const bol_folder_link = document.getElementById("folder_bol_url").href || "";
     const urlParams = new URLSearchParams(window.location.search);
