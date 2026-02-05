@@ -1613,11 +1613,23 @@ async function generateCoiDescription() {
     let coiDescription = '';
 
     if (isRequired) {
+      // Build file list from arrays
+      const urls = coi?.coi_file_urls || [];
+      const names = coi?.coi_file_names || [];
+      let fileList = 'N/A';
+      if (urls.length > 0) {
+        fileList = urls.map((url, idx) => {
+          const name = names[idx] || `File ${idx + 1}`;
+          return `  • ${name}: ${url}`;
+        }).join('\n');
+      }
+
       coiDescription = `COI Details 📄
 -----------------------------------------
-COI Required: ✅ Yes
-File URL: ${coi?.coi_file_url || 'N/A'}
-Folder URL: ${coi?.coi_folder_url || 'N/A'}`;
+COI Required: ✅ Yes \n
+Files:
+${fileList}
+\n Folder URL: ${coi?.coi_folder_url || 'N/A'}`;
     } else {
       coiDescription = `COI Details 📄
 -----------------------------------------

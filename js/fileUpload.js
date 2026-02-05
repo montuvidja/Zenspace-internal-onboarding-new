@@ -19,7 +19,7 @@ const uploadedFileData = {
   damage_images: { files: [], folderUrl: '' },
   event_images: { files: [], folderUrl: '' },
   travel_invoices: { files: [], folderUrl: '' },
-  coi: { file: null, folderUrl: '' }  // file: {url, name} or null
+  coi: { files: [], folderUrl: '' }  // files: [{url, name}, ...]
 };
 
 // ============================================================================
@@ -152,7 +152,10 @@ function storeUploadedData(uploadType, entryIndex, result, replaceExisting = fal
       break;
       
     case 'coi_documents':
-      uploadedFileData.coi.file = newFiles[0] || null;
+      uploadedFileData.coi.files = [
+        ...uploadedFileData.coi.files,
+        ...newFiles
+      ];
       uploadedFileData.coi.folderUrl = folderUrl;
       break;
   }
@@ -190,8 +193,8 @@ function getUploadedFileData(uploadType, entryIndex = null) {
       };
     case 'coi_documents':
       return {
-        url: uploadedFileData.coi.file?.url || '',
-        file: uploadedFileData.coi.file,
+        urls: uploadedFileData.coi.files.map(f => f.url),
+        files: uploadedFileData.coi.files,
         folderUrl: uploadedFileData.coi.folderUrl
       };
     default:
@@ -236,13 +239,7 @@ function setUploadedFileData(uploadType, data, entryIndex = null) {
       uploadedFileData.travel_invoices.folderUrl = data.folderUrl || '';
       break;
     case 'coi_documents':
-      if (data.file) {
-        uploadedFileData.coi.file = data.file;
-      } else if (data.url) {
-        uploadedFileData.coi.file = { url: data.url, name: extractFileName(data.url) || 'COI Document' };
-      } else {
-        uploadedFileData.coi.file = null;
-      }
+      uploadedFileData.coi.files = data.files || convertToFiles(data.urls);
       uploadedFileData.coi.folderUrl = data.folderUrl || '';
       break;
   }
@@ -266,7 +263,7 @@ function deleteUploadedFile(uploadType, fileUrl) {
       uploadedFileData.travel_invoices.files = uploadedFileData.travel_invoices.files.filter(f => f.url !== fileUrl);
       break;
     case 'coi_documents':
-      uploadedFileData.coi.file = null;
+      uploadedFileData.coi.files = uploadedFileData.coi.files.filter(f => f.url !== fileUrl);
       break;
   }
 }
@@ -279,7 +276,7 @@ function clearUploadedFileData() {
   uploadedFileData.damage_images = { files: [], folderUrl: '' };
   uploadedFileData.event_images = { files: [], folderUrl: '' };
   uploadedFileData.travel_invoices = { files: [], folderUrl: '' };
-  uploadedFileData.coi = { file: null, folderUrl: '' };
+  uploadedFileData.coi = { files: [], folderUrl: '' };
 }
 
 // ============================================================================
@@ -384,20 +381,20 @@ async function handleTravelInvoicesUpload(inputElement) {
 }
 
 /**
- * Handle COI document upload (COI section)
+ * Handle COI document upload (COI section, multiple files)
  */
 async function handleCOIUpload(inputElement) {
   const files = inputElement.files;
   if (!files || files.length === 0) return;
   
   const container = inputElement.closest('.form-group');
-  showUploadProgress(container, 'Uploading COI document...');
+  showUploadProgress(container, 'Uploading COI document(s)...');
   
   try {
-    const result = await uploadFiles(files, 'coi_documents', null, true);
+    const result = await uploadFiles(files, 'coi_documents', null, false);
     showUploadSuccess(container, result, 'coi_documents');
-    showToast('COI document uploaded successfully!', 'success');
-    // Auto-save file URL and name to Supabase
+    showToast(`${result.totalUploaded} COI document(s) uploaded successfully!`, 'success');
+    // Auto-save file URLs and names to Supabase
     await saveFileDataToSupabase('coi_documents');
   } catch (error) {
     showUploadError(container, error.message);
@@ -791,10 +788,10 @@ function getTableInfoForUploadType(uploadType) {
     },
     'coi_documents': {
       table: 'internal_coi',
-      urlColumn: 'coi_file_url',
-      nameColumn: 'coi_file_name',
+      urlColumn: 'coi_file_urls',
+      nameColumn: 'coi_file_names',
       folderColumn: 'coi_folder_url',
-      isSingle: true
+      isSingle: false
     }
   };
   

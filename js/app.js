@@ -673,21 +673,24 @@ function getTravelMetaData() {
   };
 }
 
-// Section 8: COI - WITH FILE URL and Name
+// Section 8: COI - WITH FILE URLs and Names (multi-file)
 function getCOIData() {
   const section = document.querySelector('[data-section="coi"]');
   
-  // Get uploaded file data
+  // Get uploaded file data (now multi-file format)
   const coiData = typeof getUploadedFileData === 'function' 
     ? getUploadedFileData('coi_documents') 
-    : { url: '', file: null, folderUrl: '' };
+    : { urls: [], files: [], folderUrl: '' };
+  
+  // Extract names from files array
+  const fileNames = coiData.files ? coiData.files.map(f => f.name) : [];
   
   return {
     event_id: currentEventId,
     coi_required: getRadioValue('coi_required', section),
-    // File URL and Name
-    coi_file_url: coiData.url || null,
-    coi_file_name: coiData.file?.name || null,
+    // File URLs and Names (multi-file)
+    coi_file_urls: coiData.urls && coiData.urls.length > 0 ? coiData.urls : null,
+    coi_file_names: fileNames.length > 0 ? fileNames : null,
     coi_folder_url: coiData.folderUrl || null
   };
 }
@@ -2048,7 +2051,7 @@ function populateTravelMeta(data) {
   }
 }
 
-// Populate COI - WITH FILE DISPLAY and Name
+// Populate COI - WITH FILE DISPLAY and Names (multi-file)
 function populateCOI(data) {
   const section = document.querySelector('[data-section="coi"]');
   if (!section) return;
@@ -2060,26 +2063,28 @@ function populateCOI(data) {
     wrapper.style.display = data.coi_required === 'yes' ? 'block' : 'none';
   }
   
-  if (data.coi_file_url || data.coi_folder_url) {
+  if (data.coi_file_urls || data.coi_folder_url) {
     const coiInput = section.querySelector('input[name="coi_file"]');
     const coiContainer = coiInput?.closest('.form-group') || wrapper;
     
     if (coiContainer) {
-      // Build file object with name
-      const file = data.coi_file_url ? {
-        url: data.coi_file_url,
-        name: data.coi_file_name || 'COI Document'
-      } : null;
+      // Build files array with names
+      const urls = data.coi_file_urls || [];
+      const names = data.coi_file_names || [];
+      const files = urls.map((url, idx) => ({
+        url: url,
+        name: names[idx] || `COI Document ${idx + 1}`
+      }));
       
       if (typeof setUploadedFileData === 'function') {
         setUploadedFileData('coi_documents', {
-          url: data.coi_file_url || '',
-          file: file,
+          urls: urls,
+          files: files,
           folderUrl: data.coi_folder_url || ''
         });
       }
-      if (typeof displaySingleUploadedFile === 'function') {
-        displaySingleUploadedFile(coiContainer, data.coi_file_url, data.coi_folder_url, 'coi_documents');
+      if (typeof displayUploadedFiles === 'function') {
+        displayUploadedFiles(coiContainer, urls, data.coi_folder_url, 'coi_documents');
       }
     }
   }
