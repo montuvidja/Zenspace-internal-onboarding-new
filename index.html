@@ -15,7 +15,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabaseClient.js"></script>
   <script>
-     const apiversion = "1.0.7";
+     const apiversion = "1.0.6";
      let currentEventName = "";
      let currentProjectId = "";
      const NycWarehouseAddress = "17 Madison Ave., Paterson, NJ";
@@ -2063,7 +2063,7 @@
 
             <div class="form-group coi-file-wrapper" style="display: none;">
               <label class="form-label">Upload COI</label>
-              <input type="file" name="coi_file" id="coi_file">
+              <input type="file" name="coi_file" id="coi_file" multiple>
               <p class="muted">Attach Certificate of Insurance (PDF preferred)</p>
             </div>
 
